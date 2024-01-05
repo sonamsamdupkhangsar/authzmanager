@@ -1,0 +1,120 @@
+# Default values for mychart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: github-regcred
+nameOverride: ""
+fullnameOverride: "account-rest-service"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  type: ClusterIP
+#  type: NodePort
+  port: 80
+  targetPort: 8080
+
+istio:
+  enabled: false
+
+ingress:
+  enabled: false
+  ingressClass: nginx
+  hosts:
+    - host: account-rest-service.sonam.cloud
+      paths:
+        - path: /login/
+          pathType: Prefix
+  tls:
+    - secretName: sonam.cloud
+      hosts:
+        - "*.sonam.cloud"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+#   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+postgres:
+  port: "5432"
+  service: account-minimal-cluster
+  secretfile: sonam.account-minimal-cluster.credentials.postgresql.acid.zalan.do
+  dbname: account
+
+envs:
+  - name: DB_SSLMODE
+    value: REQUIRE
+  - name: API_GATEWAY
+    value: https://api-gateway.sonam.cloud
+  - name: ISSUER_URI
+    value: https://authorization.sonam.cloud/issuer
+  - name: OAUTH_AUDIENCES
+    value: oauth-client
+
+
+health:
+  liveness:
+    path: /authzmanager/actuator/health
+    port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    failureThreshold: 5
+  readiness:
+    path: /authzmanager/actuator/health
+    port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    failureThreshold: 5
+
+secretFiles:
+  - file: account-rest-service
+    keys:
+      - key: email.from
+        name: EMAIL_FROM
+  - file: service-service-client-credential-flow-secret
+    keys:
+      - key: base64EncodedClientIdSecret
+        name: BASE64_CLIENT_ID_SECRET
+      - key: scopes
+        name: REQUEST_SCOPES
+  - file: newrelic-secret
+    keys:
+      - key: newrelic.license_key
+        name: NEW_RELIC_LICENSE_KEY
