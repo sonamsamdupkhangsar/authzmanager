@@ -22,6 +22,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.*;
         import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect;
 
 
 @Configuration
@@ -44,16 +45,15 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(httpSecurityFormLoginConfigurer ->
                         httpSecurityFormLoginConfigurer.loginPage("/login/login.html")
-                                .loginProcessingUrl("/login/login")
-                                .defaultSuccessUrl("/admin/dashboard").permitAll()
+                                .defaultSuccessUrl("/admin/dashboard") // use this to forward with this address in browser
+                                .permitAll()
                 )
                 .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer
                         .logoutUrl("/admin/logout")
                         .logoutSuccessUrl("/login/login.html")
                 )
                 .authenticationManager(authenticationManager());
-        return http.cors(Customizer.withDefaults()).formLogin(formLogin ->
-                formLogin.loginPage("/login/login.html").permitAll()).build();
+        return http.cors(Customizer.withDefaults()).build();
     }
 
     private AuthenticationManager authenticationManager() {
@@ -64,13 +64,13 @@ public class SecurityConfig {
         ProviderManager providerManager = new ProviderManager(authenticationProvider);
         providerManager.setEraseCredentialsAfterAuthentication(false);
 
+
         return providerManager;
     }
 
     UserDetailsService userDetailsService() {
-        var user = User.withDefaultPasswordEncoder()
-                .username("admin")
-                .password("password")
+        var user = User.withUsername("admin")
+                .password(passwordEncoder().encode("password"))
                 .roles("ADMIN")
                 .build();
 
@@ -78,5 +78,9 @@ public class SecurityConfig {
     }
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+    @Bean
+    public SpringSecurityDialect springSecurityDialect() {
+        return new SpringSecurityDialect();
     }
 }

@@ -1,12 +1,23 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <title>Getting Started: Serving Web Content</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
 Welcome to the Admin dashboard!
+<a th:href="@{/admin/logout}">Logout</a>
 
-<p th:text="|Hello, ${name}!|" />
+
+User: <span sec:authentication="name"></span>
+Role(s): <span sec:authentication="principal.authorities"></span>
+
+<div sec:authorize="hasRole('ROLE_ADMIN')">
+    This content is only shown to <b>administrators</b>.
+</div>
+<div sec:authorize="hasRole('ROLE_USER')">
+    This content is only shown to <b>users</b>.
+</div>
+
 </body>
 </html>

@@ -1,0 +1,187 @@
+2024-01-05T14:30:57.692-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490257692; nextExpiration=1704490257691; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:30:58.692-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490258692; nextExpiration=1704490258692; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:30:59.693-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490259693; nextExpiration=1704490259692; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:00.693-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490260693; nextExpiration=1704490260693; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.coyote.http11.Http11InputBuffer      : Before fill(): parsingHeader: [true], parsingRequestLine: [true], parsingRequestLinePhase: [0], parsingRequestLineStart: [0], byteBuffer.position(): [0], byteBuffer.limit(): [0], end: [731]
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.tomcat.util.net.SocketWrapperBase    : Socket: [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]], Read from buffer: [0]
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.tomcat.util.net.NioEndpoint   : Socket: [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]], Read direct from socket: [941]
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.coyote.http11.Http11InputBuffer      : Received [POST /login/login HTTP/1.1
+Host: localhost:9093
+Connection: keep-alive
+Content-Length: 32
+Cache-Control: max-age=0
+sec-ch-ua: "Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+Origin: http://localhost:9093
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:9093/login/login.html
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-US,en;q=0.9
+Cookie: JSESSIONID=76199D565D607437A29A2D621E099E8C
+
+username=admin&password=password]
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.t.util.http.Rfc6265CookieProcessor   : Cookies: Parsing b[]: JSESSIONID=76199D565D607437A29A2D621E099E8C
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.catalina.connector.CoyoteAdapter     :  Requested cookie session id is 76199D565D607437A29A2D621E099E8C
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.authenticator.AuthenticatorBase    : Security checking request POST /login/login
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.catalina.realm.RealmBase      :   No applicable constraints defined
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.authenticator.AuthenticatorBase    : Not subject to any constraint
+2024-01-05T14:31:01.550-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.apache.catalina.core.StandardWrapper   :   Returning instance
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.w.s.f.OrderedRequestContextFilter  : Bound request context to thread: org.apache.catalina.connector.RequestFacade@34e396d9
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Trying to match request against DefaultSecurityFilterChain [RequestMatcher=any request, Filters=[org.springframework.security.web.session.DisableEncodeUrlFilter@52fec840, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7fd4b9ec, org.springframework.security.web.context.SecurityContextHolderFilter@1fa29b9e, org.springframework.security.web.header.HeaderWriterFilter@9976b27, org.springframework.web.filter.CorsFilter@10553a61, org.springframework.security.web.authentication.logout.LogoutFilter@6369d01c, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@698e1bf5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@2f29e630, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6a7ea7c, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@3c8e4a82, org.springframework.security.web.access.ExceptionTranslationFilter@7ade62a6, org.springframework.security.web.access.intercept.AuthorizationFilter@17f8cad6]] (1/1)
+2024-01-05T14:31:01.551-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Securing POST /login/login
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking DisableEncodeUrlFilter (1/12)
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking WebAsyncManagerIntegrationFilter (2/12)
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking SecurityContextHolderFilter (3/12)
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking HeaderWriterFilter (4/12)
+2024-01-05T14:31:01.551-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking CorsFilter (5/12)
+2024-01-05T14:31:01.552-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped to HandlerExecutionChain with [ResourceHttpRequestHandler [classpath [META-INF/resources/], classpath [resources/], classpath [static/], classpath [public/], ServletContext [/]]] and 5 interceptors
+2024-01-05T14:31:01.552-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking LogoutFilter (6/12)
+2024-01-05T14:31:01.552-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.a.logout.LogoutFilter            : Did not match request to Or [Ant [pattern='/admin/logout', GET], Ant [pattern='/admin/logout', POST], Ant [pattern='/admin/logout', PUT], Ant [pattern='/admin/logout', DELETE]]
+2024-01-05T14:31:01.552-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking UsernamePasswordAuthenticationFilter (7/12)
+2024-01-05T14:31:01.552-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.tomcat.util.http.Parameters   : Set encoding to UTF-8
+2024-01-05T14:31:01.552-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.tomcat.util.http.Parameters   : Start processing with input [username=admin&password=password]
+2024-01-05T14:31:01.552-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.authentication.ProviderManager     : Authenticating request with DaoAuthenticationProvider (1/1)
+2024-01-05T14:31:01.632-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.s.a.dao.DaoAuthenticationProvider    : Authenticated user
+2024-01-05T14:31:01.632-07:00 TRACE 16089 --- [nio-9093-exec-2] s.CompositeSessionAuthenticationStrategy : Preparing session with ChangeSessionIdAuthenticationStrategy (1/1)
+2024-01-05T14:31:01.632-07:00 DEBUG 16089 --- [nio-9093-exec-2] w.c.HttpSessionSecurityContextRepository : Stored SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=org.springframework.security.core.userdetails.User [Username=admin, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[ROLE_ADMIN]], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_ADMIN]]] to HttpSession [org.apache.catalina.session.StandardSessionFacade@431242bc]
+2024-01-05T14:31:01.632-07:00 DEBUG 16089 --- [nio-9093-exec-2] w.a.UsernamePasswordAuthenticationFilter : Set SecurityContextHolder to UsernamePasswordAuthenticationToken [Principal=org.springframework.security.core.userdetails.User [Username=admin, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[ROLE_ADMIN]], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_ADMIN]]
+2024-01-05T14:31:01.633-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.apache.catalina.core.StandardWrapper   :   Returning instance
+2024-01-05T14:31:01.633-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Trying to match request against DefaultSecurityFilterChain [RequestMatcher=any request, Filters=[org.springframework.security.web.session.DisableEncodeUrlFilter@52fec840, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7fd4b9ec, org.springframework.security.web.context.SecurityContextHolderFilter@1fa29b9e, org.springframework.security.web.header.HeaderWriterFilter@9976b27, org.springframework.web.filter.CorsFilter@10553a61, org.springframework.security.web.authentication.logout.LogoutFilter@6369d01c, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@698e1bf5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@2f29e630, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6a7ea7c, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@3c8e4a82, org.springframework.security.web.access.ExceptionTranslationFilter@7ade62a6, org.springframework.security.web.access.intercept.AuthorizationFilter@17f8cad6]] (1/1)
+2024-01-05T14:31:01.633-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Securing POST /admin/dashboard
+2024-01-05T14:31:01.633-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking DisableEncodeUrlFilter (1/12)
+2024-01-05T14:31:01.633-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking WebAsyncManagerIntegrationFilter (2/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking SecurityContextHolderFilter (3/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking HeaderWriterFilter (4/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking CorsFilter (5/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking LogoutFilter (6/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.a.logout.LogoutFilter            : Did not match request to Or [Ant [pattern='/admin/logout', GET], Ant [pattern='/admin/logout', POST], Ant [pattern='/admin/logout', PUT], Ant [pattern='/admin/logout', DELETE]]
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking UsernamePasswordAuthenticationFilter (7/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] w.a.UsernamePasswordAuthenticationFilter : Did not match request to Ant [pattern='/login/login', POST]
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking RequestCacheAwareFilter (8/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.s.HttpSessionRequestCache        : matchingRequestParameterName is required for getMatchingRequest to lookup a value, but not provided
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking SecurityContextHolderAwareRequestFilter (9/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking AnonymousAuthenticationFilter (10/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking ExceptionTranslationFilter (11/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking AuthorizationFilter (12/12)
+2024-01-05T14:31:01.634-07:00 TRACE 16089 --- [nio-9093-exec-2] estMatcherDelegatingAuthorizationManager : Authorizing SecurityContextHolderAwareRequestWrapper[ FirewalledRequest[ org.springframework.security.web.header.HeaderWriterFilter$HeaderWriterRequest@52d11f18]]
+2024-01-05T14:31:01.636-07:00 TRACE 16089 --- [nio-9093-exec-2] estMatcherDelegatingAuthorizationManager : Checking authorization on SecurityContextHolderAwareRequestWrapper[ FirewalledRequest[ org.springframework.security.web.header.HeaderWriterFilter$HeaderWriterRequest@52d11f18]] using org.springframework.security.authorization.AuthenticatedAuthorizationManager@79a96818
+2024-01-05T14:31:01.636-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.a.AnonymousAuthenticationFilter  : Did not set SecurityContextHolder since already authenticated UsernamePasswordAuthenticationToken [Principal=org.springframework.security.core.userdetails.User [Username=admin, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[ROLE_ADMIN]], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_ADMIN]]
+2024-01-05T14:31:01.636-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Secured POST /admin/dashboard
+2024-01-05T14:31:01.636-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : "FORWARD" dispatch for POST "/admin/dashboard", parameters={masked}, headers={masked} in DispatcherServlet 'dispatcherServlet'
+2024-01-05T14:31:01.637-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.header.writers.HstsHeaderWriter  : Not injecting HSTS header since it did not match request to [Is Secure]
+2024-01-05T14:31:01.637-07:00  WARN 16089 --- [nio-9093-exec-2] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported]
+2024-01-05T14:31:01.637-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : No view rendering, null ModelAndView returned.
+2024-01-05T14:31:01.637-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : Exiting from "FORWARD" dispatch, status 405, headers={masked}
+2024-01-05T14:31:01.637-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.c.C.[.[.[/].[dispatcherServlet]    :  Disabling the response for further output
+2024-01-05T14:31:01.637-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.c.C.[.[.[/].[dispatcherServlet]    :  The Response is vehiculed using a wrapper: org.springframework.security.web.header.HeaderWriterFilter$HeaderWriterResponse
+2024-01-05T14:31:01.637-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.w.s.f.OrderedRequestContextFilter  : Cleared thread-bound request context: org.apache.catalina.connector.RequestFacade@34e396d9
+2024-01-05T14:31:01.638-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.c.C.[Tomcat].[localhost]           : Processing ErrorPage[errorCode=0, location=/error]
+2024-01-05T14:31:01.638-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.apache.catalina.core.StandardWrapper   :   Returning instance
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.w.s.f.OrderedRequestContextFilter  : Bound request context to thread: org.apache.catalina.core.ApplicationHttpRequest@7457d028
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Trying to match request against DefaultSecurityFilterChain [RequestMatcher=any request, Filters=[org.springframework.security.web.session.DisableEncodeUrlFilter@52fec840, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7fd4b9ec, org.springframework.security.web.context.SecurityContextHolderFilter@1fa29b9e, org.springframework.security.web.header.HeaderWriterFilter@9976b27, org.springframework.web.filter.CorsFilter@10553a61, org.springframework.security.web.authentication.logout.LogoutFilter@6369d01c, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@698e1bf5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@2f29e630, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6a7ea7c, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@3c8e4a82, org.springframework.security.web.access.ExceptionTranslationFilter@7ade62a6, org.springframework.security.web.access.intercept.AuthorizationFilter@17f8cad6]] (1/1)
+2024-01-05T14:31:01.638-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Securing POST /error
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking DisableEncodeUrlFilter (1/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking WebAsyncManagerIntegrationFilter (2/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking SecurityContextHolderFilter (3/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking HeaderWriterFilter (4/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking CorsFilter (5/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking LogoutFilter (6/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.a.logout.LogoutFilter            : Did not match request to Or [Ant [pattern='/admin/logout', GET], Ant [pattern='/admin/logout', POST], Ant [pattern='/admin/logout', PUT], Ant [pattern='/admin/logout', DELETE]]
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking UsernamePasswordAuthenticationFilter (7/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] w.a.UsernamePasswordAuthenticationFilter : Did not match request to Ant [pattern='/login/login', POST]
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking RequestCacheAwareFilter (8/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.s.HttpSessionRequestCache        : matchingRequestParameterName is required for getMatchingRequest to lookup a value, but not provided
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking SecurityContextHolderAwareRequestFilter (9/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking AnonymousAuthenticationFilter (10/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking ExceptionTranslationFilter (11/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Invoking AuthorizationFilter (12/12)
+2024-01-05T14:31:01.638-07:00 TRACE 16089 --- [nio-9093-exec-2] estMatcherDelegatingAuthorizationManager : Authorizing SecurityContextHolderAwareRequestWrapper[ FirewalledRequest[ org.apache.catalina.core.ApplicationHttpRequest@7457d028]]
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.639-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] estMatcherDelegatingAuthorizationManager : Checking authorization on SecurityContextHolderAwareRequestWrapper[ FirewalledRequest[ org.apache.catalina.core.ApplicationHttpRequest@7457d028]] using org.springframework.security.authorization.AuthenticatedAuthorizationManager@79a96818
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] w.c.HttpSessionSecurityContextRepository : Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=org.springframework.security.core.userdetails.User [Username=admin, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[ROLE_ADMIN]], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_ADMIN]]] from SPRING_SECURITY_CONTEXT
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.s.w.a.AnonymousAuthenticationFilter  : Did not set SecurityContextHolder since already authenticated UsernamePasswordAuthenticationToken [Principal=org.springframework.security.core.userdetails.User [Username=admin, Password=[PROTECTED], Enabled=true, AccountNonExpired=true, credentialsNonExpired=true, AccountNonLocked=true, Granted Authorities=[ROLE_ADMIN]], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=null], Granted Authorities=[ROLE_ADMIN]]
+2024-01-05T14:31:01.640-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.security.web.FilterChainProxy        : Secured POST /error
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={masked}, headers={masked} in DispatcherServlet 'dispatcherServlet'
+2024-01-05T14:31:01.640-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : 2 matching mappings: [{ [/error], produces [text/html]}, { [/error]}]
+2024-01-05T14:31:01.641-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'basicErrorController'
+2024-01-05T14:31:01.641-07:00 TRACE 16089 --- [nio-9093-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#errorHtml(HttpServletRequest, HttpServletResponse)
+2024-01-05T14:31:01.641-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.j.s.OpenEntityManagerInViewInterceptor : Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2024-01-05T14:31:01.641-07:00 TRACE 16089 --- [nio-9093-exec-2] .i.SessionFactoryImpl$SessionBuilderImpl : Opening Hibernate Session.  tenant=null
+2024-01-05T14:31:01.641-07:00 TRACE 16089 --- [nio-9093-exec-2] org.hibernate.internal.SessionImpl       : Opened Session [aa973a3a-74ef-43ee-9423-8528fa280505] at timestamp: 1704490261641
+2024-01-05T14:31:01.641-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.web.method.HandlerMethod             : Arguments: [SecurityContextHolderAwareRequestWrapper[ FirewalledRequest[ org.apache.catalina.core.ApplicationHttpRequest@7457d028]], org.springframework.security.web.firewall.FirewalledResponse@5caad525]
+2024-01-05T14:31:01.641-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(META-INF/resources/error/405.html)
+2024-01-05T14:31:01.641-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(resources/error/405.html)
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(static/error/405.html)
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(public/error/405.html)
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.642-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(META-INF/resources/error/4xx.html)
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(resources/error/4xx.html)
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.643-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(static/error/4xx.html)
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       : getResource(public/error/4xx.html)
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   Delegating to parent classloader jdk.internal.loader.ClassLoaders$AppClassLoader@531d72ca
+2024-01-05T14:31:01.644-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.loader.WebappClassLoaderBase       :   --> Resource not found, returning null
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.f.s.DefaultListableBeanFactory     : Returning cached instance of singleton bean 'error'
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.t.spring6.view.ThymeleafViewResolver   : View with key [error_en_US] served from cache
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.w.s.v.InternalResourceViewResolver   : View with key [error] served from cache
+2024-01-05T14:31:01.645-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.w.s.v.ContentNegotiatingViewResolver : Selected 'text/html' given [text/html, text/html;q=0.8]
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : Rendering view [org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration$StaticView@326dbe25]
+2024-01-05T14:31:01.645-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.j.s.OpenEntityManagerInViewInterceptor : Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] org.hibernate.internal.SessionImpl       : Closing session [aa973a3a-74ef-43ee-9423-8528fa280505]
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.h.e.jdbc.internal.JdbcCoordinatorImpl  : Closing JDBC container [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl@d7c6bae]
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.h.r.j.i.ResourceRegistryStandardImpl   : Releasing JDBC resources
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.h.r.j.i.LogicalConnectionManagedImpl   : Closing logical connection
+2024-01-05T14:31:01.645-07:00 TRACE 16089 --- [nio-9093-exec-2] o.h.r.j.i.LogicalConnectionManagedImpl   : Logical connection closed
+2024-01-05T14:31:01.645-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 405, headers={masked}
+2024-01-05T14:31:01.646-07:00 TRACE 16089 --- [nio-9093-exec-2] o.s.b.w.s.f.OrderedRequestContextFilter  : Cleared thread-bound request context: org.apache.catalina.core.ApplicationHttpRequest@7457d028
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.c.c.C.[.[.[/].[dispatcherServlet]    :  Disabling the response for further output
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.coyote.http11.Http11InputBuffer      : Before fill(): parsingHeader: [true], parsingRequestLine: [true], parsingRequestLinePhase: [0], parsingRequestLineStart: [0], byteBuffer.position(): [0], byteBuffer.limit(): [0], end: [909]
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.tomcat.util.net.SocketWrapperBase    : Socket: [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]], Read from buffer: [0]
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.tomcat.util.net.NioEndpoint   : Socket: [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]], Read direct from socket: [0]
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.a.coyote.http11.Http11InputBuffer      : Received []
+2024-01-05T14:31:01.646-07:00 DEBUG 16089 --- [nio-9093-exec-2] o.apache.coyote.http11.Http11Processor   : Socket: [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]], Status in: [OPEN_READ], State out: [OPEN]
+2024-01-05T14:31:01.647-07:00 DEBUG 16089 --- [nio-9093-exec-2] org.apache.tomcat.util.net.NioEndpoint   : Registered read interest for [org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper@5de42219:org.apache.tomcat.util.net.NioChannel@6b60472e:java.nio.channels.SocketChannel[connected local=/[0:0:0:0:0:0:0:1]:9093 remote=/[0:0:0:0:0:0:0:1]:61557]]
+2024-01-05T14:31:02.647-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490262647; nextExpiration=1704490261693; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:03.648-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490263648; nextExpiration=1704490263647; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:04.648-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490264648; nextExpiration=1704490264648; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:05.648-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490265648; nextExpiration=1704490265648; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:06.649-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490266649; nextExpiration=1704490266648; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:07.649-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490267649; nextExpiration=1704490267649; keyCount=0; hasEvents=false; eval=false
+2024-01-05T14:31:08.650-07:00 DEBUG 16089 --- [nio-9093-Poller] org.apache.tomcat.util.net.NioEndpoint   : timeout completed: keys processed=1; now=1704490268650; nextExpiration=1704490268649; keyCount=0; hasEvents=false; eval=false
