@@ -3,8 +3,8 @@ server:
 
 logging:
   level:
-    root: trace
-#    me.sonam.auth: info
+    root: warn
+    me.sonam.auth: info
 #    org.springframework.web: info
 #    org.springframework.security: info
 #    org.springframework.security.oauth2: info

@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-//@RequestMapping("/admin")
+@RequestMapping("/admin")
 public class AdminController {
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
 
-    @GetMapping("/admin/dashboard")
+    @GetMapping("/dashboard")
     public String getDashboard(Model model) {
         LOG.info("return dashboard page");
 
@@ -24,11 +24,18 @@ public class AdminController {
         return "admin/dashboard";
     }
 
-    @PostMapping("/admin/dashboard")
+    @PostMapping("/dashboard")
     public String getDashboardPost(Model model) {
         LOG.info("return dashboard page");
 
         model.addAttribute("name", "hello");
         return "admin/dashboard";
+    }
+
+    @GetMapping("/clients")
+    public String getClients() {
+        LOG.info("return clients");
+
+        return "admin/clients";
     }
 }

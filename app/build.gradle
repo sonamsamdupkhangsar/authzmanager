@@ -43,6 +43,15 @@ dependencies {
     // Use JUnit Jupiter for testing.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+configurations {
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
+}
+dependencies {
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+}
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {
