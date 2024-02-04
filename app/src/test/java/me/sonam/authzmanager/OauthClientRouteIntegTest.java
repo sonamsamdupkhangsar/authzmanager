@@ -1,11 +1,9 @@
 package me.sonam.authzmanager;
 
-/*
 
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-*/
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OauthClientRouteIntegTest {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientRouteIntegTest.class);
 
-    //private static MockWebServer mockWebServer;
+    private static MockWebServer mockWebServer;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -53,7 +51,7 @@ public class OauthClientRouteIntegTest {
     @Value("classpath:client-credential-access-token.json")
     private Resource refreshTokenResource;
 
-  /*  @BeforeAll
+    @BeforeAll
     static void setupMockWebServer() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
@@ -74,7 +72,7 @@ public class OauthClientRouteIntegTest {
         r.add("account-rest-service.root", () -> "http://localhost:"+mockWebServer.getPort());
         r.add("auth-server.root", () -> "http://localhost:"+ mockWebServer.getPort());
     }
-*/
+
     @Test
     public void createClientTest() throws Exception {
         saveClient();
@@ -99,7 +97,7 @@ public class OauthClientRouteIntegTest {
                 "mediateToken", "true",
                 "userId", userId.toString());
 
-/*
+
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json").setResponseCode(200)
                 .setBody(jsonTokenMap));
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
@@ -117,6 +115,6 @@ public class OauthClientRouteIntegTest {
         LOG.info("take request for mocked response to token-mediator for client save");
         recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-        assertThat(recordedRequest.getPath()).startsWith("/authzmanager/clients");*/
+        assertThat(recordedRequest.getPath()).startsWith("/authzmanager/clients");
     }
 }

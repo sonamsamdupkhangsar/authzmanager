@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller;
 
+import me.sonam.authzmanager.clients.OauthClientRoute;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/admin")
 public class AdminController {
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
+    private OauthClientRoute oauthClientRoute;
+
+    public AdminController(OauthClientRoute oauthClientRoute) {
+        this.oauthClientRoute = oauthClientRoute;
+    }
 
     @GetMapping("/dashboard")
     public String getDashboard(Model model) {
@@ -36,6 +42,11 @@ public class AdminController {
     public String getClients() {
         LOG.info("return clients");
 
+        SecurityContextHolder.getContext().getAuthentication().getName();
+
+        //oauthClientRoute.getUserClientIds()
         return "admin/clients";
     }
+
+
 }
