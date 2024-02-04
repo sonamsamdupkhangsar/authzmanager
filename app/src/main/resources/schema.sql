@@ -1,1 +1,1 @@
-create table if not exists Client (client_id varchar primary key, client_secret varchar, salt varchar);
+create table if not exists Hello (hello_id varchar primary key, hello_name varchar, salt varchar);

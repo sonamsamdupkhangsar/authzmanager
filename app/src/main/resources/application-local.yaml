@@ -22,4 +22,8 @@ spring:
     kubernetes:
       enabled: false
 
+USER_REST_SERVICE: http://user-rest-service
+AUTHENTICATION_REST_SERVICE: http://authentication-rest-service
+AUTH_SERVER: http://authorization-server
 
+allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1

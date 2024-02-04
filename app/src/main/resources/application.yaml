@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    root: warn
+    root: debug
     me.sonam.auth: info
 #    org.springframework.web: info
 #    org.springframework.security: info
@@ -11,15 +11,18 @@ logging:
 #    org.springframework.boot.autoconfigure: warn
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   profiles:
     active: local
   application:
     name: authzmanager
-  datasource:
-    url: jdbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    properties:
+      sslMode: ${DB_SSLMODE}
   jpa:
     properties:
       hibernate:
@@ -28,3 +31,21 @@ spring:
 
 permitpath:
   - path: /authzmanager/api/health/*
+
+user-rest-service:
+  root: ${USER_REST_SERVICE}
+  signup: /signup
+
+# this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
+auth-server:
+  root: ${AUTH_SERVER}
+  clients: /clients
+  oauth2token:
+    path: /oauth2/token
+    params: ?grant_type=client_credentials
+
+authentication-rest-service:
+  root: ${AUTHENTICATION_REST_SERVICE}/authentications
+  authenticate: /authenticate
+
+allowedOrigins: ${allowedOrigins}
