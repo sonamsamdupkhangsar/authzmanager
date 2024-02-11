@@ -59,7 +59,7 @@ public class AuthenticationCallout  implements AuthenticationProvider {
 
 
         return responseSpec.bodyToMono(Map.class).map(roleMap -> {
-            LOG.info("map: {}", roleMap);  //returned roles delimited by space from auth-server authenticate endpoint  like "USER ADMIN"
+            LOG.info("got response from auth-server authenticate call: {}", roleMap);  //returned roles delimited by space from auth-server authenticate endpoint  like "USER ADMIN"
             final List<GrantedAuthority> grantedAuths = new ArrayList<>();
 
             if (roleMap.get("roles") != null) {
