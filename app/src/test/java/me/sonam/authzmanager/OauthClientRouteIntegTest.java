@@ -27,6 +27,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 //import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -62,7 +63,9 @@ public class OauthClientRouteIntegTest {
     private UUID clientId = UUID.randomUUID();
     @Value("classpath:client-credential-access-token.json")
     private Resource refreshTokenResource;
-;
+
+    @MockBean
+    private ReactiveJwtDecoder reactiveJwtDecoder;
 
     @Autowired
     private WebClient webClient;

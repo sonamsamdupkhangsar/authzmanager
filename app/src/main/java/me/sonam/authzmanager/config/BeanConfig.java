@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-//import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-//import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
@@ -24,8 +24,8 @@ public class BeanConfig {
         return new AuthenticationCallout(webClientBuilder, springAuthorizationServerAuthenticationEp);
     }
 
-  /*  @Bean
+    @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         return ReactiveJwtDecoders.fromIssuerLocation(issuerUri);
-    }*/
+    }
 }
