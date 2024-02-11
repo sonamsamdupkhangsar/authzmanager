@@ -13,7 +13,7 @@ EUREKA_PASSWORD: test
 
 eureka:
   client:
-    enabled: false
+    enabled: true
     serviceUrl:
       defaultZone: http://${EUREKA_USER}:${EUREKA_PASSWORD}@${EUREKA_HOST}/eureka
 
@@ -24,6 +24,12 @@ spring:
 
 USER_REST_SERVICE: http://user-rest-service
 AUTHENTICATION_REST_SERVICE: http://authentication-rest-service
-AUTH_SERVER: http://authorization-server
+AUTH_SERVER: http://authorization-server/issuer
 
 allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1
+
+ISSUER_ADDRESS: http://api-gateway:9001
+
+ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+OAUTH_AUDIENCES: oauth-client
+JWT_SET_URI: ${ISSUER_ADDRESS}/issuer/.well-known/jwks.json

@@ -11,7 +11,7 @@ import org.springframework.core.io.ClassPathResource;
 //import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"me.sonam.security", "me.sonam.authzmanager"})
 public class Application {
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     public static void main(String[] args) {

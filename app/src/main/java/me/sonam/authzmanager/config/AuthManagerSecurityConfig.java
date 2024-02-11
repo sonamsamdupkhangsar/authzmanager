@@ -2,10 +2,12 @@ package me.sonam.authzmanager.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -22,6 +24,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.security.Provider;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,8 +37,21 @@ public class AuthManagerSecurityConfig {
     @Value("${allowedOrigins}")
     private String allowedOrigins; //csv allow origins
 
+    private final AuthenticationProvider authenticationProvider;
+
+    public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
+        this.authenticationProvider = authenticationProvider;
+        LOG.info("set authenticationProvider");
+        if (authenticationProvider == null) {
+            LOG.error("authenticationProvider is null");
+        }
+        else {
+            LOG.info("authenticationProvider is set");
+        }
+
+    }
     @Bean
-    public SecurityFilterChain afilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers("/actuator/**").permitAll()
@@ -55,8 +71,10 @@ public class AuthManagerSecurityConfig {
                 .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer
                         .logoutUrl("/admin/logout")
                         .logoutSuccessUrl("/login/login.html")
-                )
-                .authenticationManager(authenticationManager());
+                );
+                //.authenticationManager(calloutAuthManager());
+                //.authenticationManager(authenticationProvider::authenticate);
+                //.authenticationManager(calloutAuthManager());//authenticationManager());
         return http.cors(Customizer.withDefaults()).build();
     }
     @Bean
@@ -76,6 +94,12 @@ public class AuthManagerSecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
         return source;
+    }
+
+    private AuthenticationManager calloutAuthManager() {
+        ProviderManager providerManager = new ProviderManager(authenticationProvider);
+        providerManager.setEraseCredentialsAfterAuthentication(false);
+        return providerManager;
     }
 
     private AuthenticationManager authenticationManager() {

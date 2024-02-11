@@ -41,8 +41,9 @@ user-rest-service:
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
-  root: http://localhost:9001
+  root: http://localhost:9001/issuer
   clients: /clients
+  authenticate: /authenticate
   oauth2token:
     path: /oauth2/token
     params: ?grant_type=client_credentials
@@ -69,20 +70,12 @@ eureka:
       defaultZone: https://${EUREKA_USER}:${EUREKA_PASSWORD}@discovery-service.sonam.cloud/eureka
 
 permitpath:
-  - path: /users
-    httpMethods: POST
-  - path: /users/api/health/*
+  - path: /authzmanager/api/health/*
     httpMethods: GET
 
 jwtrequest:
-  - in:  /users
-    out: /authentications
-    accessToken:
-      option: request
-      scopes: message.read message.write
-      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
-  - in: /users
-    out: /accounts/(.)*/(.)*
+  - in:  /*
+    out: /authenticate
     accessToken:
       option: request
       scopes: message.read message.write

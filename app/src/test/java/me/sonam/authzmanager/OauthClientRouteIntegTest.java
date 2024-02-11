@@ -1,10 +1,17 @@
 package me.sonam.authzmanager;
 
 
+import com.gargoylesoftware.htmlunit.Page;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlButton;
+import com.gargoylesoftware.htmlunit.html.HtmlInput;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
+import okio.Buffer;
+import okio.Okio;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,14 +23,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -40,7 +52,7 @@ public class OauthClientRouteIntegTest {
     private static MockWebServer mockWebServer;
 
     @Autowired
-    private WebTestClient webTestClient;
+    private WebClient webTestClient;
 
     private String messageClient = "messaging-client";
 
@@ -50,7 +62,10 @@ public class OauthClientRouteIntegTest {
     private UUID clientId = UUID.randomUUID();
     @Value("classpath:client-credential-access-token.json")
     private Resource refreshTokenResource;
+;
 
+    @Autowired
+    private WebClient webClient;
     @BeforeAll
     static void setupMockWebServer() throws IOException {
         mockWebServer = new MockWebServer();
@@ -66,19 +81,49 @@ public class OauthClientRouteIntegTest {
         mockWebServer.close();
     }
 
+    private static String host;
+
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry r) throws IOException {
-        r.add("authentication-rest-service.root", () -> "http://localhost:"+mockWebServer.getPort());
-        r.add("account-rest-service.root", () -> "http://localhost:"+mockWebServer.getPort());
-        r.add("auth-server.root", () -> "http://localhost:"+ mockWebServer.getPort());
+        host = "http://localhost:"+ mockWebServer.getPort();
+        r.add("auth-server.root", () -> host);
     }
 
     @Test
-    public void createClientTest() throws Exception {
-        saveClient();
+    public void login() throws Exception {
+        LOG.info("login to login/login.html");
+        // Log in
+       // this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+        //set redirection false so we can login manually with code below
+        //this.webClient.getOptions().setRedirectEnabled(false);
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody("{\"roles\": \"USER ADMIN\"}"));
+
+        Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
+        LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());
+
+        LOG.info("take first request");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        assertThat(recordedRequest.getPath()).startsWith("/authenticate");
+
+        LOG.info("assert that the page returned after login is admin/dashboard");
+        assertThat(page.getUrl().toString()).isEqualTo("http://localhost:8080/admin/dashboard");
     }
 
-    private void saveClient() throws  Exception {
+    private static <P extends Page> P signIn(HtmlPage page, String username, String password) throws IOException {
+        //LOG.info("page: {}, done end", page.toString());
+        HtmlInput usernameInput = page.querySelector("input[name=\"username\"]");
+        HtmlInput passwordInput = page.querySelector("input[name=\"password\"]");
+        HtmlButton signInButton = page.querySelector("button");
+
+        usernameInput.type(username);
+        passwordInput.type(password);
+        return signInButton.click();
+    }
+
+   /* private void saveClient() throws  Exception {
         UUID userId = UUID.randomUUID();
 
         LOG.info("request oauth access token first");
@@ -116,5 +161,5 @@ public class OauthClientRouteIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         assertThat(recordedRequest.getPath()).startsWith("/authzmanager/clients");
-    }
+    }*/
 }

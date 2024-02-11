@@ -17,17 +17,23 @@ spring:
     active: local
   application:
     name: authzmanager
-  r2dbc:
-    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
-    username: ${POSTGRES_USERNAME}
-    password: ${POSTGRES_PASSWORD}
-    properties:
-      sslMode: ${DB_SSLMODE}
+#  r2dbc:
+#    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
+#    username: ${POSTGRES_USERNAME}
+#    password: ${POSTGRES_PASSWORD}
+#    properties:
+#      sslMode: ${DB_SSLMODE}
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
+          audiences: ${OAUTH_AUDIENCES}
 
 permitpath:
   - path: /authzmanager/api/health/*
@@ -40,6 +46,7 @@ user-rest-service:
 auth-server:
   root: ${AUTH_SERVER}
   clients: /clients
+  authenticate: /myauthenticate
   oauth2token:
     path: /oauth2/token
     params: ?grant_type=client_credentials

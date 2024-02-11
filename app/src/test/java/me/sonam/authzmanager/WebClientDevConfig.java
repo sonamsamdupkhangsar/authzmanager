@@ -4,9 +4,11 @@ import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
+//import me.sonam.security.headerfilter.ReactiveRequestContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+//import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -29,10 +31,20 @@ public class WebClientDevConfig {
         LOG.info("returning non-loadbalanced webclient");
         return WebClient.builder();
     }
+    //@LoadBalanced
+    //@Bean("noFilter")
+   /* public WebClient.Builder webClientBuilderNoFilter() {
+        LOG.info("returning for noFilter load balanced webclient part");
+        return WebClient.builder();
+    }*/
 
-  /*  @Bean
+/*    @Bean
     public ReactiveRequestContextHolder reactiveRequestContextHolder() {
-        return new ReactiveRequestContextHolder(webClientBuilder());
+        ReactiveRequestContextHolder reactiveRequestContextHolder = new ReactiveRequestContextHolder(webClientBuilderNoFilter());
+
+        WebClient.Builder webClientBuilder = webClientBuilder();
+        webClientBuilder.filter(reactiveRequestContextHolder.headerFilter());
+        return reactiveRequestContextHolder;
     }*/
 
     @Bean
