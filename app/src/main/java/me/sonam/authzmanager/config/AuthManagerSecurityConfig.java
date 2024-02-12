@@ -39,14 +39,6 @@ public class AuthManagerSecurityConfig {
 
     public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
-        LOG.info("set authenticationProvider");
-        if (authenticationProvider == null) {
-            LOG.error("authenticationProvider is null");
-        }
-        else {
-            LOG.info("authenticationProvider is set");
-        }
-
     }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -69,12 +61,12 @@ public class AuthManagerSecurityConfig {
                 .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer
                         .logoutUrl("/admin/logout")
                         .logoutSuccessUrl("/login/login.html")
-                );
-                //.authenticationManager(calloutAuthManager());
-                //.authenticationManager(authenticationProvider::authenticate);
-                //.authenticationManager(calloutAuthManager());//authenticationManager());
+                )
+                .authenticationManager(authenticationManager());
+
         return http.cors(Customizer.withDefaults()).build();
     }
+
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfig = new CorsConfiguration();
@@ -84,7 +76,6 @@ public class AuthManagerSecurityConfig {
         LOG.info("adding allowedOrigins: {}", list);
 
         corsConfig.setAllowedOrigins(list);
-        //corsConfig.addAllowedMethod("*");
         corsConfig.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "OPTIONS"));
         corsConfig.addAllowedHeader("*");
         corsConfig.setAllowCredentials(true);
@@ -94,34 +85,10 @@ public class AuthManagerSecurityConfig {
         return source;
     }
 
-    private AuthenticationManager calloutAuthManager() {
-        ProviderManager providerManager = new ProviderManager(authenticationProvider);
-        providerManager.setEraseCredentialsAfterAuthentication(false);
-        return providerManager;
-    }
-
     private AuthenticationManager authenticationManager() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService());
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
-
         ProviderManager providerManager = new ProviderManager(authenticationProvider);
         providerManager.setEraseCredentialsAfterAuthentication(false);
-
-
         return providerManager;
-    }
-
-    UserDetailsService userDetailsService() {
-        var user = User.withUsername("admin")
-                .password(passwordEncoder().encode("password"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(user);
-    }
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
 }

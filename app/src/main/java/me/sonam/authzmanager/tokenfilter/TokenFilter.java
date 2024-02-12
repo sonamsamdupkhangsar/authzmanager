@@ -29,19 +29,16 @@ public class TokenFilter {
     @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
     private String oauth2TokenEndpoint;
 
-
     @Autowired
     private JwtPath jwtPath;
 
     private WebClient.Builder webClientBuilder;
 
-    private RequestCache requestCache;
     @Value("${auth-server.oauth2token.path:}")
     private String accessTokenPath;
 
     public TokenFilter(WebClient.Builder webClientBuilder) {
         this.webClientBuilder = webClientBuilder;
-        //this.requestCache = requestCache;
     }
 
     public ExchangeFilterFunction renewTokenFilter() {
