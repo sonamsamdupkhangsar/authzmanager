@@ -1,12 +1,15 @@
 package me.sonam.authzmanager.config;
 
 
+import me.sonam.authzmanager.AuthenticationCallout;
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
+import me.sonam.authzmanager.tokenfilter.TokenFilter;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +28,11 @@ public class WebClientConfig {
     private String authenticateEndpoint;
     @Value("${auth-server.root}${auth-server.clients}")
     private String authServerClientsEndpoint;
+    @Value("${auth-server.root}${auth-server.authenticate}")
+    private String springAuthorizationServerAuthenticationEp;
+
+    @Autowired
+    private TokenFilter tokenFilter;
 
     @LoadBalanced
     @Bean
@@ -49,4 +57,10 @@ public class WebClientConfig {
         return new OauthClientRouteRouteAuthServer(webClientBuilder(), authServerClientsEndpoint);
     }
 
+    @Bean
+    public AuthenticationCallout authenticationCallout() {
+        WebClient.Builder webCliBuilder = webClientBuilder();
+        webCliBuilder.filter(tokenFilter.renewTokenFilter()).build();
+        return new AuthenticationCallout(webCliBuilder, springAuthorizationServerAuthenticationEp);
+    }
 }

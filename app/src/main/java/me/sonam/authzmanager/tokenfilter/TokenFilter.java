@@ -22,23 +22,28 @@ import java.util.Map;
  * Don't add it manually to a webclient to avoid getting calling twice.
  * This is copied from authorization server project
  */
-@Service
+//@Service
 public class TokenFilter {
     private static final Logger LOG = LoggerFactory.getLogger(TokenFilter.class);
 
-    @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
+   // @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
     private String oauth2TokenEndpoint;
 
-    @Autowired
+   // @Autowired
     private JwtPath jwtPath;
 
     private WebClient.Builder webClientBuilder;
 
-    @Value("${auth-server.oauth2token.path:}")
+   // @Value("${auth-server.oauth2token.path:}")
     private String accessTokenPath;
 
-    public TokenFilter(WebClient.Builder webClientBuilder) {
+    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint, String accessTokenPath) {
         this.webClientBuilder = webClientBuilder;
+        webClientBuilder.filter(renewTokenFilter()).build();
+
+        this.jwtPath = jwtPath;
+        this.oauth2TokenEndpoint = oauth2TokenEndpoint;
+        this.accessTokenPath = accessTokenPath;
     }
 
     public ExchangeFilterFunction renewTokenFilter() {

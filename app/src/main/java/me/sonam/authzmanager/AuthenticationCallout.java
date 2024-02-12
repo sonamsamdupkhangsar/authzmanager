@@ -33,7 +33,7 @@ public class AuthenticationCallout  implements AuthenticationProvider {
 
     private TokenFilter tokenFilter;
 
-    public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp, TokenFilter tokenFilter) {
+    public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp) {
         this.webClientBuilder = webClientBuilder;
         this.springAuthorizationServerAuthenticationEp = springAuthorizationServerAuthenticationEp;
         /*this.tokenFilter = tokenFilter;
