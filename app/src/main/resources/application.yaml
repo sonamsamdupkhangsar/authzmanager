@@ -3,8 +3,8 @@ server:
 
 logging:
   level:
-    root: debug
-    me.sonam.auth: info
+    root: warn
+    me.sonam.authzmanager: info
 #    org.springframework.web: info
 #    org.springframework.security: info
 #    org.springframework.security.oauth2: info
@@ -38,6 +38,14 @@ spring:
 permitpath:
   - path: /authzmanager/api/health/*
 
+jwtrequest:
+  - in:  /*
+    out: /authenticate
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+
 user-rest-service:
   root: ${USER_REST_SERVICE}
   signup: /signup
@@ -56,3 +64,4 @@ authentication-rest-service:
   authenticate: /authenticate
 
 allowedOrigins: ${allowedOrigins}
+

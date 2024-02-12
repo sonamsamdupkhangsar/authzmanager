@@ -34,53 +34,43 @@ public class TokenFilter {
 
     private WebClient.Builder webClientBuilder;
 
-   // @Value("${auth-server.oauth2token.path:}")
-    private String accessTokenPath;
 
-    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint, String accessTokenPath) {
+    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint) {
         this.webClientBuilder = webClientBuilder;
-        webClientBuilder.filter(renewTokenFilter()).build();
 
         this.jwtPath = jwtPath;
         this.oauth2TokenEndpoint = oauth2TokenEndpoint;
-        this.accessTokenPath = accessTokenPath;
     }
 
     public ExchangeFilterFunction renewTokenFilter() {
         return (request, next) -> {
             LOG.debug("request.path: {}", request.url().getPath());
-            if (request.url().getPath().equals(accessTokenPath)) {
-                LOG.debug("no need to request access token when going to that path: {}", request.url().getPath());
-                ClientRequest clientRequest = ClientRequest.from(request).build();
-                return next.exchange(clientRequest);
-            }
-            else {
-                LOG.info("going thru jwt request ") ;
-                for (JwtPath.JwtRequest jwt : jwtPath.getJwtRequest()) {
-                    LOG.debug("jwt.out: {}", jwt.getOut());
-                    if (request.url().getPath().matches(jwt.getOut())) {
-                        LOG.info("path {} matches with outbound request matches: {}",
-                                jwt.getOut(), request.url().getPath());
-                        LOG.info("make a token request");
 
-                        final StringBuilder oauthEndpointWithScope = new StringBuilder(oauth2TokenEndpoint);
+            LOG.info("going thru jwt request ") ;
+            for (JwtPath.JwtRequest jwt : jwtPath.getJwtRequest()) {
+                LOG.debug("jwt.out: {}", jwt.getOut());
+                if (request.url().getPath().matches(jwt.getOut())) {
+                    LOG.info("path {} matches with outbound request matches: {}",
+                            jwt.getOut(), request.url().getPath());
+                    LOG.info("make a token request");
 
-                        if (jwt.getAccessToken().getScopes() != null && !jwt.getAccessToken().getScopes().trim().isEmpty()) {
-                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes()).toString();
-                        }
-                        return getAccessToken(oauth2TokenEndpoint.toString(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
-                                .flatMap(accessToken -> {
+                    final StringBuilder oauthEndpointWithScope = new StringBuilder(oauth2TokenEndpoint);
 
-                                    LOG.info("get accessToken: {}", accessToken);
-                                    ClientRequest clientRequest = ClientRequest.from(request)
-                                            .headers(headers -> {
-                                                headers.set(HttpHeaders.ORIGIN, request.headers().getFirst(HttpHeaders.ORIGIN));
-                                                headers.setBearerAuth(accessToken);
-                                                LOG.info("added access-token to http header");
-                                            }).build();
-                                    return Mono.just(clientRequest);
-                                }).flatMap(clientRequest ->  next.exchange(clientRequest));
-                        //return next.exchange(clientRequest);
+                    if (jwt.getAccessToken().getScopes() != null && !jwt.getAccessToken().getScopes().trim().isEmpty()) {
+                        oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes()).toString();
+                    }
+                    return getAccessToken(oauth2TokenEndpoint.toString(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
+                            .flatMap(accessToken -> {
+
+                                LOG.info("get accessToken: {}", accessToken);
+                                ClientRequest clientRequest = ClientRequest.from(request)
+                                        .headers(headers -> {
+                                            headers.set(HttpHeaders.ORIGIN, request.headers().getFirst(HttpHeaders.ORIGIN));
+                                            headers.setBearerAuth(accessToken);
+                                            LOG.info("added access-token to http header");
+                                        }).build();
+                                return Mono.just(clientRequest);
+                            }).flatMap(clientRequest ->  next.exchange(clientRequest));
                     }
                 }
 
@@ -88,7 +78,6 @@ public class TokenFilter {
                 ClientRequest filtered = ClientRequest.from(request)
                         .build();
                 return next.exchange(filtered);
-            }
         };
     }
 

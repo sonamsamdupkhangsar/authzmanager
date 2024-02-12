@@ -45,7 +45,7 @@ public class AuthenticationCallout  implements AuthenticationProvider {
 
         LOG.info("request to authenticate");
         return callSpringAuthorizationServer(authentication.getPrincipal().toString(),
-                authentication.getCredentials().toString().toCharArray()).block();
+                authentication.getCredentials().toString()).block();
     }
 
     @Override
@@ -53,11 +53,11 @@ public class AuthenticationCallout  implements AuthenticationProvider {
         return authentication.equals(UsernamePasswordAuthenticationToken.class);
     }
 
-    private Mono<? extends Authentication> callSpringAuthorizationServer(final String username, final char[] password) {
+    private Mono<? extends Authentication> callSpringAuthorizationServer(final String username, final String password) {
         LOG.info("calling Spring Authorization Server for authentication endpoint: {}", springAuthorizationServerAuthenticationEp);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(springAuthorizationServerAuthenticationEp)
-                .bodyValue(Map.of("username", username, "password", new String(password)))
+                .bodyValue(Map.of("username", username, "password", password))
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
                 .retrieve();
 
@@ -70,11 +70,16 @@ public class AuthenticationCallout  implements AuthenticationProvider {
                 String[] tempRoles = roleMap.get("roles").toString().split(" ");
                 for (String role : tempRoles) {
                     LOG.info("add role: {}", role);
-                    grantedAuths.add(new SimpleGrantedAuthority(role));
+                    if (!role.trim().isEmpty()) {
+                        grantedAuths.add(new SimpleGrantedAuthority(role));
+                    }
                 }
             }
-
-            final UserDetails principal = new User(username, new String(password), grantedAuths);
+            if (grantedAuths.isEmpty()) {
+                LOG.info("add a user role if no role found for managing authzmanager");
+                grantedAuths.add(new SimpleGrantedAuthority("USER"));
+            }
+            final UserDetails principal = new User(username, password, grantedAuths);
 
             return new UsernamePasswordAuthenticationToken(principal, new String(password), grantedAuths);
         }).onErrorResume(throwable -> {

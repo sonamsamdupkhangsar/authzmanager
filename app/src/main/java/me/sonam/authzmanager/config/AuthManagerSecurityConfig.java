@@ -2,6 +2,7 @@ package me.sonam.authzmanager.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,11 +36,12 @@ public class AuthManagerSecurityConfig {
     @Value("${allowedOrigins}")
     private String allowedOrigins; //csv allow origins
 
-    private final AuthenticationProvider authenticationProvider;
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
 
-    public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
+    /*public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
-    }
+    }*/
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -55,7 +57,7 @@ public class AuthManagerSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(httpSecurityFormLoginConfigurer ->
                         httpSecurityFormLoginConfigurer.loginPage("/login/login.html")
-                                .defaultSuccessUrl("/admin/dashboard") // use this to forward with this address in browser
+                                .defaultSuccessUrl("/admin/dashboard", true) // use this to forward with this address in browser
                                 .permitAll()
                 )
                 .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer

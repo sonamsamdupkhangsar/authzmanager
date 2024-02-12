@@ -1,12 +1,8 @@
 package me.sonam.authzmanager.config;
 
 
-import me.sonam.authzmanager.AuthenticationCallout;
-import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
+import me.sonam.authzmanager.tokenfilter.JwtPath;
 import me.sonam.authzmanager.tokenfilter.TokenFilter;
-import me.sonam.authzmanager.user.UserRoute;
-import me.sonam.authzmanager.user.UserRouteAuthServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,46 +17,27 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
     private static final Logger LOG = LoggerFactory.getLogger(WebClientConfig.class);
-    @Value("{user-rest-service.root}${user-rest-service.signup}")
-    private String userSignupEndpoint;
-
-    @Value("{authentication-rest-service.root}${authentication-rest-service.authenticate}")
-    private String authenticateEndpoint;
-    @Value("${auth-server.root}${auth-server.clients}")
-    private String authServerClientsEndpoint;
-    @Value("${auth-server.root}${auth-server.authenticate}")
-    private String springAuthorizationServerAuthenticationEp;
-
+    @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
+    private String oauth2TokenEndpoint;
     @Autowired
-    private TokenFilter tokenFilter;
+    private JwtPath jwtPath;
 
     @LoadBalanced
-    @Bean
+    @Bean("regular")
     public WebClient.Builder webClientBuilder() {
         LOG.info("returning load balanced webclient part");
         return WebClient.builder();
     }
+
     @LoadBalanced
-    @Bean("noFilter")
+    @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
-        LOG.info("returning for noFilter load balanced webclient part");
-        return WebClient.builder();
+        LOG.info("creating a WebClient.Builder with tokenFilter set");
+        TokenFilter tokenFilter = new TokenFilter(WebClient.builder(), jwtPath, oauth2TokenEndpoint);
+        WebClient.Builder webClientBuilder = WebClient.builder();
+        webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
+
+        return webClientBuilder;
     }
 
-    @Bean
-    public UserRoute userRoute() {
-        return new UserRouteAuthServer(webClientBuilder(), userSignupEndpoint, authenticateEndpoint);
-    }
-
-    @Bean
-    public OauthClientRoute oauthClientRoute() {
-        return new OauthClientRouteRouteAuthServer(webClientBuilder(), authServerClientsEndpoint);
-    }
-
-    @Bean
-    public AuthenticationCallout authenticationCallout() {
-        WebClient.Builder webCliBuilder = webClientBuilder();
-        webCliBuilder.filter(tokenFilter.renewTokenFilter()).build();
-        return new AuthenticationCallout(webCliBuilder, springAuthorizationServerAuthenticationEp);
-    }
 }

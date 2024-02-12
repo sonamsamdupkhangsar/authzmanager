@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
-@Service
 public class OauthClientWebHandler implements OauthClientHandler {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientWebHandler.class);
 
