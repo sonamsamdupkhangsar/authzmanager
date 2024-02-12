@@ -20,6 +20,7 @@ import java.util.Map;
  * this token filter will be invoked automatically by the webclient for intercepting request
  * to add a access-token by making a client-credential flow http call.
  * Don't add it manually to a webclient to avoid getting calling twice.
+ * This is copied from authorization server project
  */
 @Service
 public class TokenFilter {
