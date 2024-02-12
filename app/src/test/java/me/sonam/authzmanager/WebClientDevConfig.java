@@ -2,11 +2,12 @@ package me.sonam.authzmanager;
 
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
+import me.sonam.authzmanager.tokenfilter.TokenFilter;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
-import me.sonam.security.headerfilter.ReactiveRequestContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientDevConfig {
     private static final Logger LOG = LoggerFactory.getLogger(WebClientDevConfig.class);
+
     @Value("{user-rest-service.root}${user-rest-service.signup}")
     private String userSignupEndpoint;
 
@@ -31,20 +33,12 @@ public class WebClientDevConfig {
         return WebClient.builder();
     }
 
-    @Bean("noFilter")
+ /*   @Bean("noFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("returning for noFilter load balanced webclient part");
         return WebClient.builder();
-    }
+    }*/
 
-   @Bean
-    public ReactiveRequestContextHolder reactiveRequestContextHolder() {
-        WebClient.Builder webClientBuilder = webClientBuilderNoFilter();
-        ReactiveRequestContextHolder reactiveRequestContextHolder = new ReactiveRequestContextHolder(webClientBuilder);
-        webClientBuilder.filter(reactiveRequestContextHolder.headerFilter());
-
-        return reactiveRequestContextHolder;
-    }
 
     @Bean
     public UserRoute userRoute() {
@@ -55,4 +49,7 @@ public class WebClientDevConfig {
     public OauthClientRoute oauthClientRoute() {
         return new OauthClientRouteRouteAuthServer(webClientBuilder(), authServerClientsEndpoint);
     }
+
+
+
 }

@@ -1,5 +1,6 @@
 package me.sonam.authzmanager;
 
+import me.sonam.authzmanager.tokenfilter.TokenFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -12,7 +13,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -24,16 +24,20 @@ import java.util.Map;
  * This authenticationProvider will make a call-out to Spring Authorization Server rest service
  * to authenticate.  This does not require a client id so the returned roles may be empty.
  */
-@Service
 public class AuthenticationCallout  implements AuthenticationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationCallout.class);
     public WebClient.Builder webClientBuilder;
+    private WebClient webClient;
 
     private final String springAuthorizationServerAuthenticationEp;
 
-    public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp) {
+    private TokenFilter tokenFilter;
+
+    public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp, TokenFilter tokenFilter) {
         this.webClientBuilder = webClientBuilder;
         this.springAuthorizationServerAuthenticationEp = springAuthorizationServerAuthenticationEp;
+        /*this.tokenFilter = tokenFilter;
+        this.webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();*/
     }
 
     @Override

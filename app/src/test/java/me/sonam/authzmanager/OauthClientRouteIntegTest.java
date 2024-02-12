@@ -12,6 +12,7 @@ import okhttp3.mockwebserver.RecordedRequest;
 
 import okio.Buffer;
 import okio.Okio;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,10 +25,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.Resource;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-//import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -45,7 +44,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest
+@SpringBootTest(classes = {Application.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 public class OauthClientRouteIntegTest {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientRouteIntegTest.class);
@@ -64,11 +63,12 @@ public class OauthClientRouteIntegTest {
     @Value("classpath:client-credential-access-token.json")
     private Resource refreshTokenResource;
 
-    @MockBean
-    private ReactiveJwtDecoder reactiveJwtDecoder;
+
 
     @Autowired
     private WebClient webClient;
+    @LocalServerPort
+    private int randomPort;
     @BeforeAll
     static void setupMockWebServer() throws IOException {
         mockWebServer = new MockWebServer();
@@ -100,6 +100,12 @@ public class OauthClientRouteIntegTest {
         //set redirection false so we can login manually with code below
         //this.webClient.getOptions().setRedirectEnabled(false);
 
+        final String jwtString= "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJzb25hbSIsImlzcyI6InNvbmFtLmNsb3VkIiwiYXVkIjoic29uYW0uY2xvdWQiLCJqdGkiOiJmMTY2NjM1OS05YTViLTQ3NzMtOWUyNy00OGU0OTFlNDYzNGIifQ.KGFBUjghvcmNGDH0eM17S9pWkoLwbvDaDBGAx2AyB41yZ_8-WewTriR08JdjLskw1dsRYpMh9idxQ4BS6xmOCQ";
+
+        final String jwtTokenMsg = " {\"access_token\":\""+jwtString+"\"}";
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody(jwtTokenMsg));
+
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
                 .setResponseCode(200).setBody("{\"roles\": \"USER ADMIN\"}"));
 
@@ -108,11 +114,16 @@ public class OauthClientRouteIntegTest {
 
         LOG.info("take first request");
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        LOG.info("should be acesstoken path for recordedRequest: {}", recordedRequest.getPath());
+        AssertionsForClassTypes.assertThat(recordedRequest.getPath()).startsWith("/oauth2/token?grant_type=client_credentials");
+        AssertionsForClassTypes.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+
+        recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
         assertThat(recordedRequest.getPath()).startsWith("/authenticate");
 
         LOG.info("assert that the page returned after login is admin/dashboard");
-        assertThat(page.getUrl().toString()).isEqualTo("http://localhost:8080/admin/dashboard");
+        assertThat(page.getUrl().toString()).isEqualTo("http://localhost:"+randomPort+"/admin/dashboard");
     }
 
     private static <P extends Page> P signIn(HtmlPage page, String username, String password) throws IOException {
