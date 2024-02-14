@@ -17,6 +17,8 @@ spring:
     active: local
   application:
     name: authzmanager
+  thymeleaf:
+    cache: false
 #  r2dbc:
 #    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
 #    username: ${POSTGRES_USERNAME}

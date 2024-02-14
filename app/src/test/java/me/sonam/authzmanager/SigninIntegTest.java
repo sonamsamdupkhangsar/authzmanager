@@ -35,8 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-public class OauthClientRouteIntegTest {
-    private static final Logger LOG = LoggerFactory.getLogger(OauthClientRouteIntegTest.class);
+public class SigninIntegTest {
+    private static final Logger LOG = LoggerFactory.getLogger(SigninIntegTest.class);
 
     private static MockWebServer mockWebServer;
 
