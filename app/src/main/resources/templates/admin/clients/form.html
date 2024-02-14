@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html  xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+
+<head>
+    <title>CSS Template</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Style the header */
+        header {
+          background-color: #666;
+          padding: 30px;
+          text-align: center;
+          font-size: 35px;
+          color: white;
+        }
+
+        /* Create two columns/boxes that floats next to each other */
+        nav {
+          float: left;
+          width: 30%;
+          height: 300px; /* only for demonstration, should be removed */
+          background: #ccc;
+          padding: 20px;
+        }
+
+        /* Style the list inside the menu */
+        nav ul {
+          list-style-type: none;
+          padding: 0;
+        }
+
+        article {
+          float: left;
+          padding: 20px;
+          width: 70%;
+          background-color: #f1f1f1;
+          height: 300px; /* only for demonstration, should be removed */
+        }
+
+        /* Clear floats after the columns */
+        section::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+
+        /* Style the footer */
+        footer {
+          background-color: #777;
+          padding: 10px;
+          text-align: center;
+          color: white;
+        }
+
+        /* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
+        @media (max-width: 600px) {
+          nav, article {
+            width: 100%;
+            height: auto;
+          }
+        }
+    </style>
+</head>
+<body>
+
+<h2>Admin dashboard</h2>
+<p>This is for managing Authorization server.</p>
+
+<header>
+    <h2>Admin dashboard</h2>
+</header>
+
+<section>
+    <nav>
+        <ul>
+            <li><a th:href="@{/admin/clients/createForm}">Create Client</a> </li>
+            <li><a th:href="@{/admin/clients}">Clients</a></li>
+
+        </ul>
+    </nav>
+
+    <article>
+        <form action="#" th:action="@{/admin/clients/create}" th:object="${client}" method="post">
+            <input type="hidden"  th:field="*{id}"/>
+             <p>client Id: <input type="text" th:field="*{clientId}" /></p>
+            <p>client issued at: <input type="text" th:field="*{clientIdIssuedAt}" /></p>
+            <p>client secret: <input type="text" th:field="*{clientSecret}" /></p>
+            <p>client secret expires at: <input type="text" th:field="*{clientSecretExpiresAt}" /></p>
+            <p>client name: <input type="text" th:field="*{clientName}" /></p>
+            <p>client Authenticate method: <input type="text" th:field="*{clientAuthenticationMethods}" /></p>
+            <p>authorization grant type: <input type="text" th:field="*{authorizationGrantTypes}" /></p>
+            <p>client redirectUris: <input type="text" th:field="*{redirectUris}" /></p>
+            <p>client post logout redirect Uris: <input type="text" th:field="*{postLogoutRedirectUris}" /></p>
+            <p>client scopes: <input type="text" th:field="*{scopes}" /></p>
+            <p>client settings: <input type="text" th:field="*{clientSettings}" /></p>
+            <p>token settings: <input type="text" th:field="*{tokenSettings}" /></p>
+
+            <p><button type="submit">Submit</button> <button type="reset">Reset</button></p>
+        </form>
+    </article>
+</section>
+
+<footer>
+    <p>Footer</p>
+</footer>
+
+</body>
+</html>
+
