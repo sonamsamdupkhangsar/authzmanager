@@ -1,25 +1,58 @@
 package me.sonam.authzmanager.controller.admin.oauth2;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class OauthClient {
     private String id;
     private String clientId;
-    private Instant clientIdIssuedAt;
+    private String clientIdIssuedAt;
     private String clientSecret;
-    private Instant clientSecretExpiresAt;
+    private String clientSecretExpiresAt;
     private String clientName;
-    private Set<ClientAuthenticationMethod> clientAuthenticationMethods;
-    private Set<AuthorizationGrantType> authorizationGrantTypes;
-    private Set<String> redirectUris;
-    private Set<String> postLogoutRedirectUris;
-    private Set<String> scopes;
-    private Map<String, String> clientSettings;
-    private Map<String, String> tokenSettings;
+    //private String clientAuthenticationMethods;
+    private List<String> clientAuthenticationMethods = new ArrayList<>();
+    private List<String> authorizationGrantTypes = new ArrayList<>();
 
+    private List<String> authenticationMethods = new ArrayList<>();
+    private List<String> grantTypes = new ArrayList<>();
+    private OidcScopes oidcScopes;
 
+    private String redirectUris;
+    private String postLogoutRedirectUris;
+    private List<String> scopes = new ArrayList<>();
+    private String clientSettings;
+    private String tokenSettings;
+
+    public OauthClient() {
+        this.authenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue());
+        this.authenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_JWT.getValue());
+        this.authenticationMethods.add(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue());
+        this.authenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue());
+
+        this.grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
+        this.grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN.getValue());
+        this.grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue());
+        this.grantTypes.add(AuthorizationGrantType.PASSWORD.getValue());
+        this.grantTypes.add(AuthorizationGrantType.JWT_BEARER.getValue());
+        this.grantTypes.add(AuthorizationGrantType.DEVICE_CODE.getValue());
+
+    }
+    public List<String> getGrantTypes() {
+        return this.grantTypes;
+    }
+    public void setClientAuthenticationMethods(List<String> clientAuthenticationMethods) {
+        this.clientAuthenticationMethods = clientAuthenticationMethods;
+    }
+    public boolean contains(String value) {
+        return clientAuthenticationMethods.contains(value);
+    }
+    public List<String> getClientAuthenticationMethods() {
+        return this.clientAuthenticationMethods;
+    }
+    public void setAuthenticationMethods(List<String> authenticationMethods) {
+        this.authenticationMethods = authenticationMethods;
+    }
     public String getId() {
         return id;
     }
@@ -36,11 +69,11 @@ public class OauthClient {
         this.clientId = clientId;
     }
 
-    public Instant getClientIdIssuedAt() {
+    public String getClientIdIssuedAt() {
         return clientIdIssuedAt;
     }
 
-    public void setClientIdIssuedAt(Instant clientIdIssuedAt) {
+    public void setClientIdIssuedAt(String clientIdIssuedAt) {
         this.clientIdIssuedAt = clientIdIssuedAt;
     }
 
@@ -52,11 +85,11 @@ public class OauthClient {
         this.clientSecret = clientSecret;
     }
 
-    public Instant getClientSecretExpiresAt() {
+    public String getClientSecretExpiresAt() {
         return clientSecretExpiresAt;
     }
 
-    public void setClientSecretExpiresAt(Instant clientSecretExpiresAt) {
+    public void setClientSecretExpiresAt(String clientSecretExpiresAt) {
         this.clientSecretExpiresAt = clientSecretExpiresAt;
     }
 
@@ -68,60 +101,60 @@ public class OauthClient {
         this.clientName = clientName;
     }
 
-    public Set<String> getRedirectUris() {
-        return redirectUris;
-    }
 
-    public void setRedirectUris(Set<String> redirectUris) {
-        this.redirectUris = redirectUris;
-    }
-
-    public Set<String> getPostLogoutRedirectUris() {
-        return postLogoutRedirectUris;
-    }
-
-    public void setPostLogoutRedirectUris(Set<String> postLogoutRedirectUris) {
-        this.postLogoutRedirectUris = postLogoutRedirectUris;
-    }
-
-    public Set<String> getScopes() {
-        return scopes;
-    }
-
-    public void setScopes(Set<String> scopes) {
-        this.scopes = scopes;
-    }
-
-    public Set<ClientAuthenticationMethod> getClientAuthenticationMethods() {
-        return clientAuthenticationMethods;
-    }
-
-    public void setClientAuthenticationMethods(Set<ClientAuthenticationMethod> clientAuthenticationMethods) {
-        this.clientAuthenticationMethods = clientAuthenticationMethods;
-    }
-
-    public Set<AuthorizationGrantType> getAuthorizationGrantTypes() {
+    public List<String> getAuthorizationGrantTypes() {
         return authorizationGrantTypes;
     }
 
-    public void setAuthorizationGrantTypes(Set<AuthorizationGrantType> authorizationGrantTypes) {
+    public void setAuthorizationGrantTypes(List<String> authorizationGrantTypes) {
         this.authorizationGrantTypes = authorizationGrantTypes;
     }
 
-    public Map<String, String> getClientSettings() {
+    public String getRedirectUris() {
+        return redirectUris;
+    }
+
+    public void setRedirectUris(String redirectUris) {
+        this.redirectUris = redirectUris;
+    }
+
+    public String getPostLogoutRedirectUris() {
+        return postLogoutRedirectUris;
+    }
+
+    public void setPostLogoutRedirectUris(String postLogoutRedirectUris) {
+        this.postLogoutRedirectUris = postLogoutRedirectUris;
+    }
+
+    public List<String> getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(List<String> scopes) {
+        this.scopes = scopes;
+    }
+
+    public String getClientSettings() {
         return clientSettings;
     }
 
-    public void setClientSettings(Map<String, String> clientSettings) {
+    public void setClientSettings(String clientSettings) {
         this.clientSettings = clientSettings;
     }
 
-    public Map<String, String> getTokenSettings() {
+    public String getTokenSettings() {
         return tokenSettings;
     }
 
-    public void setTokenSettings(Map<String, String> tokenSettings) {
+    public void setTokenSettings(String tokenSettings) {
         this.tokenSettings = tokenSettings;
+    }
+    public List<String> getAuthenticationMethods() {
+        return authenticationMethods;
+    }
+
+    public OidcScopes getOidcScopes() {
+        return oidcScopes;
     }
 
     @Override
@@ -140,6 +173,7 @@ public class OauthClient {
                 ", scopes=" + scopes +
                 ", clientSettings=" + clientSettings +
                 ", tokenSettings=" + tokenSettings +
+                ", assignedAuthenticationMethods="+authenticationMethods +
                 '}';
     }
 }

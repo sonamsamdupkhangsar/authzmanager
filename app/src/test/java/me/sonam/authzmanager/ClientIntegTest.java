@@ -4,8 +4,10 @@ package me.sonam.authzmanager;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
+import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput;
 import com.gargoylesoftware.htmlunit.html.HtmlInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import me.sonam.authzmanager.controller.admin.oauth2.ClientAuthenticationMethod;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -29,10 +31,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -118,22 +117,23 @@ public class ClientIntegTest {
         LOG.info("assert that the page returned after login is admin/dashboard");
         assertThat(page.getUrl().toString()).isEqualTo("http://localhost:"+randomPort+"/admin/dashboard");
 
+        this.webClient.getOptions().setJavaScriptEnabled(false);  //disable javascript to not load any bootstrap related js files
         LOG.info("get clientForm");
         Page clientPage = this.webClient.getPage("/admin/clients/createForm");
         LOG.info("submit to ceate client");
         OauthClient client = new OauthClient();
         client.setClientId("");
-        client.setClientIdIssuedAt(Instant.now());
+        client.setClientIdIssuedAt("");
         client.setClientSecret("");
-        client.setClientSecretExpiresAt(Instant.now());
+        client.setClientSecretExpiresAt("");
         client.setClientName("");
-        client.setClientAuthenticationMethods(new HashSet<>());
-        client.setAuthorizationGrantTypes(new HashSet<>());
-        client.setRedirectUris(new HashSet<>());
-        client.setPostLogoutRedirectUris(new HashSet<>());
-        client.setScopes(new HashSet<>());
-        client.setClientSettings(new HashMap<>());
-        client.setTokenSettings(new HashMap<>());
+        client.setClientAuthenticationMethods(new ArrayList<>());
+        client.setAuthorizationGrantTypes(new ArrayList<>());
+        client.setRedirectUris("");
+        client.setPostLogoutRedirectUris("");
+
+        client.setClientSettings("");
+        client.setTokenSettings("");
 
         fillInForm((HtmlPage) clientPage, client);
     }
@@ -144,11 +144,12 @@ public class ClientIntegTest {
         HtmlInput clientSecret = page.querySelector("input[name=\"clientSecret\"]");
         HtmlInput clientSecretExpiresAt = page.querySelector("input[name=\"clientSecretExpiresAt\"]");
         HtmlInput clientName = page.querySelector("input[name=\"clientName\"]");
-        HtmlInput clientAuthenticationMethods = page.querySelector("input[name=\"clientAuthenticationMethods\"]");
-        HtmlInput authorizationGrantTypes = page.querySelector("input[name=\"authorizationGrantTypes\"]");
+        HtmlCheckBoxInput clientAuthenticationMethods = page.querySelector("input[name=\"clientAuthenticationMethods\"]");
+        HtmlCheckBoxInput authorizationGrantTypes = page.querySelector("input[name=\"authorizationGrantTypes\"]");
+
         HtmlInput redirectUris = page.querySelector("input[name=\"redirectUris\"]");
         HtmlInput postLogoutRedirectUris = page.querySelector("input[name=\"postLogoutRedirectUris\"]");
-        HtmlInput scopes = page.querySelector("input[name=\"scopes\"]");
+        HtmlCheckBoxInput scopes = page.querySelector("input[name=\"scopes\"]");
         HtmlInput clientSettings = page.querySelector("input[name=\"clientSettings\"]");
         HtmlInput tokenSettings = page.querySelector("input[name=\"tokenSettings\"]");
 
@@ -157,11 +158,14 @@ public class ClientIntegTest {
         clientSecret.type(client.getClientSecret());
         clientSecretExpiresAt.type(client.getClientSecretExpiresAt().toString());
         clientName.type(client.getClientName());
-        clientAuthenticationMethods.type(client.getClientAuthenticationMethods().toString());
-        authorizationGrantTypes.type(client.getAuthorizationGrantTypes().toString());
+
+        clientAuthenticationMethods.setAttribute("checked", "checked");
+
+        authorizationGrantTypes.setAttribute("checked", "checked");
         redirectUris.type(client.getRedirectUris().toString());
         postLogoutRedirectUris.type(client.getPostLogoutRedirectUris().toString());
-        scopes.type(client.getScopes().toString());
+        scopes.setAttribute("checked", "checked");
+
         clientSettings.type(client.getClientSettings().toString());
         tokenSettings.type(client.getTokenSettings().toString());
 

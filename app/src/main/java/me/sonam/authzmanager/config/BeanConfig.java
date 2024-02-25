@@ -34,7 +34,6 @@ public class BeanConfig {
     @Qualifier("webClientWithTokenFilter")
     private WebClient.Builder webClientWithTokenFilter;
 
-
     @Bean
     public UserRoute userRoute() {
         return new UserRouteAuthServer(webClientWithTokenFilter, userSignupEndpoint, authenticateEndpoint);
