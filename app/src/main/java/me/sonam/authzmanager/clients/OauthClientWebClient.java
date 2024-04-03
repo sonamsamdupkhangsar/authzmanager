@@ -36,16 +36,6 @@ public class OauthClientWebClient implements OauthClientRoute {
 
         LOG.info("payload: {}", map);
 
-        var requestBody = Map.of("clientId", "sonam-app-1", "clientSecret", "{noop}secret",
-                "clientName", "Blog Application",
-                "clientAuthenticationMethods", "client_secret_basic,client_secret_jwt",
-                "authorizationGrantTypes", "authorization_code,refresh_token,client_credentials",
-                "redirectUris", "http://127.0.0.1:8080/login/oauth2/code/my-client-oidc,http://127.0.0.1:8080/authorized",
-                "scopes", "openid,profile,message.read,message.write",
-                "clientSettings", Map.of("settings.client.require-proof-key", "false", "settings.client.require-authorization-consent", "true"),
-                "mediateToken", "true",
-                "userId", UUID.randomUUID());
-
         //LOG.info("requestBody: {}", requestBody);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientsEndpoint)
                 .bodyValue(map).retrieve();

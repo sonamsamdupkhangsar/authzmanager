@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.admin;
 
+import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.controller.admin.oauth2.ConfigurationSettingNames;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
@@ -13,7 +14,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -73,18 +77,21 @@ public class ClientController {
     }
 
     @PostMapping("/create")
-    public Mono<String> createClient(@ModelAttribute OauthClient client, Model model) {
+    public Mono<String> createClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
         LOG.info("create client");
         final String PATH = "admin/clients/updateClientForm";
+
+        if (bindingResult.hasErrors()) {
+            LOG.info("user didn't enter required fields");
+            model.addAttribute("error", "Data validation failed");
+            return Mono.just("admin/clients/form");
+        }
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
 
         LOG.info("get map from client");
-        //Map<String, Object> map = client.getMap();
-        //map.put("userId", userId.getUserId().toString());
-        //LOG.info("map is {}", map);
         client.setId(UUID.randomUUID().toString());
         // on initial client creation user won't see the token settings or client settings for simplicity
         // so set them to null
@@ -116,9 +123,17 @@ public class ClientController {
     }
 
     @PostMapping("/update")
-    public Mono<String> updateClient(@ModelAttribute OauthClient client, Model model) {
+    public Mono<String> updateClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
         LOG.info("update client");
         final String PATH = "admin/clients/updateClientForm";
+
+
+        if (bindingResult.hasErrors()) {
+            LOG.info("user didn't enter required fields");
+            model.addAttribute("error", "Data validation failed");
+            return Mono.just(PATH);
+        }
+
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());

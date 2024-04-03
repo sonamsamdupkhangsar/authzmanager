@@ -10,6 +10,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <title>Hello, world!</title>
+    <style>
+        .error {
+            color: red;
+        }
+    </style>
 </head>
 <body>
 
@@ -37,8 +42,13 @@
             </div>
             <form action="#" th:action="@{/admin/clients/update}" th:object="${client}" method="post">
                 <input type="hidden"  th:field="*{id}"/>
+                <div class="mb-3 error" th:if="${#fields.hasErrors}">
+                    <span >Failed to update OAuth client.
+                        Please check the data validation errors.</span>
+                </div>
                 <div class="mb-3">
                     <label for="clientId" class="form-label">Client id</label>
+                    <p th:if="${#fields.hasErrors('clientId')}">Please enter a unique client-id</p>
                     <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
                 </div>
                 <div class="mb-3">
@@ -47,6 +57,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="clientSecret" class="form-label">Client secret</label>
+                    <p th:if="${#fields.hasErrors('clientSecret')}" class="error">Please enter client secret</p>
                     <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
                 </div>
                 <div class="mb-3">
@@ -87,6 +98,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Authorization grant types:</label>
+                    <p th:if="${#fields.hasErrors('authorizationGrantTypes')}" class="error">Please select at least 1 of Authorization grant type</p>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
                         <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
@@ -143,6 +155,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="redirectUris" class="form-label">Client redirect uris *(required)</label>
+                    <p th:if="${#fields.hasErrors('redirectUris')}" class="error">Please enter a redirect uri</p>
                     <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
                 </div>
                 <div class="mb-3">

@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.admin.oauth2;
 
+import jakarta.validation.constraints.NotEmpty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -11,20 +12,23 @@ import java.util.*;
 public class OauthClient {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClient.class);
     private String id;
+    @NotEmpty(message="client-id cannot be empty")
     private String clientId;
     private String clientIdIssuedAt;
+    @NotEmpty(message="secret cannot be empty")
     private String clientSecret;
     private String clientSecretExpiresAt;
     private String clientName;
     //private String clientAuthenticationMethods;
     private List<String> clientAuthenticationMethods = new ArrayList<>();
+    @NotEmpty(message="Need to select at least one of Authorization grant types")
     private List<String> authorizationGrantTypes = new ArrayList<>();
     //private String authorizationGrantTypes;
 
     private List<String> authenticationMethods = new ArrayList<>();
     private List<String> grantTypes = new ArrayList<>();
     private OidcScopes oidcScopes;
-
+    @NotEmpty(message="redirect uris cannot be empty")
     private String redirectUris;
     private String postLogoutRedirectUris;
     private List<String> scopes = new ArrayList<>();
