@@ -37,4 +37,6 @@ public final class ClientAuthenticationMethod implements Serializable {
     public int hashCode() {
         return this.getValue().hashCode();
     }
+
+
 }

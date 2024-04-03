@@ -91,7 +91,15 @@
     </nav>
 
     <article>
-        go over each client and show them here.
+        <div th:if="${clientIds != null}">
+            <h1>Result</h1>
+            <ul>
+                <li th:each="item : ${clientIds}">
+                    <a th:text="${item}" th:href="@{/admin/clients/{id}(id=${item})}"></a>
+
+                </li>
+            </ul>
+        </div>
     </article>
 </section>
 

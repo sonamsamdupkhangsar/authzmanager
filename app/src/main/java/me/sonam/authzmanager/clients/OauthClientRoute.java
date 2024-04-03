@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.clients;
 
+import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -8,8 +9,10 @@ import java.util.UUID;
 
 public interface OauthClientRoute {
 
-    Mono<String> createClient(Map<String, String> map);
-    Mono<String> updateClient(Map<String, String> map);
+    Mono<RegisteredClient> createClient(Map<String, Object> map);
+    Mono<RegisteredClient> updateClient(Map<String, Object> map);
     Mono<String> deleteClient(String clientId);
     Mono<List<String>> getUserClientIds(UUID userId);
+    //Mono<Map<String, Object>> getOauthClientByClientId(String clientId);
+    Mono<RegisteredClient> getOauthClientByClientId(String clientId);
 }

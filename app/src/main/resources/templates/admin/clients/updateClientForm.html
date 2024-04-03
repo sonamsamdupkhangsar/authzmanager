@@ -1,0 +1,246 @@
+
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <title>Hello, world!</title>
+</head>
+<body>
+
+<div class="container">
+    <div class="row"><div class="col">Admin dashboard</div></div>
+
+    <div class="row">
+        <div class="col">
+            <ul>
+                <li><a th:href="@{/admin/clients/createForm}">Create Client</a> </li>
+                <li><a th:href="@{/admin/clients}">Clients</a></li>
+
+            </ul>
+        </div>
+        <div class="col">
+            <div class="mb-3">
+                <div th:switch="${message}">
+                    <div th:case="'Success'" class="alert alert-success">
+                        <strong>Success!</strong> Client has been created successfyly.
+                    </div>
+                    <div th:case="'Failed'" class="alert alert-danger">
+                        <strong>Failure!</strong> Failed to create client
+                    </div>
+                </div>
+            </div>
+            <form action="#" th:action="@{/admin/clients/update}" th:object="${client}" method="post">
+                <input type="hidden"  th:field="*{id}"/>
+                <div class="mb-3">
+                    <label for="clientId" class="form-label">Client id</label>
+                    <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
+                </div>
+                <div class="mb-3">
+                    <label for="clientIssuedAt" class="form-label">Client issued at</label>
+                    <input type="text" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
+                </div>
+                <div class="mb-3">
+                    <label for="clientSecret" class="form-label">Client secret</label>
+                    <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
+                </div>
+                <div class="mb-3">
+                    <label for="clientSecretExpiresAt" class="form-label">Client secret expires at</label>
+                     <input type="text" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
+                </div>
+                <div class="mb-3">
+                    <label for="clientName" class="form-label">Client name</label>
+                    <input type="text" class="form-control" id="clientName" th:field="*{clientName}" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Client Authentication Methods</label>
+                    <span th:utext="${client.clientAuthenticationMethods}"></span>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
+                        <label  class="form-check-label" th:text="CLIENT_SECRET_BASIC">
+
+
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_POST')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_POST"/>
+                        <label class="form-check-label" th:text="CLIENT_SECRET_POST"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_JWT')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_JWT"/>
+                        <label class="form-check-label" th:text="CLIENT_SECRET_JWT"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'PRIVATE_KEY_JWT')}" name="clientAuthenticationMethods" th:value="PRIVATE_KEY_JWT"/>
+                        <label class="form-check-label" th:text="PRIVATE_KEY_JWT"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'NONE')}" name="clientAuthenticationMethods" th:value="NONE"/>
+                        <label class="form-check-label" th:text="NONE"></label>
+                    </div>
+
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Authorization grant types:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
+                        <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'REFRESH_TOKEN')}" name="authorizationGrantTypes" th:value="REFRESH_TOKEN"/>
+                        <label class="form-check-label" th:text="REFRESH_TOKEN"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'CLIENT_CREDENTIALS')}" name="authorizationGrantTypes" th:value="CLIENT_CREDENTIALS"/>
+                        <label class="form-check-label" th:text="CLIENT_CREDENTIALS"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'PASSWORD')}" name="authorizationGrantTypes" th:value="PASSWORD"/>
+                        <label class="form-check-label" th:text="PASSWORD"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'JWT_BEARER')}" name="authorizationGrantTypes" th:value="JWT_BEARER"/>
+                        <label class="form-check-label" th:text="JWT_BEARER"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'DEVICE_CODE')}" name="authorizationGrantTypes" th:value="DEVICE_CODE"/>
+                        <label class="form-check-label" th:text="DEVICE_CODE"></label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Scopes:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'OPENID')}" name="scopes" th:value="OPENID"/>
+                        <label class="form-check-label" th:text="OPENID"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PROFILE')}" name="scopes" th:value="PROFILE"/>
+                        <label class="form-check-label" th:text="PROFILE"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'EMAIL')}" name="scopes" th:value="EMAIL"/>
+                        <label class="form-check-label" th:text="EMAIL"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'ADDRESS')}" name="scopes" th:value="ADDRESS"/>
+                        <label class="form-check-label" th:text="ADDRESS"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PHONE')}" name="scopes" th:value="PHONE"/>
+                        <label class="form-check-label" th:text="PHONE"></label>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-text">
+                            <label class="form-check-label">Custom (comma separated values)</label>
+                        </div>
+                        <input class="form-control" type="text" th:field="*{customScopes}" aria-label="Text input with checkbox"/>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="redirectUris" class="form-label">Client redirect uris *(required)</label>
+                    <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
+                </div>
+                <div class="mb-3">
+                    <label for="postLogoutRedirectUris" class="form-label">Client post redirect uris</label>
+                    <input class="form-control" type="text" id="postLogoutRedirectUris" th:field="*{postLogoutRedirectUris}" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Client Seettings</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="*{clientSettings.requireAuthorizationConsent}" name="clientSettings.requireAuthorizationConsent"/>
+                        <label class="form-check-label">Require authorization consent</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="*{clientSettings.requireProofKey}" name="clientSettings.requireProofKey"/>
+                        <label class="form-check-label">Require proof key</label>
+                    </div>
+
+                    <label class="form-check-label">Jwk set url</label>
+                    <div class="input-group mb-3">
+                        <input class="form-control" type="text" th:field="*{clientSettings.jwkSetUrl}" aria-label="jwk set url checkbox"/>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Token Settings</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:checked="*{tokenSettings.reuseRefreshTokens}" name="tokenSettings.reuseRefreshTokens"/>
+                        <label class="form-check-label">Reuse refresh token</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tokenSettings.authorizationCodeTimeToLive" class="form-label">Authorization code time to live (in seconds)</label>
+                        <input type="text" class="form-control" id="tokenSettings.authorizationCodeTimeToLive" th:field="*{tokenSettings.authorizationCodeTimeToLive}" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="tokenSettings.accessTokenTimeToLive" class="form-label">Access token time to live (in seconds)</label>
+                        <input type="text" class="form-control" id="tokenSettings.accessTokenTimeToLive" th:field="*{tokenSettings.accessTokenTimeToLive}" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Access token format</label>
+                        <select th:field="*{tokenSettings.accessTokenFormat}">
+                            <option value="Select One">Select One</option>
+                            <option th:value="*{tokenSettings.accessTokenFormat.SELF_CONTAINED.getValue()}" th:text="*{tokenSettings.accessTokenFormat.SELF_CONTAINED.getValue()}">
+                            </option>
+                            <option th:value="*{tokenSettings.accessTokenFormat.REFERENCE.getValue()}" th:text="*{tokenSettings.accessTokenFormat.REFERENCE.getValue()}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tokenSettings.deviceCodeTimeToLive" class="form-label">Device code time to live (in seconds)</label>
+                        <input type="text" class="form-control" id="tokenSettings.deviceCodeTimeToLive" th:field="*{tokenSettings.deviceCodeTimeToLive}" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="tokenSettings.refreshTokenTimeToLive" class="form-label">Refresh token time to live (in seconds)</label>
+                        <input type="text" class="form-control" id="tokenSettings.refreshTokenTimeToLive" th:field="*{tokenSettings.refreshTokenTimeToLive}" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Id token signature algorithm</label>
+                        <select th:field="*{tokenSettings.idTokenSignatureAlgorithm}">
+                            <option value="Select One">Select One</option>
+                            <option th:value="RS256" th:text="RS256">
+                            </option>
+                            <option th:value="RS384" th:text="RS384">
+                            </option>
+                            <option th:value="RS512" th:text="RS512">
+                            </option>
+                            <option th:value="ES256" th:text="ES256">
+                            </option>
+                            <option th:value="ES384" th:text="ES384">
+                            </option>
+                            <option th:value="ES512" th:text="ES512">
+                            </option>
+                            <option th:value="PS256" th:text="PS256">
+                            </option>
+                            <option th:value="PS384" th:text="PS384">
+                            </option>
+                            <option th:value="PS512" th:text="PS512">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="mediateToken" class="form-label">Does this require token mediation? (explanation coming soon..) You can leave it blank.</label>
+                    <input class="form-check-input" type="checkbox" id="mediateToken" th:field="*{mediateToken}" />
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                    <button type="reset" class="btn btn-secondary mb-3">Reset</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+    <div class="row">
+        <div class="col">Authzmanager application</div>
+
+    </div>
+</div>
+</body>
+</html>

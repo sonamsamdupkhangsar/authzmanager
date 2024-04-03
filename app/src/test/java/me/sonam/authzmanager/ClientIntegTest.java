@@ -56,7 +56,6 @@ public class ClientIntegTest {
     private Resource refreshTokenResource;
 
 
-
     @Autowired
     private WebClient webClient;
     @LocalServerPort
@@ -99,7 +98,8 @@ public class ClientIntegTest {
                 .setResponseCode(200).setBody(jwtTokenMsg));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody("{\"roles\": \"USER ADMIN\"}"));
+                .setResponseCode(200).setBody("{\"userId\": \"326aed2a-4c14-42d1-aceb-1feb58fd5c9c\", " +
+                        "\"message\": \"authentication success\", \"roles\": \"USER ADMIN\"}"));
 
         Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
         LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());
@@ -131,11 +131,46 @@ public class ClientIntegTest {
         client.setAuthorizationGrantTypes(new ArrayList<>());
         client.setRedirectUris("");
         client.setPostLogoutRedirectUris("");
+        client.setMediateToken(true);
 
-        client.setClientSettings("");
-        client.setTokenSettings("");
+        Map<String, String> map = new HashMap<>();
+        map.put("settings.client.require-authorization-consent", "true");
+        map.put("settings.client.require-proof-key", "false");
+        //client.setClientSettings(map.toString());
+
+        //client.setTokenSettings("");
 
         fillInForm((HtmlPage) clientPage, client);
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody(jwtTokenMsg));
+        recordedRequest = mockWebServer.takeRequest();
+        LOG.info("should be acesstoken path for recordedRequest: {}", recordedRequest.getPath());
+        AssertionsForClassTypes.assertThat(recordedRequest.getPath()).startsWith("/oauth2/token?grant_type=client_credentials");
+        AssertionsForClassTypes.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+
+        LOG.info("set client created json response");
+        final String clientResponse= "   {" +
+                "    \"clientAuthenticationMethods\": \"client_secret_basic,client_secret_jwt\"," +
+                "    \"clientSecret\": \"{noop}hellosonam5064\"," +
+                "    \"redirectUris\": \"http://localhost:3001/api/auth/callback/myauth\"," +
+                "    \"authorizationGrantTypes\": \"refresh_token,client_credentials,authorization_code\"," +
+                "    \"clientSettings\": {\"settings.client.require-authorization-consent\":true,\"settings.client.require-proof-key\":false}," +
+                "    \"clientId\": \"oauth-client\"," +
+                "    \"clientName\": \"64141a86-5e22-4d15-80c3-4fdb69bff4d5\"," +
+                "    \"scopes\": \"openid,profile,message.read,email,message.write\"," +
+                "    \"mediateToken\": true" +
+                "}";
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody(clientResponse));
+
+        LOG.info("take the client creation request");
+        recordedRequest = mockWebServer.takeRequest();
+        LOG.info("should be acesstoken path for recordedRequest: {}", recordedRequest.getPath());
+        AssertionsForClassTypes.assertThat(recordedRequest.getPath()).startsWith("/clients");
+        AssertionsForClassTypes.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        LOG.info("asserted the path and Http method of POST");
     }
 
     private static <P extends Page> P fillInForm(HtmlPage page, OauthClient client) throws IOException {
@@ -152,6 +187,8 @@ public class ClientIntegTest {
         HtmlCheckBoxInput scopes = page.querySelector("input[name=\"scopes\"]");
         HtmlInput clientSettings = page.querySelector("input[name=\"clientSettings\"]");
         HtmlInput tokenSettings = page.querySelector("input[name=\"tokenSettings\"]");
+        HtmlCheckBoxInput mediateToken = page.querySelector("input[name=\"mediateToken\"]");
+        mediateToken.setChecked(true);
 
         clientId.type(client.getClientId());
         clientIssuedAt.type(client.getClientIdIssuedAt().toString());
@@ -166,10 +203,11 @@ public class ClientIntegTest {
         postLogoutRedirectUris.type(client.getPostLogoutRedirectUris().toString());
         scopes.setAttribute("checked", "checked");
 
-        clientSettings.type(client.getClientSettings().toString());
-        tokenSettings.type(client.getTokenSettings().toString());
+        //clientSettings.type(client.getClientSettings().toString());
+      //  tokenSettings.type(client.getTokenSettings().toString());
 
         HtmlButton submit = page.querySelector("button");
+        LOG.info("sending form with client to create the client");
         return submit.click();
     }
 

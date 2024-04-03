@@ -1,8 +1,10 @@
 package me.sonam.authzmanager;
 
 import me.sonam.authzmanager.tokenfilter.TokenFilter;
+import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * This authenticationProvider will make a call-out to Spring Authorization Server rest service
@@ -32,6 +35,8 @@ public class AuthenticationCallout  implements AuthenticationProvider {
     private final String springAuthorizationServerAuthenticationEp;
 
     private TokenFilter tokenFilter;
+    @Value("${oauthClientId}")
+    private String oauthClientId;
 
     public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp) {
         this.webClientBuilder = webClientBuilder;
@@ -57,7 +62,7 @@ public class AuthenticationCallout  implements AuthenticationProvider {
         LOG.info("calling Spring Authorization Server for authentication endpoint: {}", springAuthorizationServerAuthenticationEp);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(springAuthorizationServerAuthenticationEp)
-                .bodyValue(Map.of("username", username, "password", password))
+                .bodyValue(Map.of("username", username, "password", password, "clientId", oauthClientId))
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
                 .retrieve();
 
@@ -79,9 +84,12 @@ public class AuthenticationCallout  implements AuthenticationProvider {
                 LOG.info("add a user role if no role found for managing authzmanager");
                 grantedAuths.add(new SimpleGrantedAuthority("USER"));
             }
-            final UserDetails principal = new User(username, password, grantedAuths);
 
-            return new UsernamePasswordAuthenticationToken(principal, new String(password), grantedAuths);
+            UUID userId = UUID.fromString(roleMap.get("userId").toString());
+
+            final UserDetails principal = new UserId(userId, username, password, grantedAuths);
+
+            return new UsernamePasswordAuthenticationToken(principal, password, grantedAuths);
         }).onErrorResume(throwable -> {
             LOG.error("failed to authenticate using Spring Authorization Server authentication: {}", throwable.getMessage());
             return Mono.error(new BadCredentialsException("failed to authenticate with username and password"));

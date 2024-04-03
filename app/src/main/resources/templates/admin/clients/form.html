@@ -25,6 +25,16 @@
             </ul>
         </div>
         <div class="col">
+            <div class="mb-3">
+                <div th:switch="${message}">
+                    <div th:case="'Success'" class="alert alert-success">
+                        <strong>Success!</strong> Client has been created successfyly.
+                    </div>
+                    <div th:case="'Failed'" class="alert alert-danger">
+                        <strong>Failure!</strong> Failed to create client
+                    </div>
+                </div>
+            </div>
             <form action="#" th:action="@{/admin/clients/create}" th:object="${client}" method="post">
                 <input type="hidden"  th:field="*{id}"/>
                 <div class="mb-3">
@@ -40,7 +50,7 @@
                     <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
                 </div>
                 <div class="mb-3">
-                    <label for="clientSecretExpiresAt" class="form-label">Client secret</label>
+                    <label for="clientSecretExpiresAt" class="form-label">Client secret expires at</label>
                      <input type="text" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
                 </div>
                 <div class="mb-3">
@@ -50,28 +60,23 @@
                 <div class="mb-3">
                     <label class="form-label">Client Authentication Methods</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
                         <label  class="form-check-label" th:text="CLIENT_SECRET_BASIC"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'CLIENT_SECRET_POST')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_POST"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_POST')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_POST"/>
                         <label class="form-check-label" th:text="CLIENT_SECRET_POST"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'CLIENT_SECRET_JWT')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_JWT"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_JWT')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_JWT"/>
                         <label class="form-check-label" th:text="CLIENT_SECRET_JWT"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
-                        <label class="form-check-label" th:text="CLIENT_SECRET_BASIC"></label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'PRIVATE_KEY_JWT')}" name="clientAuthenticationMethods" th:value="PRIVATE_KEY_JWT"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'PRIVATE_KEY_JWT')}" name="clientAuthenticationMethods" th:value="PRIVATE_KEY_JWT"/>
                         <label class="form-check-label" th:text="PRIVATE_KEY_JWT"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.clientAuthenticationMethods, 'NONE')}" name="clientAuthenticationMethods" th:value="NONE"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'NONE')}" name="clientAuthenticationMethods" th:value="NONE"/>
                         <label class="form-check-label" th:text="NONE"></label>
                     </div>
 
@@ -79,50 +84,50 @@
                 <div class="mb-3">
                     <label class="form-label">Authorization grant types:</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
                         <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'REFRESH_TOKEN')}" name="authorizationGrantTypes" th:value="REFRESH_TOKEN"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'REFRESH_TOKEN')}" name="authorizationGrantTypes" th:value="REFRESH_TOKEN"/>
                         <label class="form-check-label" th:text="REFRESH_TOKEN"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'CLIENT_CREDENTIALS')}" name="authorizationGrantTypes" th:value="CLIENT_CREDENTIALS"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'CLIENT_CREDENTIALS')}" name="authorizationGrantTypes" th:value="CLIENT_CREDENTIALS"/>
                         <label class="form-check-label" th:text="CLIENT_CREDENTIALS"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'PASSWORD')}" name="authorizationGrantTypes" th:value="PASSWORD"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'PASSWORD')}" name="authorizationGrantTypes" th:value="PASSWORD"/>
                         <label class="form-check-label" th:text="PASSWORD"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'JWT_BEARER')}" name="authorizationGrantTypes" th:value="JWT_BEARER"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'JWT_BEARER')}" name="authorizationGrantTypes" th:value="JWT_BEARER"/>
                         <label class="form-check-label" th:text="JWT_BEARER"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.authorizationGrantTypes, 'DEVICE_CODE')}" name="authorizationGrantTypes" th:value="DEVICE_CODE"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'DEVICE_CODE')}" name="authorizationGrantTypes" th:value="DEVICE_CODE"/>
                         <label class="form-check-label" th:text="DEVICE_CODE"></label>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Scopes:</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.scopes, 'OPENID')}" name="scopes" th:value="OPENID"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'OPENID')}" name="scopes" th:value="OPENID"/>
                         <label class="form-check-label" th:text="OPENID"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.scopes, 'PROFILE')}" name="scopes" th:value="PROFILE"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PROFILE')}" name="scopes" th:value="PROFILE"/>
                         <label class="form-check-label" th:text="PROFILE"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.scopes, 'EMAIL')}" name="scopes" th:value="EMAIL"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'EMAIL')}" name="scopes" th:value="EMAIL"/>
                         <label class="form-check-label" th:text="EMAIL"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.scopes, 'ADDRESS')}" name="scopes" th:value="ADDRESS"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'ADDRESS')}" name="scopes" th:value="ADDRESS"/>
                         <label class="form-check-label" th:text="ADDRESS"></label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#lists.contains(client.scopes, 'PHONE')}" name="scopes" th:value="PHONE"/>
+                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PHONE')}" name="scopes" th:value="PHONE"/>
                         <label class="form-check-label" th:text="PHONE"></label>
                     </div>
                     <div class="input-group mb-3">
@@ -130,25 +135,18 @@
                             <label class="form-check-label">Custom (csv)</label>
                             <input class="form-check-input" type="checkbox" aria-label="custom scope"/>
                         </div>
-                        <input class="form-control" type="text" th:field="*{scopes}" aria-label="Text input with checkbox"/>
+                        <input class="form-control" type="text" th:field="*{customScopes}" aria-label="Text input with checkbox"/>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label for="redirectUris" class="form-label">Client redirect uris</label>
+                    <label for="redirectUris" class="form-label">Client redirect uris *(required)</label>
                     <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
                 </div>
                 <div class="mb-3">
                     <label for="postLogoutRedirectUris" class="form-label">Client post redirect uris</label>
                     <input class="form-control" type="text" id="postLogoutRedirectUris" th:field="*{postLogoutRedirectUris}" />
                 </div>
-                <div class="mb-3">
-                    <label for="clientSettings" class="form-label">Client settings</label>
-                    <input  class="form-control"type="text" id="clientSettings" th:field="*{clientSettings}" />
-                </div>
-                <div class="mb-3">
-                    <label for="tokenSettings" class="form-label">Token settings</label>
-                    <input class="form-control" type="text" id="tokenSettings" th:field="*{tokenSettings}" />
-                </div>
+
                 <div class="mb-3">
                     <button type="submit" class="btn btn-primary mb-3">Submit</button>
                     <button type="reset" class="btn btn-secondary mb-3">Reset</button>

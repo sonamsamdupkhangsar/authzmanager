@@ -23,7 +23,7 @@ public class OauthClientWebHandler implements OauthClientHandler {
     @Override
     public Mono<ServerResponse> createClient(ServerRequest serverRequest) {
         LOG.info("create client");
-        return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+        return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .flatMap(oauthClientRoute::createClient)
                 .flatMap(s -> {
                     LOG.info("create client response: {}", s);
@@ -42,7 +42,7 @@ public class OauthClientWebHandler implements OauthClientHandler {
     public Mono<ServerResponse> updateClient(ServerRequest serverRequest) {
         LOG.info("update client");
         return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
-                .flatMap(map -> oauthClientRoute.updateClient(map))
+                //.flatMap(map -> oauthClientRoute.updateClient(map))
                 .flatMap(s -> {
                     LOG.info("update client response: {}", s);
                     return ServerResponse.ok()

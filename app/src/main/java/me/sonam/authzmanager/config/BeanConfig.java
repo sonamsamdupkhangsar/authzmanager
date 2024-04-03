@@ -1,10 +1,7 @@
 package me.sonam.authzmanager.config;
 
 import me.sonam.authzmanager.AuthenticationCallout;
-import me.sonam.authzmanager.clients.OauthClientHandler;
-import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
-import me.sonam.authzmanager.clients.OauthClientWebHandler;
+import me.sonam.authzmanager.clients.*;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +23,9 @@ public class BeanConfig {
     @Value("${auth-server.root}${auth-server.authenticate}")
     private String springAuthorizationServerAuthenticationEp;
 
+    @Value("${organization-rest-service.root}${organization-rest-service.contextPath}")
+    private String organizationEndpoint;
+
     @Autowired
     @Qualifier("regular")
     private WebClient.Builder webClientBuilder;
@@ -41,16 +41,21 @@ public class BeanConfig {
 
     @Bean
     public OauthClientRoute oauthClientRoute() {
-        return new OauthClientRouteRouteAuthServer(webClientWithTokenFilter, authServerClientsEndpoint);
+        return new OauthClientWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
     }
 
-    @Bean
+    /*@Bean
     public OauthClientHandler oauthClientHandler() {
         return new OauthClientWebHandler(oauthClientRoute());
-    }
+    }*/
 
     @Bean
     public AuthenticationCallout authenticationCallout() {
         return new AuthenticationCallout(webClientWithTokenFilter, springAuthorizationServerAuthenticationEp);
+    }
+
+    @Bean
+    public OrganizationWebClient organizationWebClient() {
+        return new OrganizationWebClient(webClientWithTokenFilter, organizationEndpoint);
     }
 }

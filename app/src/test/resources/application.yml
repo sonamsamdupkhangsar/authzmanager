@@ -52,6 +52,10 @@ authentication-rest-service:
   root: http://localhost:{port}/authentications
   authenticate: /authenticate
 
+organization-rest-service:
+  root: http://localhost:{port}
+  contextPath: /organizations
+
 endpoint:
   user:
     signup: "/public/user/signup"
@@ -76,6 +80,18 @@ permitpath:
 jwtrequest:
   - in:  /*
     out: /authenticate
+    accessToken:
+      option: request
+      scopes: message.read message.write
+      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+  - in:  /*
+    out: /clients
+    accessToken:
+      option: request
+      scopes: message.read message.write
+      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+  - in:  /*
+    out: /organizations
     accessToken:
       option: request
       scopes: message.read message.write

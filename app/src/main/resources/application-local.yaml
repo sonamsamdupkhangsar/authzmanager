@@ -25,6 +25,7 @@ spring:
 USER_REST_SERVICE: http://user-rest-service
 AUTHENTICATION_REST_SERVICE: http://authentication-rest-service
 AUTH_SERVER: http://authorization-server/issuer
+ORGANIZATION_REST_SERVICE: http://organization-rest-service
 
 allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1
 
@@ -36,3 +37,17 @@ JWT_SET_URI: ${ISSUER_ADDRESS}/issuer/.well-known/jwks.json
 
 REQUEST_SCOPES: message.read message.write
 BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+
+#jwtrequest:
+#  - in:  /*
+#    out: /authenticate
+#    accessToken:
+#      option: request
+#      scopes: message.read message.write
+#      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+#  - in:  /*
+#    out: /issuer/clients
+#    accessToken:
+#      option: request
+#      scopes: message.read message.write
+#      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==

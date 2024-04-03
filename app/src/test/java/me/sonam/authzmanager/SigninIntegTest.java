@@ -95,8 +95,10 @@ public class SigninIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
                 .setResponseCode(200).setBody(jwtTokenMsg));
 
+        //{userId=326aed2a-4c14-42d1-aceb-1feb58fd5c9c, message=authentication success, roles=}
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody("{\"roles\": \"USER ADMIN\"}"));
+                .setResponseCode(200).setBody("{\"userId\": \"326aed2a-4c14-42d1-aceb-1feb58fd5c9c\", " +
+                        "\"message\": \"authentication success\", \"roles\": \"USER ADMIN\"}"));
 
         Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
         LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());

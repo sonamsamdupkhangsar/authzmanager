@@ -1,7 +1,5 @@
 package me.sonam.authzmanager;
 
-//import io.r2dbc.spi.ConnectionFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -16,18 +14,6 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 
-   /* @Bean()
-    ConnectionFactoryInitializer initializer(ConnectionFactory connectionFactory) {
-        ConnectionFactoryInitializer initializer = new ConnectionFactoryInitializer();
-        initializer.setConnectionFactory(connectionFactory);
-        // This will create our database table and schema
-        initializer.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource("schema.sql")));
-
-        // This will drop our table after we are done so we can have a fresh start next run
-        //initializer.setDatabaseCleaner(new ResourceDatabasePopulator(new ClassPathResource("cleanup.sql")));
-        return initializer;
-    }
-*/
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         LOG.info("creating bcrypt password encoder");

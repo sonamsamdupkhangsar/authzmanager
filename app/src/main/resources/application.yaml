@@ -5,6 +5,7 @@ logging:
   level:
     root: warn
     me.sonam.authzmanager: info
+    me.sonam.authzmanager.tokenfilter: debug
 #    org.springframework.web: info
 #    org.springframework.security: info
 #    org.springframework.security.oauth2: info
@@ -25,11 +26,11 @@ spring:
 #    password: ${POSTGRES_PASSWORD}
 #    properties:
 #      sslMode: ${DB_SSLMODE}
-  jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    generate-ddl: true
+#  jpa:
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+#    generate-ddl: true
   security:
     oauth2:
       resourceserver:
@@ -47,6 +48,19 @@ jwtrequest:
       option: request
       scopes: ${REQUEST_SCOPES}
       base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+  - in:  /*
+    out: /organizations
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+  - in:  /*
+    out: /issuer/clients/(.)*,/issuer/clients
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+
 
 user-rest-service:
   root: ${USER_REST_SERVICE}
@@ -64,6 +78,11 @@ auth-server:
 authentication-rest-service:
   root: ${AUTHENTICATION_REST_SERVICE}/authentications
   authenticate: /authenticate
+organization-rest-service:
+  root: ${ORGANIZATION_REST_SERVICE}
+  contextPath: /organizations
+
 
 allowedOrigins: ${allowedOrigins}
 
+oauthClientId: authzmanager-client

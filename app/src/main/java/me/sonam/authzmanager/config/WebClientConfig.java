@@ -30,14 +30,34 @@ public class WebClientConfig {
     }
 
     @LoadBalanced
+    @Bean("tokenFilter")
+    public WebClient.Builder webClientBuilderForTokenFilter() {
+        LOG.info("returning load balanced webclient part");
+        return WebClient.builder();
+    }
+
+    @LoadBalanced
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(WebClient.builder(), jwtPath, oauth2TokenEndpoint);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 
         return webClientBuilder;
     }
-
 }
+
+  /*   @LoadBalanced
+       @Bean("webClientWithTokenFilter")
+       public WebClient.Builder webClientBuilderNoFilter() {
+           LOG.info("creating a WebClient.Builder with tokenFilter set");
+           WebClient.Builder webClientBuilder = webClientBuilderForTokenFilter();
+
+           TokenFilter tokenFilter = new TokenFilter(webClientBuilder, jwtPath, oauth2TokenEndpoint);
+           //WebClient.Builder webClientBuilder = WebClient.builder();
+           webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
+
+           return webClientBuilder;
+       }
+   */

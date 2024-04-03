@@ -1,19 +1,13 @@
 package me.sonam.authzmanager;
 
-import jakarta.annotation.PostConstruct;
-import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
 import me.sonam.authzmanager.tokenfilter.JwtPath;
 import me.sonam.authzmanager.tokenfilter.TokenFilter;
-import me.sonam.authzmanager.user.UserRoute;
-import me.sonam.authzmanager.user.UserRouteAuthServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -35,15 +29,19 @@ public class WebClientDevConfig {
         return WebClient.builder();
     }
 
+    @Bean("tokenFilter")
+    public WebClient.Builder webClientBuilderForTokenFilter() {
+        LOG.info("returning load balanced webclient part");
+        return WebClient.builder();
+    }
+
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(WebClient.builder(), jwtPath, oauth2TokenEndpoint);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 
         return webClientBuilder;
     }
-
-
 }
