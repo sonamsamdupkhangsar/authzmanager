@@ -48,10 +48,7 @@ public class AuthManagerSecurityConfig {
                 .authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers("/actuator/**").permitAll()
                                 .requestMatchers("/api/health/readiness").permitAll()
-                                .requestMatchers("/forgotUsername").permitAll()
-                                .requestMatchers("/forgotPassword").permitAll()
-                                .requestMatchers("/forgot/emailUsername").permitAll()
-                                .requestMatchers("/forgot/changePassword").permitAll()
+                                .requestMatchers("/signup").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

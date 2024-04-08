@@ -59,7 +59,8 @@ public class OauthClientWebHandler implements OauthClientHandler {
     @Override
     public Mono<ServerResponse> deleteClient(ServerRequest serverRequest) {
         LOG.info("delete client");
-        return oauthClientRoute.deleteClient(serverRequest.pathVariable("clientId"))
+        return oauthClientRoute.deleteClient(serverRequest.pathVariable("clientId"),
+                        UUID.fromString(serverRequest.pathVariable("ownerId")))
                 .flatMap(s -> {
                     LOG.info("client deleted, response: {}", s);
                     return ServerResponse.ok()

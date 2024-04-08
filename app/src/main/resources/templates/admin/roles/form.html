@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+
+<head>
+    <title>CSS Template</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Style the header */
+        header {
+          background-color: #666;
+          padding: 30px;
+          text-align: center;
+          font-size: 35px;
+          color: white;
+        }
+
+        /* Create two columns/boxes that floats next to each other */
+        nav {
+          float: left;
+          width: 30%;
+          height: 300px; /* only for demonstration, should be removed */
+          background: #ccc;
+          padding: 20px;
+        }
+
+        /* Style the list inside the menu */
+        nav ul {
+          list-style-type: none;
+          padding: 0;
+        }
+
+        article {
+          float: left;
+          padding: 20px;
+          width: 70%;
+          background-color: #f1f1f1;
+          height: 300px; /* only for demonstration, should be removed */
+        }
+
+        /* Clear floats after the columns */
+        section::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+
+        /* Style the footer */
+        footer {
+          background-color: #777;
+          padding: 10px;
+          text-align: center;
+          color: white;
+        }
+
+        /* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
+        @media (max-width: 600px) {
+          nav, article {
+            width: 100%;
+            height: auto;
+          }
+        }
+
+        .error {
+            color: red;
+        }
+
+    </style>
+    <script th:inline="javascript">
+        function sendDelete(url) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", url, true);
+            xhttp.onload = function () {
+                let responseURL = xhttp.responseURL;
+                console.log("Redirecting to:", responseURL);
+                window.location.replace("/admin/roles");
+            };
+            xhttp.send();
+        }
+    </script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<header>
+    <h2>Admin dashboard</h2> <a th:href="@{/admin/logout}"> <span class="glyphicon glyphicon-log-out"
+                                                                  aria-hidden="true"></span>&nbsp;Logout
+</a>
+</header>
+
+<section>
+    <nav>
+        <ul>
+            <li><a th:href="@{/admin/dashboard}">Home</a></li>
+            <li><a th:href="@{/admin/clients}">Clients</a></li>
+            <li><a th:href="@{/admin/organizations}">Organizations</a></li>
+            <li><a th:href="@{/admin/roles}">Roles</a></li>
+        </ul>
+    </nav>
+
+
+        <h1>Organizations</h1>
+
+        <div class="row">
+            <div class="col">
+                <div class="mb-3">
+
+                    <div th:if="${message}" class="alert alert-success">
+                        <strong>Success!</strong> <span th:text="${message}"></span>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger">
+                        <strong>Failure!</strong> <span th:text="${error}"></span>
+                    </div>
+                </div>
+
+
+                <div class="mb-3" th:if="${role}">
+                    <button th:with="url = @{/admin/roles/{id}(id=${role.id})}" class="btn btn-primary mb-3"
+                            th:onclick="sendDelete([[${url}]])">Delete this role
+                    </button>
+                </div>
+
+                <form action="#" th:action="@{/admin/roles}" th:object="${role}" method="post">
+                    <input type="hidden" th:field="*{id}"/>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Role name</label>
+                        <p th:if="${#fields.hasErrors('name')}" class="error">Please enter role name</p>
+                        <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="role name"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                        <button type="reset" class="btn btn-secondary mb-3">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+    <footer>
+        <div class="row">
+            <div class="col">Authzmanager application</div>
+        </div>
+    </footer>
+</body>
+</html>

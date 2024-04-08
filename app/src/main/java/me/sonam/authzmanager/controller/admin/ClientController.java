@@ -48,34 +48,6 @@ public class ClientController {
         return PATH;
     }
 
-    @GetMapping("/{id}")
-    public Mono<String> getClientByClientId(@PathVariable("id") String clientId, Model model) {
-        LOG.info("get client by clientId {}", clientId);
-        final String PATH = "admin/clients/updateClientForm";
-
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        LOG.info("userId: {}", userId.getUserId());
-        return oauthClientWebClient.getOauthClientByClientId(clientId).flatMap(registeredClient -> {
-            LOG.info("got client {}", registeredClient);
-            try {
-                OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
-                LOG.info("oauthClient {}", oauthClient.getClientAuthenticationMethods());
-                model.addAttribute("client", oauthClient);
-            }
-            catch (Exception e) {
-                LOG.error("failed to parse to OautClient", e);
-                model.addAttribute("client", new OauthClient());
-            }
-
-            LOG.info("return updateClientForm");
-            return Mono.just(PATH);
-        }).onErrorResume(throwable -> {
-            LOG.error("Failed to get client by clientId", throwable);
-            model.addAttribute("client", new OauthClient());
-            return Mono.just(PATH);
-        });
-    }
-
     @PostMapping("/create")
     public Mono<String> createClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
         LOG.info("create client");
@@ -120,6 +92,35 @@ public class ClientController {
               model.addAttribute("error", "Failed");
               return Mono.just(PATH);
           });
+    }
+
+
+    @GetMapping("/{id}")
+    public Mono<String> getClientByClientId(@PathVariable("id") String clientId, Model model) {
+        LOG.info("get client by clientId {}", clientId);
+        final String PATH = "admin/clients/updateClientForm";
+
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        LOG.info("userId: {}", userId.getUserId());
+        return oauthClientWebClient.getOauthClientByClientId(clientId).flatMap(registeredClient -> {
+            LOG.info("got client {}", registeredClient);
+            try {
+                OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
+                LOG.info("oauthClient {}", oauthClient.getClientAuthenticationMethods());
+                model.addAttribute("client", oauthClient);
+            }
+            catch (Exception e) {
+                LOG.error("failed to parse to OautClient", e);
+                model.addAttribute("client", new OauthClient());
+            }
+
+            LOG.info("return updateClientForm");
+            return Mono.just(PATH);
+        }).onErrorResume(throwable -> {
+            LOG.error("Failed to get client by clientId", throwable);
+            model.addAttribute("client", new OauthClient());
+            return Mono.just(PATH);
+        });
     }
 
     @PostMapping("/update")
@@ -179,7 +180,7 @@ public class ClientController {
     public Mono<String> getLoggedInUserClients(Model model) {
         LOG.info("get this logged-in users clients only");
 
-        final String PATH = "/admin/clients";
+        final String PATH = "/admin/clients/list";
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
@@ -192,5 +193,22 @@ public class ClientController {
             model.addAttribute("message", "failed");
             return Mono.just(PATH);
         });
+    }
+
+    @DeleteMapping("/{clientId}")
+    public Mono<String> deleteClientByClientId(@PathVariable("clientId")String clientId, Model model) {
+        LOG.info("delete client by clientId: {}", clientId);
+        final String PATH = "/admin/clients/list";
+
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        LOG.info("userId: {}", userId.getUserId());
+
+        return oauthClientWebClient.deleteClient(clientId, userId.getUserId()).thenReturn(PATH)
+                .onErrorResume(throwable -> {
+                    LOG.error("error occurred on deleting client by clientId: {}", clientId, throwable);
+                    model.addAttribute("error", "Failed to delete by clientId");
+                    return Mono.just(PATH);
+                });
+
     }
 }

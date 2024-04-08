@@ -11,7 +11,7 @@ public interface OauthClientRoute {
 
     Mono<RegisteredClient> createClient(Map<String, Object> map);
     Mono<RegisteredClient> updateClient(Map<String, Object> map);
-    Mono<String> deleteClient(String clientId);
+    Mono<Void> deleteClient(String clientId, UUID ownerId);
     Mono<List<String>> getUserClientIds(UUID userId);
     //Mono<Map<String, Object>> getOauthClientByClientId(String clientId);
     Mono<RegisteredClient> getOauthClientByClientId(String clientId);

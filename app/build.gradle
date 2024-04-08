@@ -26,6 +26,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation ("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.0.1")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.data:spring-data-commons")
     implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

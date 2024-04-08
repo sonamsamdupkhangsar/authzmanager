@@ -13,7 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class BeanConfig {
-    @Value("{user-rest-service.root}${user-rest-service.signup}")
+    @Value("${user-rest-service.root}")
     private String userSignupEndpoint;
 
     @Value("{authentication-rest-service.root}${authentication-rest-service.authenticate}")
@@ -25,6 +25,9 @@ public class BeanConfig {
 
     @Value("${organization-rest-service.root}${organization-rest-service.contextPath}")
     private String organizationEndpoint;
+
+    @Value("${role-rest-service.root}${role-rest-service.contextPath}")
+    private String rolesEndpoint;
 
     @Autowired
     @Qualifier("regular")
@@ -57,5 +60,15 @@ public class BeanConfig {
     @Bean
     public OrganizationWebClient organizationWebClient() {
         return new OrganizationWebClient(webClientWithTokenFilter, organizationEndpoint);
+    }
+
+    @Bean
+    public RoleWebClient roleWebClient() {
+        return new RoleWebClient(webClientWithTokenFilter, rolesEndpoint);
+    }
+
+    @Bean
+    public UserWebClient userWebClient() {
+        return new UserWebClient(webClientWithTokenFilter, userSignupEndpoint);
     }
 }

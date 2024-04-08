@@ -1,16 +1,16 @@
 package me.sonam.authzmanager.clients;
 
+
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.organization.OrganizationController;
-import me.sonam.authzmanager.user.UserId;
+import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.UUID;
 
 public class OrganizationWebClient {
@@ -23,37 +23,55 @@ public class OrganizationWebClient {
         this.organizationEndpoint = organizationEndpoint;
     }
 
-    public Mono<Map<String, String>> getMyOrganizations() {
+    public Mono<RestPage<Organization>> getMyOrganizations(UUID userId) {
         LOG.info("get organizations created/owned by this user");
 
-        LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        //LOG.info("requestBody: {}", requestBody);
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(organizationEndpoint)
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/owner/").append(userId);
+        LOG.info("get organizations for user at endpoint: {}", stringBuilder.toString());
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
                 .retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>(){}).map(responseMap-> {
-            LOG.info("got back response {}", responseMap);
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {});
+    }
 
-            return responseMap;
-        }).onErrorResume(throwable -> {
-            String stringBuilder = "get organizations call failed: " +
-                    throwable.getMessage();
-            LOG.error(stringBuilder, throwable);
-            return Mono.just(Map.of("error", stringBuilder));
+    // use httpMethod for update or post
+
+    public Mono<Organization> updateOrganization(Organization organization, HttpMethod httpMethod) {
+        LOG.info("create organization: {}", organization);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(organizationEndpoint)
+                .bodyValue(organization)
+                .retrieve();
+        return responseSpec.bodyToMono(Organization.class).flatMap(organization1-> {
+            LOG.info("saved organization");
+            return Mono.just(organization1);
         });
     }
 
-    public Mono<UUID> createOrganization(Organization organization) {
-        LOG.info("create organization");
+    public Mono<String> deleteOrganization(UUID organizationId) {
+        LOG.info("delete organization by id: {}", organizationId);
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/").append(organizationId);
+        LOG.info("delete organization endpoint: {}", stringBuilder.toString());
 
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(organizationEndpoint)
-                .bodyValue(organization)
-                .retrieve();
-        return responseSpec.bodyToMono(Map.class).map(map-> {
-            LOG.info("created organization id {}", map.get("id"));
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString()).
+                retrieve();
 
-            return UUID.fromString(map.get("id").toString());
+        return responseSpec.bodyToMono(String.class).flatMap(string -> {
+            LOG.info("organization deleted");
+            return Mono.just(string);
         });
+    }
+
+    public Mono<Organization> getOrganizationById(UUID id) {
+        LOG.info("get organization by id: {}", id);
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/").append(id);
+        LOG.info("get organization by idendpoint: {}", stringBuilder.toString());
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).
+                retrieve();
+
+        return responseSpec.bodyToMono(Organization.class);
     }
 }

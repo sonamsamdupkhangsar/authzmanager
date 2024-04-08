@@ -73,24 +73,17 @@ public class OauthClientWebClient implements OauthClientRoute {
     }
 
     @Override
-    public Mono<String> deleteClient(String clientId) {
+    public Mono<Void> deleteClient(String clientId, UUID ownerId) {
         LOG.info("delete client");
 
-        StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint).append("/").append(clientId);
+        StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint).append("/")
+                .append(clientId).append("/ownerId/").append(ownerId);
         LOG.info("calling auth-server delete client endpoint {}", deleteEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(deleteEndpoint.toString())
                 .retrieve();
 
-        return responseSpec.bodyToMono(String.class).map(string-> {
-            LOG.info("got back response from auth-server delete client call: {}", string);
-            return string;
-        }).onErrorResume(throwable -> {
-            StringBuilder errorMessage = new StringBuilder("auth-server delete client failed: ")
-                    .append(throwable.getMessage());
-            LOG.error(errorMessage.toString());
-            return Mono.just(errorMessage.toString());
-        });
+        return responseSpec.bodyToMono(String.class).then();
     }
 
     /**

@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.admin.organization;
+package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.constraints.NotEmpty;
 
@@ -7,20 +7,20 @@ import java.util.UUID;
 /**
  * this is Organization class used for entering data into organization-rest-service
  */
-public class Organization {
+public class Role {
     private UUID id;
     @NotEmpty(message = "name cannot be empty")
     private String name;
-    private UUID creatorUserId;
 
-    public Organization() {
+    private UUID userId;
+    public Role() {
 
     }
 
-    public Organization(UUID id, String name, UUID creatorUserId) {
+    public Role(UUID id, String name, UUID userId) {
         this.id = id;
         this.name = name;
-        this.creatorUserId = creatorUserId;
+        this.userId = userId;
     }
 
     public UUID getId() {
@@ -31,16 +31,15 @@ public class Organization {
         return name;
     }
 
-    public UUID getCreatorUserId() {
-        return creatorUserId;
+    public UUID getUserId() {
+        return this.userId;
     }
-
     @Override
     public String toString() {
-        return "Organization{" +
+        return "Role{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", creatorUserId=" + creatorUserId +
+                ", userId='" + userId + '\'' +
                 '}';
     }
 
@@ -52,7 +51,4 @@ public class Organization {
         this.id = id;
     }
 
-    public void setCreatorUserId(UUID creatorUserId) {
-        this.creatorUserId = creatorUserId;
-    }
 }

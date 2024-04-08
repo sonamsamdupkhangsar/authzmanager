@@ -60,7 +60,7 @@ public class TokenFilter {
                         final StringBuilder oauthEndpointWithScope = new StringBuilder(oauth2TokenEndpoint);
 
                         if (jwt.getAccessToken().getScopes() != null && !jwt.getAccessToken().getScopes().trim().isEmpty()) {
-                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes()).toString();
+                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes());
                         }
                         return getAccessToken(oauth2TokenEndpoint.toString(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
                                 .flatMap(accessToken -> {

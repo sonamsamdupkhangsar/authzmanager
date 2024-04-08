@@ -70,7 +70,16 @@
             height: auto;
           }
         }
+         .error {
+            color: red;
+        }
     </style>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <title>Organizations listing</title>
+
 </head>
 <body>
 <header>
@@ -81,33 +90,29 @@
 <section>
     <nav>
         <ul>
+            <li><a th:href="@{/admin/dashboard}">Home</a></li>
             <li><a th:href="@{/admin/clients}">Clients</a></li>
-            <li>
-                <a th:href="@{/admin/organization}">Organization</a>
-                    <ul>
-                        <li>
-                            <a th:href="@{/admin/organization/roles}">Roles</a>
-                        </li>
-                    </ul>
-            </li>
+            <li><a th:href="@{/admin/organizations}">Organizations</a></li>
+            <li><a th:href="@{/admin/roles}">Roles</a></li>
         </ul>
     </nav>
 
     <article>
         <h1>Organizations</h1>
+        <div th:if="${page != null}">
+            <ul>
+                <li th:if="${page.totalElements} < 100">
+                    <h3><a th:href="@{/admin/organizations/new}"> - Create Organization</a></h3>
+                </li>
 
-        <p1><a th:href="@{/admin/organization/createForm}">Create Organization</a></p1>
-        <table>
-            <tr th:each="element : ${orgMap}">
-                <td th:text="${element.key}">org</td>
-                <table>
-                    <tr th:each="anews : ${element.value}">
-                        <td th:text="${anews.id}">id</td>
-                        <td th:text="${anews.name}">Some name</td>
-                    </tr>
-                </table>
-            </tr>
-        </table>
+                    <li th:each="organization : ${page.content}">
+                        <a th:text="${organization.name}" th:href="@{/admin/organizations/{id}(id=${organization.id})}"></a>
+
+                    </li>
+                </ul>
+            </div>
+
+
     </article>
 </section>
 

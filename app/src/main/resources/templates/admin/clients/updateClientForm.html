@@ -15,6 +15,18 @@
             color: red;
         }
     </style>
+    <script th:inline="javascript">
+        function sendDelete(url) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", url, true);
+            xhttp.onload = function () {
+                let responseURL = xhttp.responseURL;
+                console.log("Redirecting to:", responseURL);
+                window.location.replace("/admin/clients");
+            };
+            xhttp.send();
+        }
+    </script>
 </head>
 <body>
 
@@ -24,8 +36,10 @@
     <div class="row">
         <div class="col">
             <ul>
-                <li><a th:href="@{/admin/clients/createForm}">Create Client</a> </li>
+                <li><a th:href="@{/admin/dashboard}">Home</a></li>
                 <li><a th:href="@{/admin/clients}">Clients</a></li>
+                <li><a th:href="@{/admin/organizations}">Organizations</a></li>
+                <li><a th:href="@{/admin/roles}">Roles</a></li>
 
             </ul>
         </div>
@@ -39,6 +53,9 @@
                         <strong>Failure!</strong> Failed to create client
                     </div>
                 </div>
+            </div>
+            <div class="mb-3" th:if="${client}">
+                <button th:with="url = @{/admin/clients/{id}(id=${client.id})}" class="btn btn-primary mb-3" th:onclick="sendDelete([[${url}]])">Delete this Client</button>
             </div>
             <form action="#" th:action="@{/admin/clients/update}" th:object="${client}" method="post">
                 <input type="hidden"  th:field="*{id}"/>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html  xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 
@@ -69,30 +70,11 @@
             height: auto;
           }
         }
-
-        .error {
-            color: red;
-        }
-
     </style>
-
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <title>Organizations listing</title>
-
-    <script th:inline="javascript">
-        function sendDelete(url) {
-            var xhttp = new XMLHttpRequest();
-            xhttp.open("DELETE", url, true);
-            xhttp.onload = function () {
-                let responseURL = xhttp.responseURL;
-                console.log("Redirecting to:", responseURL);
-                window.location.replace("/admin/organizations");
-            };
-            xhttp.send();
-        }
-    </script>
 </head>
 <body>
 <header>
@@ -100,7 +82,7 @@
 </a>
 </header>
 
-
+<section>
     <nav>
         <ul>
             <li><a th:href="@{/admin/dashboard}">Home</a></li>
@@ -112,41 +94,27 @@
 
     <article>
         <h1>Organizations</h1>
+        <div th:if="${page != null}">
+            <ul>
+                <li th:if="${page.totalElements} < 100">
+                    <h3><a th:href="@{/admin/roles/new}"> - Create Role</a></h3>
+                </li>
 
+                    <li th:each="role : ${page.content}">
+                        <a th:text="${role.name}" th:href="@{/admin/roles/{id}(id=${role.id})}"></a>
 
-        <div class="col">
-            <div class="mb-3" th:if="${organization}">
-                <button th:with="url = @{/admin/organizations/{id}(id=${organization.id})}" class="btn btn-primary mb-3" th:onclick="sendDelete([[${url}]])">Delete this organization</button>
-                <span><a th:href="@{/admin/roles/organization/{organizationId}(organizationId=${organization.id})}">Manage Roles</a></span>
+                    </li>
+                </ul>
             </div>
-
-            <form action="#" th:action="@{/admin/organizations}" th:object="${organization}" method="post">
-                <input type="hidden"  th:field="*{id}"/>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Organization name</label>
-                    <p th:if="${#fields.hasErrors('name')}" class="error">Please enter organization name</p>
-                    <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="organization name" />
-                </div>
-
-                <div class="mb-3">
-                    <button type="submit" class="btn btn-primary mb-3">Submit</button>
-                    <button type="reset" class="btn btn-secondary mb-3">Reset</button>
-                </div>
-            </form>
-
-        </div>
-
-
-
-
 
 
     </article>
+</section>
 
-    <footer>
-    <div class="row">
-        <div class="col">Authzmanager application</div>
-    </div>
-    </footer>
+<footer>
+    <p>Footer</p>
+</footer>
+
 </body>
 </html>
+
