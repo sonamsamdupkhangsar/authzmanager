@@ -1,49 +1,39 @@
-
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    <title>Hello, world!</title>
-    <style>
-        .error {
-            color: red;
-        }
-    </style>
-    <script th:inline="javascript">
-        function sendDelete(url) {
-            var xhttp = new XMLHttpRequest();
-            xhttp.open("DELETE", url, true);
-            xhttp.onload = function () {
-                let responseURL = xhttp.responseURL;
-                console.log("Redirecting to:", responseURL);
-                window.location.replace("/admin/clients");
-            };
-            xhttp.send();
-        }
-    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Oauth Clients</title>
 </head>
 <body>
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
 <div class="container">
-    <div class="row"><div class="col">Admin dashboard</div></div>
+    <!-- Content here -->
+    <div class="row jumbotron m-4">
+        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
 
+    </div>
     <div class="row">
-        <div class="col">
-            <ul>
-                <li><a th:href="@{/admin/dashboard}">Home</a></li>
-                <li><a th:href="@{/admin/clients}">Clients</a></li>
-                <li><a th:href="@{/admin/organizations}">Organizations</a></li>
-                <li><a th:href="@{/admin/roles}">Roles</a></li>
-
+        <div class="col-2">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
+                <li class="nav-item"><a class="nav-link"th:href="@{/admin/roles}">Roles</a></li>
             </ul>
         </div>
-        <div class="col">
+        <div class="col-sm">
+            <div class="mb-3"><h3>Client Update Page</h3></div>
             <div class="mb-3">
                 <div th:switch="${message}">
                     <div th:case="'Success'" class="alert alert-success">
@@ -65,7 +55,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="clientId" class="form-label">Client id</label>
-                    <p th:if="${#fields.hasErrors('clientId')}">Please enter a unique client-id</p>
+                    <p th:if="${#fields.hasErrors('clientId')}" class="text-danger">Please enter a unique client-id</p>
                     <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
                 </div>
                 <div class="mb-3">
@@ -74,7 +64,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="clientSecret" class="form-label">Client secret</label>
-                    <p th:if="${#fields.hasErrors('clientSecret')}" class="error">Please enter client secret</p>
+                    <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
                     <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
                 </div>
                 <div class="mb-3">
@@ -115,7 +105,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Authorization grant types:</label>
-                    <p th:if="${#fields.hasErrors('authorizationGrantTypes')}" class="error">Please select at least 1 of Authorization grant type</p>
+                    <p th:if="${#fields.hasErrors('authorizationGrantTypes')}" class="text-danger">Please select at least 1 of Authorization grant type</p>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
                         <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
@@ -172,7 +162,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="redirectUris" class="form-label">Client redirect uris *(required)</label>
-                    <p th:if="${#fields.hasErrors('redirectUris')}" class="error">Please enter a redirect uri</p>
+                    <p th:if="${#fields.hasErrors('redirectUris')}" class="text-danger">Please enter a redirect uri</p>
                     <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
                 </div>
                 <div class="mb-3">
@@ -265,12 +255,15 @@
                 </div>
             </form>
         </div>
+    </div>
+
+        <div class="row justify-content-center m-4 bg-light">
+            <div class="col-4">Authorization manager web application 2024</div>
+            <div class="col-4"></div>
+        </div>
 
     </div>
-    <div class="row">
-        <div class="col">Authzmanager application</div>
 
-    </div>
-</div>
+
 </body>
 </html>

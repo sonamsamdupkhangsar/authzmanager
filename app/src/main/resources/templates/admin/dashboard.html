@@ -1,122 +1,60 @@
-
-<!DOCTYPE html>
-<html  xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
-
+<!doctype html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
-    <title>CSS Template</title>
+    <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <style>
-        * {
-          box-sizing: border-box;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-        body {
-          font-family: Arial, Helvetica, sans-serif;
-        }
-
-        /* Style the header */
-        header {
-          background-color: #666;
-          padding: 30px;
-          text-align: center;
-          font-size: 35px;
-          color: white;
-        }
-
-        /* Create two columns/boxes that floats next to each other */
-        nav {
-          float: left;
-          width: 30%;
-          height: 300px; /* only for demonstration, should be removed */
-          background: #ccc;
-          padding: 20px;
-        }
-
-        /* Style the list inside the menu */
-        nav ul {
-          list-style-type: none;
-          padding: 0;
-        }
-
-        article {
-          float: left;
-          padding: 20px;
-          width: 70%;
-          background-color: #f1f1f1;
-          height: 300px; /* only for demonstration, should be removed */
-        }
-
-        /* Clear floats after the columns */
-        section::after {
-          content: "";
-          display: table;
-          clear: both;
-        }
-
-        /* Style the footer */
-        footer {
-          background-color: #777;
-          padding: 10px;
-          text-align: center;
-          color: white;
-        }
-
-        /* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
-        @media (max-width: 600px) {
-          nav, article {
-            width: 100%;
-            height: auto;
-          }
-        }
-
-    </style>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    <title>Organizations listing</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Oauth Clients</title>
 </head>
 <body>
-<header>
-    <h2>Admin dashboard</h2> <a th:href="@{/admin/logout}"> <span class="glyphicon glyphicon-log-out" aria-hidden="true"></span>&nbsp;Logout
-    </a>
-</header>
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
 
-<section>
-    <nav>
-        <ul>
-            <li><a th:href="@{/admin/clients}">Clients</a></li>
-            <li><a th:href="@{/admin/organizations}">Organizations</a></li>
-            <li><a th:href="@{/admin/roles}">Roles</a></li>
-        </ul>
-    </nav>
-
-    <article>
-        Welcome to the Admin dashboard!
+<div class="container">
+    <!-- Content here -->
+    <div class="row jumbotron m-4">
+        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
         <a th:href="@{/admin/logout}">Logout</a>
-
-
-        User: <span sec:authentication="name"></span>
-        Role(s): <span sec:authentication="principal.authorities"></span>
-
-        <div sec:authorize="hasRole('ROLE_ADMIN')">
-            This content is only shown to <b>administrators</b>.
+    </div>
+    <div class="row">
+        <div class="col-2">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
+            </ul>
         </div>
-        <div sec:authorize="hasRole('ROLE_USER')">
-            This content is only shown to <b>users</b>.
+        <div class="col-sm">
+            <div class="m-4">
+            <span class="h3">Welcome to the Admin dashboard!</span>
+            <p class="mt-4">This is the Authorization Manager web application.</p>
+                <p>This for managing OAuth2 Client, Organization and roles</p>
+            </div>
         </div>
+    </div>
 
+    <div class="row justify-content-center m-4 bg-light">
+        <div class="col-4">Authorization manager web application 2024</div>
+        <div class="col-4"></div>
+    </div>
 
-        <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
-        <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
-    </article>
-</section>
+</div>
 
-<footer>
-    <p>Footer</p>
-</footer>
 
 </body>
 </html>
-
