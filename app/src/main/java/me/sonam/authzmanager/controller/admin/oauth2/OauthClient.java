@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.oauth2;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -12,10 +13,13 @@ import java.util.*;
 public class OauthClient {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClient.class);
     private String id;
-    @NotEmpty(message="client-id cannot be empty")
+    @NotEmpty
+    @Size(min = 3, max = 100)
     private String clientId;
+    private UUID clientIdUuid;
+    private String fullClientId;
     private String clientIdIssuedAt;
-    @NotEmpty(message="secret cannot be empty")
+    //@NotEmpty(message="secret cannot be empty")
     private String clientSecret;
     private String clientSecretExpiresAt;
     private String clientName;
@@ -28,10 +32,12 @@ public class OauthClient {
     private List<String> authenticationMethods = new ArrayList<>();
     private List<String> grantTypes = new ArrayList<>();
     private OidcScopes oidcScopes;
-    @NotEmpty(message="redirect uris cannot be empty")
-    private String redirectUris;
+    //@NotEmpty(message="redirect uris cannot be empty")
+    @Size(max = 500)
+    private String redirectUris="";
     private String postLogoutRedirectUris;
     private List<String> scopes = new ArrayList<>();
+    @Size(max = 200)
     private String customScopes;
 
     //private String scopes;
@@ -291,6 +297,19 @@ public class OauthClient {
         this.scopes = scopes;
     }
 
+    public String getFullClientId() {
+        setFullClientId();
+        return this.fullClientId;
+    }
+
+    private void setFullClientId(){
+        if (this.clientIdUuid != null) {
+            this.fullClientId = this.clientIdUuid + "." + clientId;
+        }
+        else {
+            this.fullClientId = "." + clientId;
+        }
+    }
 
     private String toClientAuthenticationMethods(List<String> list) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -311,6 +330,16 @@ public class OauthClient {
             }
         }
         return stringBuilder.toString();
+    }
+
+    public UUID getClientIdUuid() {
+        return clientIdUuid;
+    }
+
+
+
+    public void setClientIdUuid(UUID clientIdUuid) {
+        this.clientIdUuid = clientIdUuid;
     }
 
     private String toAuthorizationGrantTypes(List<String> list) {
@@ -713,7 +742,24 @@ public class OauthClient {
     }
 
     public RegisteredClient getRegisteredClient() {
-        RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id).clientId(clientId)
+
+
+        if (id == null || id.isEmpty()) {
+            id = UUID.randomUUID().toString();
+
+            LOG.info("this RegisteredClient has not been created yet");
+            LOG.info("copy clientIdUuid and append with .clientId");
+            clientId = clientIdUuid + "." + clientId;
+            LOG.info("id is null, prepend clientIdUuid to clientIdString: {}", clientId);
+        }
+        else {
+            LOG.info("id is not empty: '{}'", id);
+        }
+
+        LOG.info("clientId: {}", clientId);
+
+        RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id)
+                .clientId(clientId)
                 .clientSecret(clientSecret);
 
         for(String s: clientAuthenticationMethods) {

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import reactor.core.publisher.Mono;
@@ -43,8 +44,9 @@ public class ClientController {
         LOG.info("userId: {}", userId.getUserId());
 
         OauthClient oauthClient = new OauthClient();
+        oauthClient.setClientIdUuid(UUID.randomUUID());
 
-        model.addAttribute("client", new OauthClient());
+        model.addAttribute("client", oauthClient);
         return PATH;
     }
 
@@ -59,12 +61,20 @@ public class ClientController {
             return Mono.just("admin/clients/form");
         }
 
+      /*  if (client.getClientId() == null || client.getClientId().isEmpty() || client.getClientId().length() < 5) {
+            bindingResult.addError(new ObjectError("clientId", "Give a client name ( > 5 character length)"));
+            LOG.info("clientId error added when empty or less than 5 characters in length");
+
+            model.addAttribute("error", "Data validation failed");
+            return Mono.just("admin/clients/form");
+        }*/
+
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
 
         LOG.info("get map from client");
-        client.setId(UUID.randomUUID().toString());
+
         // on initial client creation user won't see the token settings or client settings for simplicity
         // so set them to null
         client.setTokenSettings(null);
@@ -82,6 +92,7 @@ public class ClientController {
         return  oauthClientWebClient.createClient(map).flatMap(registeredClient1 -> {
             LOG.info("get OauthClient from registeredClient1");
             OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
+             //parseClientIdUuid(oauthClient);
 
               model.addAttribute("client", oauthClient);
               model.addAttribute("message", "Success");
@@ -93,7 +104,6 @@ public class ClientController {
               return Mono.just(PATH);
           });
     }
-
 
     @GetMapping("/{id}")
     public Mono<String> getClientByClientId(@PathVariable("id") String clientId, Model model) {
@@ -108,6 +118,8 @@ public class ClientController {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
                 LOG.info("oauthClient {}", oauthClient.getClientAuthenticationMethods());
                 model.addAttribute("client", oauthClient);
+
+               // parseClientIdUuid(oauthClient);
             }
             catch (Exception e) {
                 LOG.error("failed to parse to OautClient", e);
@@ -123,6 +135,26 @@ public class ClientController {
         });
     }
 
+/*    private void parseClientIdUuid(OauthClient oauthClient) {
+        LOG.info("parse clientId uuid");
+
+        int indexOf = oauthClient.getClientId().indexOf(".");
+        String uuidString = oauthClient.getClientId().substring(0, indexOf);
+        if (indexOf > 0) {
+            try {
+                UUID uuid = UUID.fromString(uuidString);
+                oauthClient.setClientIdUuid(uuid);
+                LOG.info("it is a uuid: {}", uuid);
+                String afterUuidString = oauthClient.getClientId().substring(indexOf+1);
+                LOG.info("text after uuid: {}", afterUuidString);
+                oauthClient.setClientId(afterUuidString);
+            }
+            catch (Exception e) {
+                LOG.error("is not a uuid", e);
+            }
+        }
+    }*/
+
     @PostMapping("/update")
     public Mono<String> updateClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
         LOG.info("update client");
@@ -135,15 +167,11 @@ public class ClientController {
             return Mono.just(PATH);
         }
 
-
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
         LOG.info("get map from client");
 
-        if (client.getId() == null || client.getId().isEmpty()) {
-            client.setId(UUID.randomUUID().toString());
-        }
         RegisteredClient registeredClient = client.getRegisteredClient();
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
         map.put("mediateToken", client.isMediateToken());
@@ -158,6 +186,7 @@ public class ClientController {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
                 LOG.info("oauthClient.tokenSettings.authorizationCodeTImeToLive: {}", oauthClient.getTokenSettings().getAuthorizationCodeTimeToLive());
 
+                //parseClientIdUuid(oauthClient);
 
                 LOG.info("oauthClient {}", oauthClient);
                 model.addAttribute("client", oauthClient);

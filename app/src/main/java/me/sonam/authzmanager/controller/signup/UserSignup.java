@@ -1,16 +1,22 @@
 package me.sonam.authzmanager.controller.signup;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.Arrays;
 
 public class UserSignup {
     @NotEmpty(message="firstName cannot be empty")
+    @Size(min = 3, max = 50)
     private String firstName;
+    @Size(min = 0, max = 50)
     private String lastName;
     @NotEmpty(message="email cannot be empty")
+    @Size(max = 100)
     private String email;
     @NotEmpty(message="Username cannot be empty")
+    @Size(min = 3, max = 50)
     private String authenticationId;
+    @Size(min = 8, max = 50)
     @NotEmpty(message="password cannot be empty")
     private char[] password;
 

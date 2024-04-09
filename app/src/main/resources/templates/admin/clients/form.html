@@ -51,128 +51,151 @@
                     <span >Failed to create OAuth client.
                         Please check the data validation errors.</span>
                 </div>
-                <div class="mb-3">
-                    <label for="clientId" class="form-label">Client-id</label>
-                    <p th:if="${#fields.hasErrors('clientId')}">Please enter a unique client-id</p>
-                    <label th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-danger">Client id error - enter a unique client id</label>
-
-                    <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
-                </div>
-                <div class="mb-3">
-                    <label for="clientIssuedAt" class="form-label">Client issued at</label>
-                    <input type="text" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
-                </div>
-                <div class="mb-3">
-                    <label for="clientSecret" class="form-label">Client secret</label>
-                    <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
-                    <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
-                </div>
-                <div class="mb-3">
-                    <label for="clientSecretExpiresAt" class="form-label">Client secret expires at</label>
-                     <input type="text" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
-                </div>
-                <div class="mb-3">
-                    <label for="clientName" class="form-label">Client name</label>
-                    <input type="text" class="form-control" id="clientName" th:field="*{clientName}" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Client Authentication Methods</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
-                        <label  class="form-check-label" th:text="CLIENT_SECRET_BASIC"></label>
+                <div class="mb-3 row">
+                    <label for="clientId" class="col-sm-4 col-form-label">Client-id </label>
+                    <div class="col-sm-4">
+                        <label for="clientIdUuid">uuid</label>
+                        <input type="text" class="form-control" id="clientIdUuid" th:field="*{clientIdUuid}" size="40" placeholder="UUID prepend" readonly/>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_POST')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_POST"/>
-                        <label class="form-check-label" th:text="CLIENT_SECRET_POST"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_JWT')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_JWT"/>
-                        <label class="form-check-label" th:text="CLIENT_SECRET_JWT"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'PRIVATE_KEY_JWT')}" name="clientAuthenticationMethods" th:value="PRIVATE_KEY_JWT"/>
-                        <label class="form-check-label" th:text="PRIVATE_KEY_JWT"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'NONE')}" name="clientAuthenticationMethods" th:value="NONE"/>
-                        <label class="form-check-label" th:text="NONE"></label>
-                    </div>
-
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Authorization grant types:</label>
-                    <p th:if="${#fields.hasErrors('authorizationGrantTypes')}" class="text-danger">Please select at least 1 of Authorization grant type</p>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
-                        <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'REFRESH_TOKEN')}" name="authorizationGrantTypes" th:value="REFRESH_TOKEN"/>
-                        <label class="form-check-label" th:text="REFRESH_TOKEN"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'CLIENT_CREDENTIALS')}" name="authorizationGrantTypes" th:value="CLIENT_CREDENTIALS"/>
-                        <label class="form-check-label" th:text="CLIENT_CREDENTIALS"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'PASSWORD')}" name="authorizationGrantTypes" th:value="PASSWORD"/>
-                        <label class="form-check-label" th:text="PASSWORD"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'JWT_BEARER')}" name="authorizationGrantTypes" th:value="JWT_BEARER"/>
-                        <label class="form-check-label" th:text="JWT_BEARER"></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'DEVICE_CODE')}" name="authorizationGrantTypes" th:value="DEVICE_CODE"/>
-                        <label class="form-check-label" th:text="DEVICE_CODE"></label>
+                    <div class="col-sm-4">
+                        <label for="clientIdUuid">Enter your client-id</label>
+                        <label th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-danger">Client id error - enter a unique client id</label>
+                        <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Scopes:</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'OPENID')}" name="scopes" th:value="OPENID"/>
-                        <label class="form-check-label" th:text="OPENID"></label>
+                <div class="mb-3 row">
+                    <label for="clientIssuedAt" class="col-sm-4 col-form-label">Client issued at</label>
+                    <div class="col-sm-5">
+                        <input type="text" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PROFILE')}" name="scopes" th:value="PROFILE"/>
-                        <label class="form-check-label" th:text="PROFILE"></label>
+                </div>
+                <div class="mb-3 row">
+                    <label for="clientSecret" class="col-sm-4 col-form-label">Client secret</label>
+                    <div class="col-sm-5">
+                        <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
+                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'EMAIL')}" name="scopes" th:value="EMAIL"/>
-                        <label class="form-check-label" th:text="EMAIL"></label>
+                </div>
+                <div class="mb-3 row">
+                    <label for="clientSecretExpiresAt" class="col-sm-4 col-form-label">Client secret expires at</label>
+                    <div class="col-sm-5">
+                        <input type="text" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'ADDRESS')}" name="scopes" th:value="ADDRESS"/>
-                        <label class="form-check-label" th:text="ADDRESS"></label>
+                </div>
+                <div class="mb-3 row">
+                    <label for="clientName" class="col-sm-4 col-form-label">Client name</label>
+                    <div class="col-sm-5">
+                        <input type="text" class="form-control" id="clientName" th:field="*{clientName}" />
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PHONE')}" name="scopes" th:value="PHONE"/>
-                        <label class="form-check-label" th:text="PHONE"></label>
-                    </div>
-                    <div class="input-group mb-3">
-                        <div class="input-group-text">
-                            <label class="form-check-label">Custom (csv)</label>
-                            <input class="form-check-input" type="checkbox" aria-label="custom scope"/>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Client Authentication Methods</label>
+                    <div class="col-sm-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_BASIC')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_BASIC"/>
+                            <label  class="form-check-label" th:text="CLIENT_SECRET_BASIC"></label>
                         </div>
-                        <input class="form-control" type="text" th:field="*{customScopes}" aria-label="Text input with checkbox"/>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_POST')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_POST"/>
+                            <label class="form-check-label" th:text="CLIENT_SECRET_POST"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'CLIENT_SECRET_JWT')}" name="clientAuthenticationMethods" th:value="CLIENT_SECRET_JWT"/>
+                            <label class="form-check-label" th:text="CLIENT_SECRET_JWT"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'PRIVATE_KEY_JWT')}" name="clientAuthenticationMethods" th:value="PRIVATE_KEY_JWT"/>
+                            <label class="form-check-label" th:text="PRIVATE_KEY_JWT"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.clientAuthenticationMethods, 'NONE')}" name="clientAuthenticationMethods" th:value="NONE"/>
+                            <label class="form-check-label" th:text="NONE"></label>
+                        </div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label for="redirectUris" class="form-label">Client redirect uris *(required)</label>
-                    <p th:if="${#fields.hasErrors('redirectUris')}" class="text-danger">Please enter a redirect uri</p>
-                    <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Authorization grant types:</label>
+                    <div class="col-sm-5">
+                        <p th:if="${#fields.hasErrors('authorizationGrantTypes')}" class="text-danger">Please select at least 1 of Authorization grant type</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'AUTHORIZATION_CODE')}" name="authorizationGrantTypes" th:value="AUTHORIZATION_CODE"/>
+                            <label class="form-check-label" th:text="AUTHORIZATION_CODE"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'REFRESH_TOKEN')}" name="authorizationGrantTypes" th:value="REFRESH_TOKEN"/>
+                            <label class="form-check-label" th:text="REFRESH_TOKEN"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'CLIENT_CREDENTIALS')}" name="authorizationGrantTypes" th:value="CLIENT_CREDENTIALS"/>
+                            <label class="form-check-label" th:text="CLIENT_CREDENTIALS"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'PASSWORD')}" name="authorizationGrantTypes" th:value="PASSWORD"/>
+                            <label class="form-check-label" th:text="PASSWORD"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'JWT_BEARER')}" name="authorizationGrantTypes" th:value="JWT_BEARER"/>
+                            <label class="form-check-label" th:text="JWT_BEARER"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.authorizationGrantTypes, 'DEVICE_CODE')}" name="authorizationGrantTypes" th:value="DEVICE_CODE"/>
+                            <label class="form-check-label" th:text="DEVICE_CODE"></label>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="postLogoutRedirectUris" class="form-label">Client post redirect uris</label>
-                    <input class="form-control" type="text" id="postLogoutRedirectUris" th:field="*{postLogoutRedirectUris}" />
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Scopes:</label>
+                    <div class="col-sm-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'OPENID')}" name="scopes" th:value="OPENID"/>
+                            <label class="form-check-label" th:text="OPENID"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PROFILE')}" name="scopes" th:value="PROFILE"/>
+                            <label class="form-check-label" th:text="PROFILE"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'EMAIL')}" name="scopes" th:value="EMAIL"/>
+                            <label class="form-check-label" th:text="EMAIL"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'ADDRESS')}" name="scopes" th:value="ADDRESS"/>
+                            <label class="form-check-label" th:text="ADDRESS"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" th:checked="${#strings.containsIgnoreCase(client.scopes, 'PHONE')}" name="scopes" th:value="PHONE"/>
+                            <label class="form-check-label" th:text="PHONE"></label>
+                        </div>
+                        <div class="input-group mb-3">
+                            <div class="input-group-text">
+                                <label class="form-check-label">Custom (csv)</label>
+                            </div>
+                            <input class="form-control" type="text" th:field="*{customScopes}" aria-label="Text input with checkbox"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label for="redirectUris" class="col-sm-4 col-form-label">Client redirect uris *(required)</label>
+                    <div class="col-sm-5">
+                        <p th:if="${#fields.hasErrors('redirectUris')}" class="text-danger">Please enter a redirect uri</p>
+                        <input class="form-control" id="redirectUris" type="text" th:field="*{redirectUris}" />
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label for="postLogoutRedirectUris" class="col-sm-4 col-form-label">Client post redirect uris</label>
+                    <div class="col-sm-5">
+                        <input class="form-control" type="text" id="postLogoutRedirectUris" th:field="*{postLogoutRedirectUris}" />
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <span>(Once you create your OAuth client, client settings and token settings config will show.)</span>
+                <div class="mb-3 row">
+                    <span>(Once you create your OAuth2 client, client settings and token settings config will show.)</span>
                 </div>
-                <div class="mb-3">
-                    <button type="submit" class="btn btn-primary mb-3">Submit</button>
-                    <button type="reset" class="btn btn-secondary mb-3">Reset</button>
+                <div class="mb-3 row">
+                    <div class="col-sm-5">
+                        <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                        <button type="reset" class="btn btn-secondary mb-3">Reset</button>
+                    </div>
                 </div>
             </form>
         </div>

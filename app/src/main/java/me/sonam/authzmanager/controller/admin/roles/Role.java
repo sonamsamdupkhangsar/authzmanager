@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import java.util.UUID;
 public class Role {
     private UUID id;
     @NotEmpty(message = "name cannot be empty")
+    @Size(min = 3, max = 50)
     private String name;
 
     private UUID userId;
