@@ -9,18 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <title>Oauth Clients</title>
-    <script th:inline="javascript">
-        function sendDelete(url) {
-            var xhttp = new XMLHttpRequest();
-            xhttp.open("DELETE", url, true);
-            xhttp.onload = function () {
-                let responseURL = xhttp.responseURL;
-                console.log("Redirecting to:", responseURL);
-                window.location.replace("/admin/clients");
-            };
-            xhttp.send();
-        }
-    </script>
 </head>
 <body>
 <!-- Optional JavaScript -->
@@ -44,56 +32,43 @@
                 <li class="nav-item"><a class="nav-link"th:href="@{/admin/roles}">Roles</a></li>
             </ul>
         </div>
-        <div class="col-sm">
-            <div class="mb-3"><h3>Client Update Page</h3></div>
+        <div class="col">
+            <div class="mb-3"><h3>Client Creation Page</h3></div>
             <div class="mb-3">
                 <div th:switch="${message}">
                     <div th:case="'Success'" class="alert alert-success">
                         <strong>Success!</strong> Client has been created successfyly.
                     </div>
-                    <div th:case="'Failed'" class="alert alert-danger">
+                    <div th:case="'error'" class="alert alert-danger">
                         <strong>Failure!</strong> Failed to create client
+                        <span th:if="${#fields.hasErrors}" class="text-danger">Please check the data validation failed</span>
                     </div>
                 </div>
             </div>
-            <div class="mb-3" th:if="${client}">
-                <button th:with="url = @{/admin/clients/{id}(id=${client.id})}" class="btn btn-primary mb-3" th:onclick="sendDelete([[${url}]])">Delete this Client</button>
-            </div>
-            <form action="#" th:action="@{/admin/clients/update}" th:object="${client}" method="post">
+            <form action="#" th:action="@{/admin/clients/create}" th:object="${client}" method="post">
                 <input type="hidden"  th:field="*{id}"/>
                 <div class="mb-3 error" th:if="${#fields.hasErrors}">
-                    <span >Failed to update OAuth client.
+                    <span >Failed to create OAuth client.
                         Please check the data validation errors.</span>
                 </div>
-
-                <div class="mb-3 row" th:if="*{id == null}">
-                    <label for="clientId" class="col-sm-4 col-form-label">Client-id subpart</label>
+                <div class="mb-3 row">
+                    <label for="clientId" class="col-sm-4 col-form-label">Client-id </label>
                     <div class="col-sm-4">
                         <label for="clientIdUuid">uuid</label>
                         <input type="text" class="form-control" id="clientIdUuid" th:field="*{clientIdUuid}" size="40" placeholder="UUID prepend" readonly/>
                     </div>
-
                     <div class="col-sm-4">
-                        <label for="clientId">Enter client-id subpart</label>
+                        <label for="clientIdUuid">Enter your client-id</label>
                         <label th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-danger">Client id error - enter a unique client id</label>
                         <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
                     </div>
                 </div>
-
-                <div class="mb-3 row" th:if="*{id}">
-                    <label for="clientIdAfterUpdate" class="col-sm-4 col-form-label">Client id</label>
-                    <div class="col-sm-7">
-                        <input type="text" class="form-control" id="clientIdAfterUpdate" th:field="*{clientId}" placeholder="unique client id" readonly/>
-                    </div>
-                </div>
-
                 <div class="mb-3 row">
                     <label for="clientIssuedAt" class="col-sm-4 col-form-label">Client issued at</label>
                     <div class="col-sm-5">
                         <input type="text" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
                     </div>
                 </div>
-
                 <div class="mb-3 row">
                     <label for="clientSecret" class="col-sm-4 col-form-label">Client secret</label>
                     <div class="col-sm-5">
@@ -138,7 +113,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="mb-3 row">
                     <label class="col-sm-4 col-form-label">Authorization grant types:</label>
                     <div class="col-sm-5">
@@ -214,122 +188,24 @@
                     </div>
                 </div>
 
-
                 <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Client Settings</label>
+                    <span>(Once you create your OAuth2 client, client settings and token settings config will show.)</span>
+                </div>
+                <div class="mb-3 row">
                     <div class="col-sm-5">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" th:checked="*{clientSettings.requireAuthorizationConsent}" name="clientSettings.requireAuthorizationConsent"/>
-                            <label class="form-check-label">Require authorization consent</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" th:checked="*{clientSettings.requireProofKey}" name="clientSettings.requireProofKey"/>
-                            <label class="form-check-label">Require proof key</label>
-                        </div>
-
-                        <div class="input-group mb-3">
-                            <div class="input-group-text">
-                                <label class="form-check-label">Jwk set url</label>
-                            </div>
-                            <input class="form-control" type="text" th:field="*{clientSettings.jwkSetUrl}" aria-label="jwk set url checkbox"/>
-                        </div>
+                        <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                        <button type="reset" class="btn btn-secondary mb-3">Reset</button>
                     </div>
-                </div>
-
-                <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Token Settings</label>
-                    <div class="col-sm-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" th:checked="*{tokenSettings.reuseRefreshTokens}" name="tokenSettings.reuseRefreshTokens"/>
-                            <label class="form-check-label">Reuse refresh token</label>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-text">
-                                <label for="tokenSettings.authorizationCodeTimeToLive" class="form-label">Authorization code time to live (in seconds)</label>
-                            </div>
-                            <input type="text" class="form-control" id="tokenSettings.authorizationCodeTimeToLive" th:field="*{tokenSettings.authorizationCodeTimeToLive}" />
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-text">
-                                <label for="tokenSettings.accessTokenTimeToLive" class="form-label">Access token time to live (in seconds)</label>
-                            </div>
-                            <input type="text" class="form-control" id="tokenSettings.accessTokenTimeToLive" th:field="*{tokenSettings.accessTokenTimeToLive}" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Access token format</label>
-                            <select th:field="*{tokenSettings.accessTokenFormat}">
-                                <option value="Select One">Select One</option>
-                                <option th:value="*{tokenSettings.accessTokenFormat.SELF_CONTAINED.getValue()}" th:text="*{tokenSettings.accessTokenFormat.SELF_CONTAINED.getValue()}">
-                                </option>
-                                <option th:value="*{tokenSettings.accessTokenFormat.REFERENCE.getValue()}" th:text="*{tokenSettings.accessTokenFormat.REFERENCE.getValue()}">
-                                </option>
-                            </select>
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-text">
-                                <label for="tokenSettings.deviceCodeTimeToLive" class="form-label">Device code time to live (in seconds)</label>
-                            </div>
-                            <input type="text" class="form-control" id="tokenSettings.deviceCodeTimeToLive" th:field="*{tokenSettings.deviceCodeTimeToLive}" />
-                        </div>
-                        <div class="input-group mb-3">
-                            <div class="input-group-text">
-                                <label for="tokenSettings.refreshTokenTimeToLive" class="form-label">Refresh token time to live (in seconds)</label>
-                            </div>
-                            <input type="text" class="form-control" id="tokenSettings.refreshTokenTimeToLive" th:field="*{tokenSettings.refreshTokenTimeToLive}" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Id token signature algorithm</label>
-                            <select th:field="*{tokenSettings.idTokenSignatureAlgorithm}">
-                                <option value="Select One">Select One</option>
-                                <option th:value="RS256" th:text="RS256">
-                                </option>
-                                <option th:value="RS384" th:text="RS384">
-                                </option>
-                                <option th:value="RS512" th:text="RS512">
-                                </option>
-                                <option th:value="ES256" th:text="ES256">
-                                </option>
-                                <option th:value="ES384" th:text="ES384">
-                                </option>
-                                <option th:value="ES512" th:text="ES512">
-                                </option>
-                                <option th:value="PS256" th:text="PS256">
-                                </option>
-                                <option th:value="PS384" th:text="PS384">
-                                </option>
-                                <option th:value="PS512" th:text="PS512">
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Token Mediation</label>
-                    <div class="col-sm-5">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="mediateToken" th:field="*{mediateToken}" />
-                            <label class="form-label">Select for token mediation</label>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="mb-3 row">
-                    <button type="submit" class="btn btn-primary m-3">Submit</button>
-                    <button type="reset" class="btn btn-secondary m-3">Reset</button>
                 </div>
             </form>
         </div>
     </div>
-
-        <div class="row justify-content-center m-4 bg-light">
-            <div class="col-4">Authorization manager web application 2024</div>
-            <div class="col-4"></div>
-        </div>
-
+    <div class="row justify-content-center m-4 bg-light">
+        <div class="col-4">Authorization manager web application 2024</div>
+        <div class="col-4"></div>
     </div>
+
+</div>
 
 
 </body>

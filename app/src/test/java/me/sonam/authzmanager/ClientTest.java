@@ -59,6 +59,20 @@ public class ClientTest {
         assertThat(chosen.contains("mouse")).isTrue();
 
     }
+
+    @Test
+    public void containsAuthorizationGrantTypes() {
+        OauthClient oauthClient = new OauthClient();
+        oauthClient.getAuthorizationGrantTypes().add("AUTHORIZATION_CODE");
+
+        LOG.info("authcode: {}", AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase());
+        if (oauthClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase())) {
+            LOG.info("contains auth code");
+        }
+        else {
+            LOG.info("not contains");
+        }
+    }
     @Test
     public void createRegisteredClient() {
         //RegisteredClient registeredClient = save("hello", "password");

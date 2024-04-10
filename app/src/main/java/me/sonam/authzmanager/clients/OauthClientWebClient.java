@@ -10,8 +10,11 @@ import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -46,19 +49,26 @@ public class OauthClientWebClient implements OauthClientRoute {
         }).onErrorResume(throwable -> {
             String stringBuilder = "auth-server create client failed: " +
                     throwable.getMessage();
-            LOG.error(stringBuilder, throwable);
-            //return Mono.just(Map.of("error", stringBuilder));
+
+            if (throwable instanceof WebClientResponseException) {
+                WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
+                LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
+            }
+            else {
+                LOG.error(stringBuilder, throwable);
+            }
+
             return Mono.error(throwable);
         });
     }
 
     @Override
-    public Mono<RegisteredClient> updateClient(Map<String, Object> map) {
-        LOG.info("update client");
+    public Mono<RegisteredClient> updateClient(Map<String, Object> map, HttpMethod httpMethod) {
+        LOG.info("update client with method: {}", httpMethod);
 
         LOG.info("calling auth-server update client endpoint {}", clientsEndpoint);
 
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(clientsEndpoint)
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(clientsEndpoint)
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server update client call: {}", responseMap);

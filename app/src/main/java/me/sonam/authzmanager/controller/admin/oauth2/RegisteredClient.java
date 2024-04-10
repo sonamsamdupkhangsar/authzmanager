@@ -1,19 +1,16 @@
 package me.sonam.authzmanager.controller.admin.oauth2;
 
-import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class RegisteredClient implements Serializable {
     private static final long serialVersionUID;
@@ -118,7 +115,7 @@ public class RegisteredClient implements Serializable {
     }
 
     public static Builder withId(String id) {
-        Assert.hasText(id, "id cannot be empty");
+        //Assert.hasText(id, "id cannot be empty");
         return new Builder(id);
     }
 

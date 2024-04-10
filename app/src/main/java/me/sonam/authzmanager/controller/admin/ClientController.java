@@ -2,14 +2,12 @@ package me.sonam.authzmanager.controller.admin;
 
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.controller.admin.oauth2.ConfigurationSettingNames;
-import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
-import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
-import me.sonam.authzmanager.controller.admin.oauth2.TokenSettings;
+import me.sonam.authzmanager.controller.admin.oauth2.*;
 import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Controller;
@@ -50,65 +48,11 @@ public class ClientController {
         return PATH;
     }
 
-    @PostMapping("/create")
-    public Mono<String> createClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
-        LOG.info("create client");
-        final String PATH = "admin/clients/updateClientForm";
-
-        if (bindingResult.hasErrors()) {
-            LOG.info("user didn't enter required fields");
-            model.addAttribute("error", "Data validation failed");
-            return Mono.just("admin/clients/form");
-        }
-
-      /*  if (client.getClientId() == null || client.getClientId().isEmpty() || client.getClientId().length() < 5) {
-            bindingResult.addError(new ObjectError("clientId", "Give a client name ( > 5 character length)"));
-            LOG.info("clientId error added when empty or less than 5 characters in length");
-
-            model.addAttribute("error", "Data validation failed");
-            return Mono.just("admin/clients/form");
-        }*/
-
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        LOG.info("userId: {}", userId.getUserId());
-
-
-        LOG.info("get map from client");
-
-        // on initial client creation user won't see the token settings or client settings for simplicity
-        // so set them to null
-        client.setTokenSettings(null);
-        client.setClientSettings(null);
-        if (client.getRedirectUris() == null) {
-            client.setRedirectUris("");
-        }
-        RegisteredClient registeredClient = client.getRegisteredClient();
-
-        Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
-        //Map<String, Object> map = client.getMap();
-        map.put("userId", userId.getUserId().toString());
-        LOG.info("map is {}", map);
-
-        return  oauthClientWebClient.createClient(map).flatMap(registeredClient1 -> {
-            LOG.info("get OauthClient from registeredClient1");
-            OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
-             //parseClientIdUuid(oauthClient);
-
-              model.addAttribute("client", oauthClient);
-              model.addAttribute("message", "Success");
-              return Mono.just(PATH);
-              //return Mono.just(Rendering.view(PATH).modelAttribute("client", client).build());
-          }).onErrorResume(throwable -> {
-              LOG.error("Failed to create client {}", throwable.getMessage());
-              model.addAttribute("error", "Failed");
-              return Mono.just(PATH);
-          });
-    }
 
     @GetMapping("/{id}")
     public Mono<String> getClientByClientId(@PathVariable("id") String clientId, Model model) {
         LOG.info("get client by clientId {}", clientId);
-        final String PATH = "admin/clients/updateClientForm";
+        final String PATH = "admin/clients/form";
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
@@ -126,7 +70,7 @@ public class ClientController {
                 model.addAttribute("client", new OauthClient());
             }
 
-            LOG.info("return updateClientForm");
+            LOG.info("return form");
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
             LOG.error("Failed to get client by clientId", throwable);
@@ -135,33 +79,21 @@ public class ClientController {
         });
     }
 
-/*    private void parseClientIdUuid(OauthClient oauthClient) {
-        LOG.info("parse clientId uuid");
 
-        int indexOf = oauthClient.getClientId().indexOf(".");
-        String uuidString = oauthClient.getClientId().substring(0, indexOf);
-        if (indexOf > 0) {
-            try {
-                UUID uuid = UUID.fromString(uuidString);
-                oauthClient.setClientIdUuid(uuid);
-                LOG.info("it is a uuid: {}", uuid);
-                String afterUuidString = oauthClient.getClientId().substring(indexOf+1);
-                LOG.info("text after uuid: {}", afterUuidString);
-                oauthClient.setClientId(afterUuidString);
-            }
-            catch (Exception e) {
-                LOG.error("is not a uuid", e);
-            }
-        }
-    }*/
-
-    @PostMapping("/update")
+    /**
+     * This will handle the client creation and client update.
+     * @param client
+     * @param bindingResult
+     * @param model
+     * @return
+     */
+    @PostMapping
     public Mono<String> updateClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
         LOG.info("update client");
-        final String PATH = "admin/clients/updateClientForm";
-
+        final String PATH = "admin/clients/form";
 
         if (bindingResult.hasErrors()) {
+            LOG.info("client.getId: {}", client.getId());
             LOG.info("user didn't enter required fields");
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
@@ -172,34 +104,57 @@ public class ClientController {
 
         LOG.info("get map from client");
 
-        RegisteredClient registeredClient = client.getRegisteredClient();
+        RegisteredClient registeredClient = null;
+        LOG.info("client.authgranttrypes: {}", client.getAuthorizationGrantTypes());
+
+        if (client.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase())) {
+            LOG.info("authorizationGrantTypes contains Authorization_Code");
+            if (client.getRedirectUris().trim().isEmpty()) {
+                final String error = "redirect uris is needed for AuthorizationGrantType of AUTHORIZATION_CODE";
+                LOG.error(error);
+                bindingResult.rejectValue("redirectUris", "error.user", error);
+                return Mono.just(PATH);
+            }
+            else {
+                LOG.info("redirectUris is not empty: '{}'", client.getRedirectUris());
+            }
+        }
+        HttpMethod httpMethod = HttpMethod.POST;
+
+        try {
+            if (client.getId() == null || client.getId().isEmpty()) {
+                client.setTokenSettings(null);
+                client.setClientSettings(null);
+                LOG.info("it's a create client");
+            }
+            else {
+                httpMethod = HttpMethod.PUT;
+                LOG.info("client.id is not null and not empty, it's an update");
+            }
+
+            registeredClient = client.getRegisteredClient();
+        }
+        catch (Exception e) {
+            LOG.error("exception occured: {}", e.getMessage());
+            bindingResult.addError(new ObjectError("error", e.getMessage()));
+            return Mono.just(PATH);
+        }
+
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
         map.put("mediateToken", client.isMediateToken());
 
         map.put("userId", userId.getUserId().toString());
         LOG.info("map is {}", map);
 
-        return  oauthClientWebClient.updateClient(map).flatMap(updatedRegisteredClient -> {
+        return  oauthClientWebClient.updateClient(map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
-            try {
 
-                OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
-                LOG.info("oauthClient.tokenSettings.authorizationCodeTImeToLive: {}", oauthClient.getTokenSettings().getAuthorizationCodeTimeToLive());
-
-                //parseClientIdUuid(oauthClient);
-
-                LOG.info("oauthClient {}", oauthClient);
-                model.addAttribute("client", oauthClient);
-            }
-            catch (Exception e) {
-                LOG.error("failed to parse to OauthClient", e);
-                model.addAttribute("client", new OauthClient());
-                model.addAttribute("error", "Failed");
-            }
+            OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
+            LOG.info("oauthClient {}", oauthClient);
+            model.addAttribute("client", oauthClient);
             return Mono.just(PATH);
-            //return Mono.just(Rendering.view(PATH).modelAttribute("client", client).build());
         }).onErrorResume(throwable -> {
-            LOG.error("Failed to create client {}", throwable.getMessage());
+            LOG.error("Failed to update client {}", throwable.getMessage());
             model.addAttribute("error", "Failed");
             return Mono.just(PATH);
         });

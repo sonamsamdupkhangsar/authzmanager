@@ -1,7 +1,10 @@
 package me.sonam.authzmanager.controller.admin.oauth2;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -45,6 +48,7 @@ public class OauthClient {
     //private Map<String, Boolean> clientSettings = new HashMap<>();
    // private String clientSettings;
     private ClientSettings clientSettings = new ClientSettings();
+    @Valid
     private TokenSettings tokenSettings = new TokenSettings();
     static class ClientSettings {
         private boolean requireAuthorizationConsent;
@@ -92,11 +96,15 @@ public class OauthClient {
 
     public static class TokenSettings {
         //long represents the duration in seconds
+        @Min(value=1, message = "value must be greater than 0")
         private long authorizationCodeTimeToLive;
+        @Range(min = 1, message = "value must be greater than 0")
         private long accessTokenTimeToLive;
         private OAuth2TokenFormat accessTokenFormat;
+        @Range(min = 1, message = "value must be greater than 0")
         private long deviceCodeTimeToLive;
         private boolean reuseRefreshTokens;
+        @Range(min = 1, message = "value must be greater than 0")
         private long refreshTokenTimeToLive;
         private SignatureAlgorithm idTokenSignatureAlgorithm;
 
@@ -742,10 +750,8 @@ public class OauthClient {
     }
 
     public RegisteredClient getRegisteredClient() {
-
-
         if (id == null || id.isEmpty()) {
-            id = UUID.randomUUID().toString();
+           // id = UUID.randomUUID().toString();
 
             LOG.info("this RegisteredClient has not been created yet");
             LOG.info("copy clientIdUuid and append with .clientId");
@@ -772,6 +778,7 @@ public class OauthClient {
                 default -> LOG.error("invalid authenticationMethod: {}", s);
             }
         }
+
         for(String s: authorizationGrantTypes) {
             switch (s) {
                 case "AUTHORIZATION_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
@@ -800,9 +807,13 @@ public class OauthClient {
             LOG.info("added custom scope {}", customScopeList);
         }
 
+        if (redirectUris != null && !redirectUris.trim().isEmpty()) {
+            Arrays.stream(redirectUris.split(",")).forEach(registeredClientBuilder::redirectUri);
+        }
+        if (postLogoutRedirectUris != null && !postLogoutRedirectUris.trim().isEmpty()) {
+            Arrays.stream(postLogoutRedirectUris.split(",")).forEach(registeredClientBuilder::postLogoutRedirectUri);
+        }
 
-        registeredClientBuilder.redirectUri(redirectUris);
-        registeredClientBuilder.postLogoutRedirectUri(postLogoutRedirectUris);
         registeredClientBuilder.mediateToken(mediateToken);
         me.sonam.authzmanager.controller.admin.oauth2.ClientSettings.Builder clientSettings1Builder =
                 me.sonam.authzmanager.controller.admin.oauth2.ClientSettings.builder();
