@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.clients.OrganizationWebClient;
 import me.sonam.authzmanager.clients.RoleWebClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
@@ -21,9 +22,11 @@ public class RoleController {
     private static final Logger LOG = LoggerFactory.getLogger(RoleController.class);
 
     private RoleWebClient roleWebClient;
+    private OrganizationWebClient organizationWebClient;
 
-    public RoleController(RoleWebClient roleWebClient) {
+    public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient) {
         this.roleWebClient = roleWebClient;
+        this.organizationWebClient = organizationWebClient;
     }
 
     @GetMapping
@@ -37,23 +40,6 @@ public class RoleController {
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
 
-    }
-    /**
-     * get all roles in this role id
-     * @param model
-     * @return
-     */
-    @GetMapping("/role/{roleId}")
-    public Mono<String> getRoleRoles(@PathVariable("roleId")UUID roleId, Model model) {
-        LOG.info("return createForm");
-        final String PATH = "/admin/roles/list";
-
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        return roleWebClient.getRoles(roleId).doOnNext(restPage -> {
-            LOG.info("roleList: {}", restPage);
-            model.addAttribute("page", restPage);
-        }).then(Mono.just(PATH));
     }
 
     @GetMapping("/new")
@@ -85,14 +71,20 @@ public class RoleController {
         }
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        Role role2 = new Role(role.getId(), role.getName(), userId.getUserId());
-        LOG.info("create role : {}", role);
+        Role role2 = new Role(role.getId(), role.getName(), userId.getUserId(), role.getRoleOrganization());
 
-       return roleWebClient.updateRole(role2, httpMethod).flatMap(updateRole -> {
+        LOG.info("role : {}", role);
+
+       return roleWebClient.updateRole(role2, httpMethod).doOnNext(updateRole -> {
                     LOG.info("got back response: {}", updateRole);
                     model.addAttribute("role", updateRole);
                     model.addAttribute("message", "role updated");
-                    return Mono.just(PATH);
+        })
+               .flatMap(role1 ->  organizationWebClient.getMyOrganizations(userId.getUserId()))
+               .flatMap(organizationRestPage -> {
+            LOG.info("organizationList: {}", organizationRestPage);
+            model.addAttribute("organizationPage", organizationRestPage);
+            return Mono.just(PATH);
         }).onErrorResume(throwable -> {
            model.addAttribute("role", role2);
            model.addAttribute("error", "failed to update/create role");
@@ -105,10 +97,34 @@ public class RoleController {
         final String PATH = "admin/roles/form";
         LOG.info("get role by id: {}", id);
 
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         return roleWebClient.getRoleById(id)
-                .doOnNext(role -> model.addAttribute("role", role))
+                .doOnNext(role ->{ model.addAttribute("role", role); LOG.info("role: {}", role);})
+                .flatMap(roles -> organizationWebClient.getMyOrganizations(userId.getUserId()).doOnNext(restPage -> {
+                            LOG.info("organizationList: {}", restPage);
+
+                            model.addAttribute("organizationPage", restPage);
+                        }))
                 .thenReturn(PATH);
     }
+
+    /**
+     * get all roles in this role id
+     * @param model
+     * @return
+     */
+  //  @GetMapping("/role/{roleId}")
+  /*  public Mono<String> getRoleRoles(@PathVariable("roleId")UUID roleId, Model model) {
+        LOG.info("return createForm");
+        final String PATH = "/admin/roles/list";
+
+        return roleWebClient.getRoles(roleId).doOnNext(restPage -> {
+            LOG.info("roleList: {}", restPage);
+            model.addAttribute("page", restPage);
+        }).then(Mono.just(PATH));
+    }*/
+
 
     @DeleteMapping("/{id}")
     public Mono<String> delete(@PathVariable("id") UUID roleId, Model model) {
@@ -124,5 +140,19 @@ public class RoleController {
                     model.addAttribute("error", "failed to delete role");
                     return Mono.just(PATH);
         });
+    }
+
+    @GetMapping("/{id}/organizations")
+    public Mono<String> getOrganizationsCreatedByThis(@PathVariable("id")UUID roleId, Model model) {
+        final String PATH = "admin/roles/form";
+        LOG.info("get organizations for this userId and associated to this role");
+
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return organizationWebClient.getMyOrganizations(userId.getUserId()).doOnNext(restPage -> {
+            LOG.info("organizationList: {}", restPage);
+
+            model.addAttribute("organizationPage", restPage);
+        }).then(Mono.just(PATH));
     }
 }

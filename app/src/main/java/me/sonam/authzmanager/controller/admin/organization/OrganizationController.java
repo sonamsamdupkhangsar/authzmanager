@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
+import me.sonam.authzmanager.clients.RoleWebClient;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
@@ -27,9 +28,11 @@ public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
 
     private OrganizationWebClient organizationWebClient;
+    private RoleWebClient roleWebClient;
 
-    public OrganizationController(OrganizationWebClient organizationWebClient) {
+    public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient) {
         this.organizationWebClient = organizationWebClient;
+        this.roleWebClient = roleWebClient;
     }
 
     /**
@@ -96,6 +99,19 @@ public class OrganizationController {
 
         return organizationWebClient.getOrganizationById(id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
+                .thenReturn(PATH);
+    }
+
+
+    @GetMapping("/{id}/roles")
+    public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model) {
+        final String PATH = "admin/organizations/view_roles";
+        LOG.info("get roles for organization by id: {}", id);
+
+        return organizationWebClient.getOrganizationById(id).doOnNext(organization -> model.addAttribute("organization", organization))
+                .flatMap(organization -> roleWebClient.getRoles(id))
+                .doOnNext(roleRestPage ->
+                        model.addAttribute("rolesRestPage", roleRestPage))
                 .thenReturn(PATH);
     }
 

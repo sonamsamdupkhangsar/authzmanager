@@ -2,6 +2,7 @@ package me.sonam.authzmanager.clients;
 
 
 
+import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class RoleWebClient {
     // use httpMethod for update or post
 
     public Mono<Role> updateRole(Role role, HttpMethod httpMethod) {
-        LOG.info("create role: {}", role);
+        LOG.info("update role: {}", role);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(roleEndpoint)
                 .bodyValue(role)
@@ -86,4 +87,5 @@ public class RoleWebClient {
 
         return responseSpec.bodyToMono(Role.class);
     }
+
 }

@@ -10,16 +10,21 @@
 
     <title>Oauth Clients</title>
     <script th:inline="javascript">
-        function sendDelete(url) {
-            var xhttp = new XMLHttpRequest();
-            xhttp.open("DELETE", url, true);
-            xhttp.onload = function () {
-                let responseURL = xhttp.responseURL;
-                console.log("Redirecting to:", responseURL);
-                window.location.replace("/admin/clients");
-            };
-            xhttp.send();
-        }
+
+          function sendDelete(url) {
+              if(!confirm("Do you really want to delete this Client?")) {
+                  console.log("cancel delete");
+                  return false;
+              }
+              var xhttp = new XMLHttpRequest();
+              xhttp.open("DELETE", url, true);
+              xhttp.onload = function () {
+                  let responseURL = xhttp.responseURL;
+                  console.log("Redirecting to:", responseURL);
+                  window.location.replace("/admin/clients");
+              };
+              xhttp.send();
+          }
     </script>
 </head>
 <body>
@@ -45,6 +50,16 @@
             </ul>
         </div>
         <div class="col-sm">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Client Details</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{'/admin/clients/{id}(id=${client.id})+'/organizations'}">Add User</a>
+                </li>
+
+            </ul>
+
             <div class="mb-3"><h3>Client Update Page</h3></div>
             <div class="mb-3">
                 <div th:switch="${message}">
@@ -64,10 +79,14 @@
                 <div class="mb-3 error text-danger" th:if="${#fields.hasErrors}">
                     <span >Failed to update OAuth client.
                         Please check the data validation errors.</span>
+                    <ul>
+                        <li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
+                    </ul>
+
                 </div>
 
                 <div class="mb-3 row" th:if="*{#strings.isEmpty(id)}">
-                    <label for="clientId" class="col-sm-4 col-form-label">Client-id subpart</label>
+                    <label for="clientId" class="col-sm-4 col-form-label">Client-id (uuid + input)</label>
                     <div class="col-sm-4">
                         <label for="clientIdUuid">uuid</label>
                         <input type="text" class="form-control" id="clientIdUuid" th:field="*{clientIdUuid}" size="40" placeholder="UUID prepend" readonly/>
@@ -213,7 +232,6 @@
                         <input class="form-control" type="text" id="postLogoutRedirectUris" th:field="*{postLogoutRedirectUris}" />
                     </div>
                 </div>
-
 
                 <div class="mb-3 row" th:if="*{not #strings.isEmpty(id)}">
                     <label class="col-sm-4 col-form-label">Client Settings</label>

@@ -2,21 +2,19 @@ package me.sonam.authzmanager.controller.admin;
 
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.controller.admin.oauth2.*;
+import me.sonam.authzmanager.controller.admin.oauth2.AuthorizationGrantType;
+import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
+import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
 import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -94,7 +92,7 @@ public class ClientController {
 
         if (bindingResult.hasErrors()) {
             LOG.info("client.getId: {}", client.getId());
-            LOG.info("user didn't enter required fields");
+            LOG.info("user didn't enter required fields: {}, allerror: {}", bindingResult.getFieldError(), bindingResult.getAllErrors());
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
@@ -135,8 +133,24 @@ public class ClientController {
             registeredClient = client.getRegisteredClient();
         }
         catch (Exception e) {
-            LOG.error("exception occured: {}", e.getMessage());
-            bindingResult.addError(new ObjectError("error", e.getMessage()));
+            LOG.error("exception occured when creating client: {}", e.getMessage());
+
+            if (e.getMessage().startsWith("authorizationCodeTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive",  "error.user", "authorizationCodeTimeToLive value must be greater than 0");
+            }
+            else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.accessTokenTimeToLive", "error.user", "accessTokenTimeToLive value must be greater than 0");
+            }
+            else if (e.getMessage().startsWith("deviceCodeTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.deviceCodeTimeToLive", "error.user", "deviceCodeTimeToLive value must be greater than 0");
+            }
+            else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive","error.user", "refreshTokenTimeToLive value must be greater than 0");
+            }
+            else {
+                LOG.error("unknown error: {}", e.getMessage());
+                bindingResult.rejectValue("error", e.getMessage());
+            }
             return Mono.just(PATH);
         }
 

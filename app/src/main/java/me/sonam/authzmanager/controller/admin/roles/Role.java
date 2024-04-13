@@ -15,14 +15,30 @@ public class Role {
     private String name;
 
     private UUID userId;
+
+    private RoleOrganization roleOrganization;
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public RoleOrganization getRoleOrganization() {
+        return roleOrganization;
+    }
+
+    public void setRoleOrganization(RoleOrganization roleOrganization) {
+        this.roleOrganization = roleOrganization;
+    }
+
     public Role() {
 
     }
 
-    public Role(UUID id, String name, UUID userId) {
+    public Role(UUID id, String name, UUID userId, RoleOrganization roleOrganization) {
         this.id = id;
         this.name = name;
         this.userId = userId;
+        this.roleOrganization = roleOrganization;
     }
 
     public UUID getId() {
@@ -36,12 +52,14 @@ public class Role {
     public UUID getUserId() {
         return this.userId;
     }
+
     @Override
     public String toString() {
         return "Role{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", userId='" + userId + '\'' +
+                ", userId=" + userId +
+                ", roleOrganization=" + roleOrganization +
                 '}';
     }
 

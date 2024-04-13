@@ -16,7 +16,7 @@ import java.util.*;
 public class OauthClient {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClient.class);
     private String id;
-    @NotEmpty
+    @NotEmpty(message="Your clientId value must be greater than 2 characters")
     @Size(min = 3, max = 100)
     private String clientId;
     private UUID clientIdUuid;
@@ -48,7 +48,7 @@ public class OauthClient {
     //private Map<String, Boolean> clientSettings = new HashMap<>();
    // private String clientSettings;
     private ClientSettings clientSettings = new ClientSettings();
-    @Valid
+
     private TokenSettings tokenSettings = new TokenSettings();
     static class ClientSettings {
         private boolean requireAuthorizationConsent;
@@ -96,15 +96,15 @@ public class OauthClient {
 
     public static class TokenSettings {
         //long represents the duration in seconds
-        @Min(value=1, message = "value must be greater than 0")
+
         private long authorizationCodeTimeToLive;
-        @Range(min = 1, message = "value must be greater than 0")
+
         private long accessTokenTimeToLive;
         private OAuth2TokenFormat accessTokenFormat;
-        @Range(min = 1, message = "value must be greater than 0")
+
         private long deviceCodeTimeToLive;
         private boolean reuseRefreshTokens;
-        @Range(min = 1, message = "value must be greater than 0")
+
         private long refreshTokenTimeToLive;
         private SignatureAlgorithm idTokenSignatureAlgorithm;
 
