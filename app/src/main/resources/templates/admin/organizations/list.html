@@ -33,21 +33,32 @@
             </ul>
         </div>
         <div class="col-sm">
-
             <h1>Organizations</h1>
+            <div>
+                <p th:if="${page.totalElements} < 50">
+                <h3><a th:href="@{/admin/organizations/new}"> Create Organization</a></h3>
+                </p>
+            </div>
             <div th:if="${page != null}">
-                <ul>
-                    <li th:if="${page.totalElements} < 100">
-                        <h3><a th:href="@{/admin/organizations/new}"> - Create Organization</a></h3>
-                    </li>
+                <div>
+                    <ul class="pagination" th:if="${page}">
+                        <li class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{'/admin/organizations?page='+${page.number-1}}" tabindex="-1">Previous</a>
+                        </li>
 
-                        <li th:each="organization : ${page.content}">
-                            <a th:text="${organization.name}" th:href="@{/admin/organizations/{id}(id=${organization.id})}"></a>
-
+                        <li class="page-item" th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
+                            <a class="page-link" th:href="@{'/admin/organizations?page='+${page.number+1}}">Next Page</a>
                         </li>
                     </ul>
                 </div>
-
+                <div class="col-sm-4">
+                    <ul>
+                        <li  th:each="organization : ${page.content}">
+                            <a th:text="${organization.name}" th:href="@{/admin/organizations/{id}(id=${organization.id})}"></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
     <div class="row justify-content-center m-4 bg-light">

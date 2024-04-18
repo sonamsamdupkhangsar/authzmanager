@@ -1,11 +1,16 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
+import io.netty.handler.codec.socks.SocksRequestType;
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
 import me.sonam.authzmanager.clients.RoleWebClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -30,13 +35,16 @@ public class RoleController {
     }
 
     @GetMapping
-    public Mono<String> getRolesByUserId(Model model) {
+    public Mono<String> getRolesByUserId(Model model, Pageable pageable) {
         final String PATH = "admin/roles/list";
         LOG.info("get roles by owner id");
+        pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
+
+        LOG.info("pageable: {}", pageable);
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return roleWebClient.getRolesByUserId(userId.getUserId()).doOnNext(restPage -> {
-            LOG.info("roleList: {}", restPage);
+        return roleWebClient.getRolesByUserId(userId.getUserId(), pageable).doOnNext(restPage -> {
+            LOG.info("roleList: {}", restPage.getSize());
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
 
@@ -53,9 +61,11 @@ public class RoleController {
     }
 
     @PostMapping
-    public Mono<String> updateRole(@Valid  @ModelAttribute("role") Role role, BindingResult bindingResult, Model model) {
+    public Mono<String> updateRole(@Valid  @ModelAttribute("role") Role role, BindingResult bindingResult, Model model, Pageable userPageable) {
         final String PATH = "admin/roles/form";
         HttpMethod httpMethod = HttpMethod.POST;
+
+        Pageable pageable  = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
 
         if (role.getId() == null) {
             LOG.info("no id, this is for create");
@@ -80,7 +90,7 @@ public class RoleController {
                     model.addAttribute("role", updateRole);
                     model.addAttribute("message", "role updated");
         })
-               .flatMap(role1 ->  organizationWebClient.getMyOrganizations(userId.getUserId()))
+               .flatMap(role1 ->  organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
                .flatMap(organizationRestPage -> {
             LOG.info("organizationList: {}", organizationRestPage);
             model.addAttribute("organizationPage", organizationRestPage);
@@ -93,15 +103,16 @@ public class RoleController {
     }
 
     @GetMapping("/{id}")
-    public Mono<String> getRoleById(@PathVariable("id") UUID id, Model model) {
+    public Mono<String> getRoleById(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         final String PATH = "admin/roles/form";
         LOG.info("get role by id: {}", id);
 
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 100, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return roleWebClient.getRoleById(id)
                 .doOnNext(role ->{ model.addAttribute("role", role); LOG.info("role: {}", role);})
-                .flatMap(roles -> organizationWebClient.getMyOrganizations(userId.getUserId()).doOnNext(restPage -> {
+                .flatMap(roles -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable).doOnNext(restPage -> {
                             LOG.info("organizationList: {}", restPage);
 
                             model.addAttribute("organizationPage", restPage);
@@ -143,13 +154,14 @@ public class RoleController {
     }
 
     @GetMapping("/{id}/organizations")
-    public Mono<String> getOrganizationsCreatedByThis(@PathVariable("id")UUID roleId, Model model) {
+    public Mono<String> getOrganizationsCreatedByThis(@PathVariable("id")UUID roleId, Model model, Pageable pageable) {
         final String PATH = "admin/roles/form";
         LOG.info("get organizations for this userId and associated to this role");
+        pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return organizationWebClient.getMyOrganizations(userId.getUserId()).doOnNext(restPage -> {
+        return organizationWebClient.getMyOrganizations(userId.getUserId(), pageable).doOnNext(restPage -> {
             LOG.info("organizationList: {}", restPage);
 
             model.addAttribute("organizationPage", restPage);

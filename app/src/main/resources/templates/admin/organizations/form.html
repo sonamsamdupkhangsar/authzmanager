@@ -58,9 +58,12 @@
                         <a class="nav-link active" aria-current="page" th:href="@{/admin/organizations/{id}(id=${organization.id})}">Organization</a>
                     </li>
                     <li class="nav-item" th:if="${organization.id}">
-
                         <a class="nav-link" th:href="@{/admin/organizations/{organizationId}/roles(organizationId=${organization.id})}" th:text="${organization.name}+' Roles'">View Roles</a>
                     </li>
+                    <li class="nav-item" th:if="${organization.id}">
+                        <a class="nav-link" th:href="@{/admin/organizations/{organizationId}/users(organizationId=${organization.id})}">User association</a>
+                    </li>
+
                 </ul>
             </div>
             <div class="mb-3 mt-3" th:if="${organization.id}">

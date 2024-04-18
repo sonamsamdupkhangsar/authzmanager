@@ -8,6 +8,7 @@ import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -23,11 +24,15 @@ public class RoleWebClient {
         this.webClientBuilder = webClientBuilder;
         this.roleEndpoint = roleEndpoint;
     }
-    public Mono<RestPage<Role>> getRolesByUserId(UUID userId) {
+    public Mono<RestPage<Role>> getRolesByUserId(UUID userId, Pageable pageable) {
         LOG.info("get roles for this ownerId: {}", userId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/userId/").append(userId);
+        stringBuilder.append("/userId/").append(userId)
+          .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize())
+                .append("&sortBy=name");
+
         LOG.info("get roles by owner using userId at endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
@@ -35,11 +40,14 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
     }
 
-    public Mono<RestPage<Role>> getRoles(UUID organizationId) {
+    public Mono<RestPage<Role>> getRoles(UUID organizationId, Pageable pageable) {
         LOG.info("get roles for this organizationId: {}", organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/organizations/").append(organizationId);
+        stringBuilder.append("/organizations/").append(organizationId)
+                .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize())
+                .append("&sortBy=r.name");
         LOG.info("get roles for organization at endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
