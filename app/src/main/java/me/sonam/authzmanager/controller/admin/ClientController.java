@@ -5,6 +5,7 @@ import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
+import me.sonam.authzmanager.clients.user.UserWebClient;
 import me.sonam.authzmanager.controller.admin.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
@@ -38,15 +39,18 @@ public class ClientController {
     private OrganizationWebClient organizationWebClient;
     private OauthClientRoute oauthClientWebClient;
     private ClientOrganizationWebClient clientOrganizationWebClient;
+    private UserWebClient userWebClient;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
     public ClientController(OauthClientRoute oauthClientWebClient,
                             OrganizationWebClient organizationWebClient,
-                            ClientOrganizationWebClient clientOrganizationWebClient) {
+                            ClientOrganizationWebClient clientOrganizationWebClient,
+                            UserWebClient userWebClient) {
         this.oauthClientWebClient = oauthClientWebClient;
         this.organizationWebClient = organizationWebClient;
         this.clientOrganizationWebClient = clientOrganizationWebClient;
+        this.userWebClient = userWebClient;
     }
 
     @GetMapping("/createForm")
@@ -268,6 +272,45 @@ public class ClientController {
                             });
         }).thenReturn(PATH);
     }
+
+    /**
+     * When user clicks on the User tab in Clients page
+     * get users in the clients' organization.
+     * @param id
+     * @param model
+     * @param userPageable
+     * @return
+     */
+    @GetMapping("id/{id}/users")
+    public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+        LOG.info("get client users relationships");
+        final String PATH = "/admin/clients/users";
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return setClientInModel(id, model, PATH)
+                .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(id))
+                .flatMap(uuid -> organizationWebClient.getOrganizationById(uuid))
+                .doOnNext(organization -> model.addAttribute("organization", organization))
+                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(organization.getId(), pageable))
+                .flatMap(uuidPage -> {
+                    LOG.info("uuidPage: {}", uuidPage.getContent());
+                    model.addAttribute("page", uuidPage);
+                    return userWebClient.getUserByBatchOfIds(uuidPage.getContent());
+                })
+                .doOnNext(users -> {
+                    LOG.info("got users: {}", users);
+                    model.addAttribute("users", users);
+                })
+                .thenReturn(PATH)
+                .onErrorResume(throwable -> {
+                    LOG.error("error occured", throwable.getMessage());
+                    model.addAttribute("error", "please select Organization for this client first.");
+                    return Mono.just("error");
+                });
+    }
+
 
     /**
      * id is the {@link RegisteredClient#id} field not the clientId

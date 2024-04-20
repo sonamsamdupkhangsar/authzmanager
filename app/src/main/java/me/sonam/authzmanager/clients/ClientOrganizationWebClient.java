@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.clients;
 
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.util.MyPair;
@@ -88,6 +89,28 @@ public class ClientOrganizationWebClient {
         });
     }
 
+    public Mono<UUID> getOrganizationIdAssociatedWithClientId(UUID id) {
+        LOG.info("calling ClientOrganization endpoint to get organizationId fro client.id: {}", id);
+
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/clients/id/")
+                .append(id).append("/organizations/id");
+        LOG.info("calling auth-server get organizationId endpoint {}", clientsEndpoint);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString()).retrieve();
+
+        return responseSpec.bodyToMono(UUID.class)
+                        .switchIfEmpty(Mono.error(
+                                new AuthzManagerException("Please select a organization for this client.")))
+                .map(uuid-> {
+                    LOG.info("got back response from auth-server for getting organizationId for client.id: {}", uuid);
+
+                    return uuid;
+                }).onErrorResume(throwable -> {
+                    LOG.error("error occured: {}", throwable.getMessage());
+
+                    return Mono.empty();
+                });
+    }
 
     private String getErrorMessage(Throwable throwable) {
         if (throwable instanceof WebClientResponseException) {

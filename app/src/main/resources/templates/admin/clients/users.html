@@ -45,44 +45,58 @@
                         <a class="nav-link" aria-current="page" th:href="@{/admin/clients/id/{id}(id=${client.id})}">Client Details</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/clients/id/{id}/organizations(id=${client.id})}">Add to
+                        <a class="nav-link" th:href="@{/admin/clients/id/{id}/organizations(id=${client.id})}">Add to
                             Organization</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/clients/id/{id}/userRole(id=${client.id})}">Set User
+                        <a class="nav-link active" th:href="@{/admin/clients/id/{id}/userRole(id=${client.id})}">Set User
                             Role</a>
                     </li>
                 </ul>
             </div>
 
             <div class="col-sm mt-3">
-                <p class="h5">Assign to one organization from below</p>
+                <p class="h5">Users in this client id and organization selected</p>
 
-                <div th:if="${page != null}">
-                    <div>
-                        <ul class="pagination" th:if="${page}">
-                            <li class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
-                                <a class="page-link" th:href="@{'/admin/clients/id/'+${client.id}+'/organizations?page='+${page.number-1}}"
-                                   tabindex="-1">Previous</a>
-                            </li>
+                <div class="col mt-5" th:if="${page}">
+                    <p>Users in this organization</p>
+                    <ul class="pagination" th:if="${page}">
+                        <li class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
+                            <a class="page-link"
+                               th:href="@{'/admin/organizations/{id}/users?page='+${page.number-1}(id=${organization.id})}"
+                               tabindex="-1">Previous</a>
+                        </li>
 
-                            <li class="page-item"
-                                th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
-                                <a class="page-link" th:href="@{'/admin/clients/id/'+${client.id}+'/organizations?page='+${page.number+1}}">Next
-                                    Page</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-sm-4">
-                        <ul>
-                            <li th:each="organization : ${page.content}">
-                                <a th:text="${organization.name}"
-                                   th:href="@{/admin/organizations/{id}(id=${organization.id})}"></a>
-                            </li>
-                        </ul>
-                    </div>
+                        <li class="page-item" th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
+                            <a class="page-link"
+                               th:href="@{'/admin/organizations/{id}/users?page='+${page.number+1}(id=${organization.id})}">Next
+                                Page</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <table class="table" th:if="${users}">
+                        <thead>
+                        <tr>
+                            <th scope="col">First</th>
+                            <th scope="col">Last</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Handle</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                        <tr th:each="user : ${users}">
+                            <td><span th:text="${user.firstName}"></span></td>
+                            <td><span th:text="${user.lastName}"></span></td>
+                            <td><span th:text="${user.email}"></span></td>
+                            <td><span th:text="${user.authenticationId}"></span></td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
         </div>
 
     </div>
