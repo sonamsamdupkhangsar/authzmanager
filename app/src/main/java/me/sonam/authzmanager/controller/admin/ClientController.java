@@ -1,14 +1,22 @@
 package me.sonam.authzmanager.controller.admin;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.clients.OauthClientRoute;
+import me.sonam.authzmanager.clients.OrganizationWebClient;
+import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
 import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -17,6 +25,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,12 +35,20 @@ import java.util.UUID;
 public class ClientController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientController.class);
 
+    private OrganizationWebClient organizationWebClient;
     private OauthClientRoute oauthClientWebClient;
+    private ClientOrganizationWebClient clientOrganizationWebClient;
+
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
-    public ClientController(OauthClientRoute oauthClientWebClient) {
+    public ClientController(OauthClientRoute oauthClientWebClient,
+                            OrganizationWebClient organizationWebClient,
+                            ClientOrganizationWebClient clientOrganizationWebClient) {
         this.oauthClientWebClient = oauthClientWebClient;
+        this.organizationWebClient = organizationWebClient;
+        this.clientOrganizationWebClient = clientOrganizationWebClient;
     }
+
     @GetMapping("/createForm")
     public String getCreateForm(Model model) {
         LOG.info("return createForm");
@@ -46,40 +64,42 @@ public class ClientController {
         return PATH;
     }
 
-
-    @GetMapping("/{id}")
-    public Mono<String> getClientByClientId(@PathVariable("id") String clientId, Model model) {
-        LOG.info("get client by clientId {}", clientId);
+    //id is a UUID
+    @GetMapping("/id/{id}")
+    public Mono<String> getClientByClientId(@PathVariable("id") UUID id, Model model) {
+        LOG.info("get client by id {}", id);
         final String PATH = "admin/clients/form";
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
-        return oauthClientWebClient.getOauthClientByClientId(clientId).flatMap(registeredClient -> {
+        return setClientInModel(id, model, PATH).thenReturn(PATH);
+    }
+
+    private Mono<String> setClientInModel(UUID id, Model model, final String PATH) {
+        return oauthClientWebClient.getOauthClientById(id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient);
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
                 LOG.info("oauthClient {}", oauthClient.getClientAuthenticationMethods());
                 model.addAttribute("client", oauthClient);
 
-               // parseClientIdUuid(oauthClient);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 LOG.error("failed to parse to OautClient", e);
                 model.addAttribute("client", new OauthClient());
-            }
 
-            LOG.info("return form");
-            return Mono.just(PATH);
+            }
+            return PATH;
         }).onErrorResume(throwable -> {
             LOG.error("Failed to get client by clientId", throwable);
             model.addAttribute("client", new OauthClient());
-            return Mono.just(PATH);
+
+            return null;
         });
     }
 
-
     /**
      * This will handle the client creation and client update.
+     *
      * @param client
      * @param bindingResult
      * @param model
@@ -112,8 +132,7 @@ public class ClientController {
                 LOG.error(error);
                 bindingResult.rejectValue("redirectUris", "error.user", error);
                 return Mono.just(PATH);
-            }
-            else {
+            } else {
                 LOG.info("redirectUris is not empty: '{}'", client.getRedirectUris());
             }
         }
@@ -124,30 +143,24 @@ public class ClientController {
                 client.setTokenSettings(null);
                 client.setClientSettings(null);
                 LOG.info("it's a create client");
-            }
-            else {
+            } else {
                 httpMethod = HttpMethod.PUT;
                 LOG.info("client.id is not null and not empty, it's an update");
             }
 
             registeredClient = client.getRegisteredClient();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("exception occured when creating client: {}", e.getMessage());
 
             if (e.getMessage().startsWith("authorizationCodeTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive",  "error.user", "authorizationCodeTimeToLive value must be greater than 0");
-            }
-            else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive", "error.user", "authorizationCodeTimeToLive value must be greater than 0");
+            } else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
                 bindingResult.rejectValue("tokenSettings.accessTokenTimeToLive", "error.user", "accessTokenTimeToLive value must be greater than 0");
-            }
-            else if (e.getMessage().startsWith("deviceCodeTimeToLive")) {
+            } else if (e.getMessage().startsWith("deviceCodeTimeToLive")) {
                 bindingResult.rejectValue("tokenSettings.deviceCodeTimeToLive", "error.user", "deviceCodeTimeToLive value must be greater than 0");
-            }
-            else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive","error.user", "refreshTokenTimeToLive value must be greater than 0");
-            }
-            else {
+            } else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
+                bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive", "error.user", "refreshTokenTimeToLive value must be greater than 0");
+            } else {
                 LOG.error("unknown error: {}", e.getMessage());
                 bindingResult.rejectValue("error", e.getMessage());
             }
@@ -160,7 +173,7 @@ public class ClientController {
         map.put("userId", userId.getUserId().toString());
         LOG.info("map is {}", map);
 
-        return  oauthClientWebClient.updateClient(map, httpMethod).flatMap(updatedRegisteredClient -> {
+        return oauthClientWebClient.updateClient(map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
 
             OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
@@ -182,31 +195,124 @@ public class ClientController {
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
-        return oauthClientWebClient.getUserClientIds(userId.getUserId()).flatMap(clientIds -> {
+        return oauthClientWebClient.getUserClientIds(userId.getUserId()).flatMap(pairs -> {
             LOG.info("got clientIds for this userId: {}", userId.getUserId());
-            model.addAttribute("clientIds", clientIds);
+            model.addAttribute("clientPairs", pairs);
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
-            LOG.error("error occued on calling get user clientIds: {}", throwable.getMessage());
+            LOG.error("error occued on calling get user clientIds: {}", throwable);
             model.addAttribute("message", "failed");
             return Mono.just(PATH);
         });
     }
 
-    @DeleteMapping("/{clientId}")
-    public Mono<String> deleteClientByClientId(@PathVariable("clientId")String clientId, Model model) {
-        LOG.info("delete client by clientId: {}", clientId);
+    @DeleteMapping("/id/{id}")
+    public Mono<String> deleteClientById(@PathVariable("id") UUID id, Model model) {
+        LOG.info("delete client by id: {}", id);
         final String PATH = "/admin/clients/list";
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
-        return oauthClientWebClient.deleteClient(clientId, userId.getUserId()).thenReturn(PATH)
+        return oauthClientWebClient.deleteClient(id, userId.getUserId()).thenReturn(PATH)
                 .onErrorResume(throwable -> {
-                    LOG.error("error occurred on deleting client by clientId: {}", clientId, throwable);
+                    LOG.error("error occurred on deleting client by id: {}", id, throwable);
                     model.addAttribute("error", "Failed to delete by clientId");
                     return Mono.just(PATH);
                 });
 
     }
+
+    /**
+     * Get organizations created by the logged-in user
+     *
+     * @param model
+     * @param pageable
+     * @return
+     */
+
+    @GetMapping("id/{id}/organizations")
+    public Mono<String> getOrganizations(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+        LOG.info("get organizations created or owned by this user");
+        final String PATH = "/admin/clients/organizations";
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return setClientInModel(id, model, PATH)
+                .flatMap(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .doOnNext(restPage -> {
+                    LOG.info("organizationList: {}", restPage);
+                    model.addAttribute("page", restPage);
+                }).flatMap(organizationRestPage -> {
+                    List<ClientOrganization> clientOrganizationList = new ArrayList<>();
+
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(organizationRestPage.getContent(), id)
+                    .switchIfEmpty(Mono.just(new ClientOrganization()))
+                            .doOnNext(clientOrganization -> {
+                                for(Organization organization: organizationRestPage.getContent()) {
+                                    if (id.equals(clientOrganization.getClientId()) &&
+                                            organization.getId().equals(clientOrganization.getOrganizationId())) {
+                                        ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, true);
+                                        LOG.info("found a match and add the clientOrganization to list");
+                                        clientOrganizationList.add(clientOrganization1);
+                                    }
+                                    else {
+                                        ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, false);
+                                        LOG.info("add clientOrganization to list");
+                                        clientOrganizationList.add(clientOrganization1);
+                                    }
+                                }
+                                LOG.info("add clientOrganizations as modelAttribute: {}", clientOrganizationList);
+                                model.addAttribute("clientOrganizations", clientOrganizationList);
+                            });
+        }).thenReturn(PATH);
+    }
+
+    /**
+     * id is the {@link RegisteredClient#id} field not the clientId
+     * id is the client.id (not clientId)
+     */
+
+    /*@PostMapping("id/{id}/organizations/organizationId")
+    public Mono<String> addOrganizationToClient(@PathVariable("id") UUID id, @Valid @ModelAttribute("clientOrganization")
+    MyPair<String, String> myPair, Model model, final Pageable userPageable) {
+        LOG.info("add organization to clientId");
+        final String PATH = "/admin/clients/organizations";
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID clientsId = UUID.fromString(myPair.getKey());
+        UUID organizationId = UUID.fromString(myPair.getValue());
+
+        return clientOrganizationWebClient.addClientToOrganization(clientsId, organizationId)
+                .doOnNext(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .doOnNext(restPage -> {
+                    LOG.info("organizationList: {}", restPage);
+                    model.addAttribute("page", restPage);
+                })
+                .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
+                .then(Mono.just(PATH));
+    }
+    @DeleteMapping("id/{id}/organizations/organizationId")
+    public Mono<String> deleteClientOrganizationAssociation(@PathVariable("id") UUID id,
+                                                            @Valid @ModelAttribute("clientOrganization")
+                MyPair<String, String> myPair, Model model, final Pageable userPageable) {
+        LOG.info("delete client organization association");
+        final String PATH = "/admin/clients/organizations";
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID clientsId = UUID.fromString(myPair.getKey());
+        UUID organizationId = UUID.fromString(myPair.getValue());
+
+        return clientOrganizationWebClient.deleteClientOrganizationAssociation(clientsId, organizationId)
+                .doOnNext(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .doOnNext(restPage -> {
+                    LOG.info("organizationList: {}", restPage);
+                    model.addAttribute("page", restPage);
+                })
+                .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
+                .then(Mono.just(PATH));
+    }*/
 }

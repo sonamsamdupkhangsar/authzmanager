@@ -21,6 +21,10 @@ public class BeanConfig {
     private String authenticateEndpoint;
     @Value("${auth-server.root}${auth-server.clients}")
     private String authServerClientsEndpoint;
+
+    @Value("${auth-server.root}${auth-server.clientOrganizations}")
+    private String authServerClientOrganizationsEndpoint;
+
     @Value("${auth-server.root}${auth-server.authenticate}")
     private String springAuthorizationServerAuthenticationEp;
 
@@ -71,5 +75,10 @@ public class BeanConfig {
     @Bean
     public UserWebClient userWebClient() {
         return new UserWebClient(webClientWithTokenFilter, userSignupEndpoint);
+    }
+
+    @Bean
+    public ClientOrganizationWebClient clientOrganizationWebClient() {
+        return new ClientOrganizationWebClient(webClientWithTokenFilter, authServerClientOrganizationsEndpoint);
     }
 }

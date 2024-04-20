@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class OrganizationWebClient {
-    private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationWebClient.class);
 
     private final WebClient.Builder webClientBuilder;
     private final String organizationEndpoint;
