@@ -1,9 +1,13 @@
 package me.sonam.authzmanager.clients.user;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 import java.util.UUID;
 
 public class User {
+    private static final Logger LOG = LoggerFactory.getLogger(User.class);
 
     private UUID id;
     private String firstName;
@@ -14,21 +18,27 @@ public class User {
     private Boolean userAuthAccountCreated;
     private OrganizationChoice organizationChoice = new OrganizationChoice();
 
+    public User(UUID id, String email) {
+        this.id = id;
+        this.email = email;
+    }
+
+    public User(UUID id) {
+        this.id = id;
+    }
     @Override
     public boolean equals(Object o) {
+        LOG.info("equlas called");
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(id, user.id) && Objects.equals(firstName, user.firstName) &&
-                Objects.equals(lastName, user.lastName) && Objects.equals(email, user.email) &&
-                Objects.equals(authenticationId, user.authenticationId) && Objects.equals(active, user.active) &&
-                Objects.equals(userAuthAccountCreated, user.userAuthAccountCreated) &&
-                Objects.equals(organizationChoice, user.organizationChoice);
+        return Objects.equals(id, user.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, lastName, email, authenticationId, active, userAuthAccountCreated, organizationChoice);
+        LOG.info("hashcode called");
+        return Objects.hash(id);
     }
 
     public User() {
@@ -102,13 +112,13 @@ public class User {
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
+               /* ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +*/
                 ", email='" + email + '\'' +
-                ", authenticationId='" + authenticationId + '\'' +
+             /*   ", authenticationId='" + authenticationId + '\'' +
                 ", active=" + active +
                 ", userAuthAccountCreated=" + userAuthAccountCreated +
-                ", organizationChoice=" + organizationChoice +
+                ", organizationChoice=" + organizationChoice +*/
                 '}';
     }
 

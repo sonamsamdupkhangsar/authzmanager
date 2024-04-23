@@ -10,6 +10,27 @@
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <title>Authzmanager::client organization</title>
+    <script th:inline="javascript">
+
+        function sendDelete(url, clientId, page) {
+            if(!confirm("Do you really want to delete this assigned role?")) {
+                console.log("cancel delete");
+                return false;
+            }
+
+            console.log("url: " + url);
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", url, true);
+            xhttp.onload = function () {
+                let responseUrl = xhttp.responseURL;
+
+                let url = '/admin/clients/id/' + clientId + '/users?page=' + page;
+                console.log("redirecting to url: " + url);
+                window.location.replace(url);//"/admin/clients");
+            };
+            xhttp.send();
+        }
+    </script>
 </head>
 <body>
 <!-- Optional JavaScript -->
@@ -56,7 +77,7 @@
             </div>
 
             <div class="col-sm mt-3">
-                <p class="h5">Users in this client id and organization selected</p>
+                <p class="h5">Users in this client id and organization <b>[[${organization.name}]]</b></p>
 
                 <div class="col mt-5" th:if="${page}">
                     <p>Users in this organization</p>
@@ -82,15 +103,53 @@
                             <th scope="col">Last</th>
                             <th scope="col">Email</th>
                             <th scope="col">Handle</th>
+                            <th scope="col">Roles</th>
                         </tr>
                         </thead>
                         <tbody>
+
+                        <tr th:each="userInClientOrganizationWithRole : ${usersInClientOrganizationUserRole}">
+
+                            <td><span th:text="${userInClientOrganizationWithRole.user.firstName}"></span></td>
+                            <td><span th:text="${userInClientOrganizationWithRole.user.lastName}"></span></td>
+                            <td><span th:text="${userInClientOrganizationWithRole.user.email}"></span></td>
+                            <td><span th:text="${userInClientOrganizationWithRole.user.authenticationId}"></span></td>
+                            <td><span th:text="${userInClientOrganizationWithRole.user.role.name}"></span>
+                                <button type="button" th:with="clientId=${client.id}, myPage=${page.number},
+                                url=@{/admin/clients/id/{clientId}/users/client-organization-user-role/id/{id}?page={pageNumber}(clientId=${client.id},
+                                id=${userInClientOrganizationWithRole.id}, pageNumber=${page.number})}"
+                                        th:onclick="sendDelete([[${url}]], [[${clientId}]], [[${myPage}]])"
+                                          class="btn btn-primary">Remove Role</button>
+
+                            </td>
+
+                        </tr>
 
                         <tr th:each="user : ${users}">
                             <td><span th:text="${user.firstName}"></span></td>
                             <td><span th:text="${user.lastName}"></span></td>
                             <td><span th:text="${user.email}"></span></td>
                             <td><span th:text="${user.authenticationId}"></span></td>
+                            <td>
+                            <form class="mt-3" action="#" method="post" th:action="@{/admin/clients/id/{id}/users/role(id=${client.id})}">
+                                <input type="hidden" th:name="clientId" th:value="${client.id}" />
+                                <input type="hidden" th:name="organizationId" th:value="${organization.id}"/>
+                                <input type="hidden" th:name="user.id"  th:value="${user.id}"/>
+                                    <div>
+                                        <select id="selectOrg" th:name="user.role.id">
+
+                                            <option th:each="role : ${roles}" th:value="${role.id}"
+                                                    th:text="${role.name}">
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                <div class="mb-3 mt-5">
+                                    <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                                    <button type="reset" class="btn btn-secondary mb-3">Reset</button>
+                                </div>
+                            </form>
+                            </td>
                         </tr>
                         </tbody>
                     </table>

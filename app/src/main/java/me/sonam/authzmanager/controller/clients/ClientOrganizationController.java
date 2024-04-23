@@ -1,6 +1,5 @@
-package me.sonam.authzmanager.controller.admin;
+package me.sonam.authzmanager.controller.clients;
 
-import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.clients.OauthClientWebClient;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
@@ -8,7 +7,6 @@ import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 @Controller
-@RequestMapping("/admin/clientOrganizations")
+@RequestMapping("/admin/clients/organizations")
 public class ClientOrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientOrganizationController.class);
     private ClientOrganizationWebClient clientOrganizationWebClient;
@@ -130,6 +128,7 @@ public class ClientOrganizationController {
                 })
                 .then(Mono.just(PATH));
     }
+
 
     private Mono<String> setClientInModel(UUID id, Model model, final String PATH) {
         return oauthClientWebClient.getOauthClientById(id).map(registeredClient -> {

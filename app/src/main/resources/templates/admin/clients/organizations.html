@@ -100,7 +100,7 @@
                     <div class="col">
                         <span class="h6 border" th:if="${message}" th:text="${message}"></span>
 
-                        <form class="mt-3" action="#" method="post" th:action="@{/admin/clientOrganizations/client/id/{id}/organizations?page={pageNumber}(id=${client.id}, pageNumber=${page.number})}">
+                        <form class="mt-3" action="#" method="post" th:action="@{/admin/clients/organizations/client/id/{id}/organizations?page={pageNumber}(id=${client.id}, pageNumber=${page.number})}">
                             <input type="hidden" th:name="clientId" th:value="${client.id}" />
                             <div class="form-check" th:each="co : ${clientOrganizations}">
 
@@ -109,7 +109,7 @@
 
 
                                 <label class="form-check-label m-2" th:text="${co.organization.name}"></label>
-                                <button type="button" th:with="clientId=${client.id}, myPage=${page.number}, url=@{/admin/clientOrganizations/client/id/{clientId}/organizations/id/{organizationId}?page={pageNumber}(clientId=${client.id},
+                                <button type="button" th:with="clientId=${client.id}, myPage=${page.number}, url=@{/admin/clients/organizations/client/id/{clientId}/organizations/id/{organizationId}?page={pageNumber}(clientId=${client.id},
                                  pageNumber=${page.number}, organizationId=${co.organization.id})}" th:if="${co.selected}" th:onclick="sendDelete([[${url}]], [[${clientId}]], [[${myPage}]])"
                                         class="btn btn-primary">Remove association to this organization</button>
 

@@ -95,7 +95,7 @@
                             <div>
                                 <select id="selectOrg" th:field="*{roleOrganization.organizationId}">
                                     <option th:each="org : ${organizationPage.content}" th:value="${org.id}"
-                                            th:text="${org.name}">
+                                            th:text="${org.name}"  >
                                     </option>
                                 </select>
                             </div>

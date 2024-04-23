@@ -1,17 +1,19 @@
-package me.sonam.authzmanager.controller.admin;
+package me.sonam.authzmanager.controller.clients;
 
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
+import me.sonam.authzmanager.clients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
+import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.clients.user.UserWebClient;
 import me.sonam.authzmanager.controller.admin.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
 import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,31 +28,30 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 @RequestMapping("/admin/clients")
-public class ClientController {
+public class ClientController implements ClientUserPage {
     private static final Logger LOG = LoggerFactory.getLogger(ClientController.class);
 
     private OrganizationWebClient organizationWebClient;
     private OauthClientRoute oauthClientWebClient;
     private ClientOrganizationWebClient clientOrganizationWebClient;
     private UserWebClient userWebClient;
+    private RoleWebClient roleWebClient;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
     public ClientController(OauthClientRoute oauthClientWebClient,
                             OrganizationWebClient organizationWebClient,
                             ClientOrganizationWebClient clientOrganizationWebClient,
-                            UserWebClient userWebClient) {
+                            UserWebClient userWebClient, RoleWebClient roleWebClient) {
         this.oauthClientWebClient = oauthClientWebClient;
         this.organizationWebClient = organizationWebClient;
         this.clientOrganizationWebClient = clientOrganizationWebClient;
         this.userWebClient = userWebClient;
+        this.roleWebClient = roleWebClient;
     }
 
     @GetMapping("/createForm")
@@ -283,79 +284,84 @@ public class ClientController {
      */
     @GetMapping("id/{id}/users")
     public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+        return setUsersAndsersInClientOrganizationUserRole(id, model, userPageable);
+    }
+
+    @Override
+    public Mono<String> setUsersAndsersInClientOrganizationUserRole(UUID id, Model model, Pageable userPageable) {
         LOG.info("get client users relationships");
         final String PATH = "/admin/clients/users";
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return setClientInModel(id, model, PATH)
+
                 .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(id))
                 .flatMap(uuid -> organizationWebClient.getOrganizationById(uuid))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(organization.getId(), pageable))
-                .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.getContent());
-                    model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(uuidPage.getContent());
+                .flatMap(organization -> {
+                    LOG.info("get roles");
+                    return roleWebClient.getRolesByOrganizationId(organization.getId(), PageRequest.of(0, Integer.MAX_VALUE))
+                            .zipWith(Mono.just(organization));
                 })
-                .doOnNext(users -> {
-                    LOG.info("got users: {}", users);
-                    model.addAttribute("users", users);
+                .doOnNext(objects -> {
+                    LOG.info("got roles: {}", objects.getT1().getContent());
+                    model.addAttribute("roles", objects.getT1().getContent());
+                }) //objects = roles, organizationId
+                .flatMap(objects -> organizationWebClient.getUsersInOrganizationId(objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
+                .flatMap(objects -> {
+                    LOG.info("uuidPage: {}", objects.getT1().getContent());
+                    model.addAttribute("page", objects.getT1());
+                    return userWebClient.getUserByBatchOfIds(objects.getT1().getContent()).zipWith(Mono.just(objects.getT2()));
+                })
+                .doOnNext(objects -> {//objects = users, organization
+                    LOG.info("got users: {}", objects.getT1());
+                    //  model.addAttribute("users", objects.getT1());
+                })
+                //find users that have this clientId with a role
+                .flatMap(objects -> {
+                    List<UUID> userIds = objects.getT1().stream().map(User::getId).toList();
+                    return roleWebClient.getClientOrganiationUserWithRoles(id, objects.getT2().getId(), userIds)
+                            .switchIfEmpty(Mono.just(new ArrayList<ClientOrganizationUserWithRole>()))
+                            .zipWith(Mono.just(objects.getT1()));
+                })
+                .doOnNext(objects -> { // objects = ClientOrganizationUserWithRole,users
+                    List<User> usersInOrganizationList = objects.getT2();
+
+                    List<ClientOrganizationUserWithRole> clientOrganizationUserWithRoleList = objects.getT1();
+
+                    Map<UUID, User> userMap = new HashMap<>();
+                    List<User> userList = usersInOrganizationList;
+                    userList.forEach(user -> userMap.put(user.getId(), user));
+                    LOG.info("userMap contains: {}", userMap);
+
+
+                    List<ClientOrganizationUserWithRole> userInClientOrganizationRoleList = clientOrganizationUserWithRoleList.stream().map(clientOrganizationUserWithRole -> {
+                        User user = userMap.get(clientOrganizationUserWithRole.getUser().getId());
+                        LOG.info("get from map with user.id: {}", clientOrganizationUserWithRole.getUser().getId());
+                        clientOrganizationUserWithRole.getUser().setFirstName(user.getFirstName());
+                        clientOrganizationUserWithRole.getUser().setLastName(user.getLastName());
+                        clientOrganizationUserWithRole.getUser().setEmail(user.getEmail());
+                        clientOrganizationUserWithRole.getUser().setAuthenticationId(user.getAuthenticationId());
+                        return clientOrganizationUserWithRole;
+                    }).toList();
+
+                    LOG.info("remove from userMap user that is already assigned to a clientOrganizationUserWithRole");
+                    for(ClientOrganizationUserWithRole clientOrganizationUserWithRole: clientOrganizationUserWithRoleList) {
+                        User user = userMap.remove(clientOrganizationUserWithRole.getUser().getId());
+                        LOG.info("removed user: {}", user);
+                    }
+                    LOG.info("userMap.values: {}", userMap.values());
+
+                    model.addAttribute("users", userMap.values());
+                    model.addAttribute("usersInClientOrganizationUserRole", userInClientOrganizationRoleList);// objects.getT1());
+                    LOG.info("added users and usersInClientOrganizationUserRole in model as attributes");
                 })
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
-                    LOG.error("error occured", throwable.getMessage());
+                    LOG.error("error occured: {}", throwable.getMessage());
                     model.addAttribute("error", "please select Organization for this client first.");
                     return Mono.just("error");
                 });
     }
-
-
-    /**
-     * id is the {@link RegisteredClient#id} field not the clientId
-     * id is the client.id (not clientId)
-     */
-
-    /*@PostMapping("id/{id}/organizations/organizationId")
-    public Mono<String> addOrganizationToClient(@PathVariable("id") UUID id, @Valid @ModelAttribute("clientOrganization")
-    MyPair<String, String> myPair, Model model, final Pageable userPageable) {
-        LOG.info("add organization to clientId");
-        final String PATH = "/admin/clients/organizations";
-
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UUID clientsId = UUID.fromString(myPair.getKey());
-        UUID organizationId = UUID.fromString(myPair.getValue());
-
-        return clientOrganizationWebClient.addClientToOrganization(clientsId, organizationId)
-                .doOnNext(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
-                .doOnNext(restPage -> {
-                    LOG.info("organizationList: {}", restPage);
-                    model.addAttribute("page", restPage);
-                })
-                .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
-                .then(Mono.just(PATH));
-    }
-    @DeleteMapping("id/{id}/organizations/organizationId")
-    public Mono<String> deleteClientOrganizationAssociation(@PathVariable("id") UUID id,
-                                                            @Valid @ModelAttribute("clientOrganization")
-                MyPair<String, String> myPair, Model model, final Pageable userPageable) {
-        LOG.info("delete client organization association");
-        final String PATH = "/admin/clients/organizations";
-
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UUID clientsId = UUID.fromString(myPair.getKey());
-        UUID organizationId = UUID.fromString(myPair.getValue());
-
-        return clientOrganizationWebClient.deleteClientOrganizationAssociation(clientsId, organizationId)
-                .doOnNext(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
-                .doOnNext(restPage -> {
-                    LOG.info("organizationList: {}", restPage);
-                    model.addAttribute("page", restPage);
-                })
-                .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
-                .then(Mono.just(PATH));
-    }*/
 }

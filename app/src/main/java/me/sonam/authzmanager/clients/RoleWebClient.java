@@ -2,7 +2,8 @@ package me.sonam.authzmanager.clients;
 
 
 
-import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.clients.user.ClientOrganizationUserRole;
+import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 public class RoleWebClient {
@@ -40,7 +42,7 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
     }
 
-    public Mono<RestPage<Role>> getRoles(UUID organizationId, Pageable pageable) {
+    public Mono<RestPage<Role>> getRolesByOrganizationId(UUID organizationId, Pageable pageable) {
         LOG.info("get roles for this organizationId: {}", organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -96,4 +98,71 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(Role.class);
     }
 
+    /**
+     * Get User roles from role-rest-service that has this organizationId, and clientId and matching UserIds
+     *  class ClientOrgUsersWithRole {
+     *      clientId,
+     *      orgId,
+     *      User: {userId, Role}
+     *  }
+     * @param clientId
+     * @param organizationId
+     * @param userIds
+     * @return
+     */
+    public Mono<List<ClientOrganizationUserWithRole>> getClientOrganiationUserWithRoles(UUID clientId, UUID organizationId, List<UUID> userIds) {
+        LOG.info("get an object that has the clientId, organizationId, a list of UserIds with their roles (id, name)");
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/client-organization-user-roles/clientId/{clientId}/organizationId/{organizationId}/userIds/{userIds}");
+
+        String endpoint = stringBuilder.toString().replace("{clientId}", clientId.toString())
+                .replace("{organizationId}", organizationId.toString());
+
+        StringBuilder userIdString = new StringBuilder();
+        for(int i = 0; i < userIds.size(); i++) {
+            userIdString.append(userIds.get(i));
+            if (i+1 < userIds.size()) {
+                userIdString.append(",");
+            }
+        }
+        LOG.info("userIdString: {}", userIdString);
+        endpoint = endpoint.replace("{userIds}", userIdString);
+
+        LOG.info("get clientOrganizationUserWithRoles with endpoint: {}", endpoint);
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(endpoint).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<ClientOrganizationUserWithRole>>() {});
+    }
+
+    public Mono<ClientOrganizationUserRole> addClientOrganizationUserRole(ClientOrganizationUserWithRole clientOrganizationUserWithRole) {
+        LOG.info("add client organization user role: {}", clientOrganizationUserWithRole);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/client-organization-user-roles");
+
+        LOG.info("add client-organization-user-roles endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
+                .bodyValue(clientOrganizationUserWithRole).retrieve();
+        return responseSpec.bodyToMono(ClientOrganizationUserRole.class);
+    }
+
+    /**
+     * this id represents the {@link ClientOrganizationUserRole#getId()}
+     * @param id
+     * @return
+     */
+    public Mono<String> deleteClientOrganizationUserRole(UUID id) {
+        LOG.info("delete client organization user role by its id: {}", id);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/client-organization-user-roles/id/{id}");
+        String endpoint = stringBuilder.toString().replace("{id}", id.toString());
+
+        LOG.info("delete client-organization-user-roles endpoint: {}", endpoint);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(endpoint).retrieve();
+        return responseSpec.bodyToMono(String.class);
+    }
 }

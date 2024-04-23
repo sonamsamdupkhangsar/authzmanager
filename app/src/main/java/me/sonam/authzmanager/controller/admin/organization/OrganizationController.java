@@ -1,15 +1,11 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Path;
-import me.sonam.authzmanager.AuthzManagerException;
-import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.clients.OrganizationWebClient;
 import me.sonam.authzmanager.clients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
 import me.sonam.authzmanager.clients.user.UserWebClient;
-import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.result.view.Rendering;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -120,7 +113,7 @@ public class OrganizationController {
 
         return organizationWebClient.getOrganizationById(id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> roleWebClient.getRoles(id, pageable))
+                .flatMap(organization -> roleWebClient.getRolesByOrganizationId(id, pageable))
                 .doOnNext(roleRestPage ->
                         model.addAttribute("page", roleRestPage))
                 .thenReturn(PATH);

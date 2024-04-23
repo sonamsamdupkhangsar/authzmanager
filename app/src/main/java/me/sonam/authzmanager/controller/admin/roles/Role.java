@@ -34,6 +34,11 @@ public class Role {
 
     }
 
+    public Role(UUID id, UUID userId) {
+        this.id = id;
+        this.userId = userId;
+    }
+
     public Role(UUID id, String name, UUID userId, RoleOrganization roleOrganization) {
         this.id = id;
         this.name = name;
