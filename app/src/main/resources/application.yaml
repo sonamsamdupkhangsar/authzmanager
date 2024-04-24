@@ -3,8 +3,10 @@ server:
 
 logging:
   level:
-    root: debug
-    me.sonam.auth: info
+    root: warn
+    me.sonam: debug
+#    me.sonam.authzmanager: info
+#    me.sonam.authzmanager.tokenfilter: debug
 #    org.springframework.web: info
 #    org.springframework.security: info
 #    org.springframework.security.oauth2: info
@@ -17,17 +19,30 @@ spring:
     active: local
   application:
     name: authzmanager
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+  thymeleaf: # to enable hot reload of Thymeleaf templates
+    cache: false
+#    mode: HTML
+#    encoding: UTF-8
+#    prefix: file:src/main/resources/templates/
+#  resources: # Static resources
+#    static-locations: file:src/main/resources/static/
+#    cache:
+#      period: 0
 #  r2dbc:
 #    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
 #    username: ${POSTGRES_USERNAME}
 #    password: ${POSTGRES_PASSWORD}
 #    properties:
 #      sslMode: ${DB_SSLMODE}
-  jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    generate-ddl: true
+#  jpa:
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+#    generate-ddl: true
   security:
     oauth2:
       resourceserver:
@@ -38,14 +53,35 @@ spring:
 permitpath:
   - path: /authzmanager/api/health/*
 
+jwtrequest:
+  - in:  /*
+    out: /authenticate
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+  - in:  /*
+    out: /organizations
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+  - in:  /*
+    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,/issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,/issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,/issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,/organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,/roles/(.)*
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+
+
 user-rest-service:
-  root: ${USER_REST_SERVICE}
-  signup: /signup
+  root: ${USER_REST_SERVICE}/users
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
   root: ${AUTH_SERVER}
   clients: /clients
+  clientOrganizations: /clientOrganizations
   authenticate: /myauthenticate
   oauth2token:
     path: /oauth2/token
@@ -55,4 +91,15 @@ authentication-rest-service:
   root: ${AUTHENTICATION_REST_SERVICE}/authentications
   authenticate: /authenticate
 
+organization-rest-service:
+  root: ${ORGANIZATION_REST_SERVICE}
+  contextPath: /organizations
+
+role-rest-service:
+  root: ${ROLE_REST_SERVICE}
+  contextPath: /roles
+
+
 allowedOrigins: ${allowedOrigins}
+
+oauthClientId: authzmanager-client

@@ -12,7 +12,6 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
-@Service
 public class OauthClientWebHandler implements OauthClientHandler {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientWebHandler.class);
 
@@ -24,7 +23,7 @@ public class OauthClientWebHandler implements OauthClientHandler {
     @Override
     public Mono<ServerResponse> createClient(ServerRequest serverRequest) {
         LOG.info("create client");
-        return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+        return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .flatMap(oauthClientRoute::createClient)
                 .flatMap(s -> {
                     LOG.info("create client response: {}", s);
@@ -43,7 +42,7 @@ public class OauthClientWebHandler implements OauthClientHandler {
     public Mono<ServerResponse> updateClient(ServerRequest serverRequest) {
         LOG.info("update client");
         return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
-                .flatMap(map -> oauthClientRoute.updateClient(map))
+                //.flatMap(map -> oauthClientRoute.updateClient(map))
                 .flatMap(s -> {
                     LOG.info("update client response: {}", s);
                     return ServerResponse.ok()
@@ -60,7 +59,8 @@ public class OauthClientWebHandler implements OauthClientHandler {
     @Override
     public Mono<ServerResponse> deleteClient(ServerRequest serverRequest) {
         LOG.info("delete client");
-        return oauthClientRoute.deleteClient(serverRequest.pathVariable("clientId"))
+        return oauthClientRoute.deleteClient(UUID.fromString(serverRequest.pathVariable("id")),
+                        UUID.fromString(serverRequest.pathVariable("ownerId")))
                 .flatMap(s -> {
                     LOG.info("client deleted, response: {}", s);
                     return ServerResponse.ok()

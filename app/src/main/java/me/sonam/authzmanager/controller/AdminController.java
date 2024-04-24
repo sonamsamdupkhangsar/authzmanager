@@ -38,7 +38,7 @@ public class AdminController {
         return "admin/dashboard";
     }
 
-    @GetMapping("/clients")
+    //@GetMapping("/clients")
     public String getClients() {
         LOG.info("return clients");
 

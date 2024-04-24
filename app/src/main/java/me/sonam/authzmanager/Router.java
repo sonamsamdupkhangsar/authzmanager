@@ -1,7 +1,6 @@
 package me.sonam.authzmanager;
 
 import me.sonam.authzmanager.clients.OauthClientHandler;
-import me.sonam.authzmanager.clients.OauthClientRouteRouteAuthServer;
 import me.sonam.authzmanager.user.UserHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 /**
  * Set AccountService methods route for checking active and to actiate acccount
  */
-@Configuration
+//@Configuration
 public class Router {
     private static final Logger LOG = LoggerFactory.getLogger(Router.class);
 

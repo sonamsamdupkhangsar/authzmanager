@@ -2,6 +2,7 @@ package me.sonam.authzmanager.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,46 +36,36 @@ public class AuthManagerSecurityConfig {
     @Value("${allowedOrigins}")
     private String allowedOrigins; //csv allow origins
 
-    private final AuthenticationProvider authenticationProvider;
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
 
-    public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
+    /*public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
-        LOG.info("set authenticationProvider");
-        if (authenticationProvider == null) {
-            LOG.error("authenticationProvider is null");
-        }
-        else {
-            LOG.info("authenticationProvider is set");
-        }
-
-    }
+    }*/
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers("/actuator/**").permitAll()
                                 .requestMatchers("/api/health/readiness").permitAll()
-                                .requestMatchers("/forgotUsername").permitAll()
-                                .requestMatchers("/forgotPassword").permitAll()
-                                .requestMatchers("/forgot/emailUsername").permitAll()
-                                .requestMatchers("/forgot/changePassword").permitAll()
+                                .requestMatchers("/signup").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(httpSecurityFormLoginConfigurer ->
                         httpSecurityFormLoginConfigurer.loginPage("/login/login.html")
-                                .defaultSuccessUrl("/admin/dashboard") // use this to forward with this address in browser
+                                .defaultSuccessUrl("/admin/dashboard", true) // use this to forward with this address in browser
                                 .permitAll()
                 )
                 .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer
                         .logoutUrl("/admin/logout")
                         .logoutSuccessUrl("/login/login.html")
-                );
-                //.authenticationManager(calloutAuthManager());
-                //.authenticationManager(authenticationProvider::authenticate);
-                //.authenticationManager(calloutAuthManager());//authenticationManager());
+                )
+                .authenticationManager(authenticationManager());
+
         return http.cors(Customizer.withDefaults()).build();
     }
+
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfig = new CorsConfiguration();
@@ -84,7 +75,6 @@ public class AuthManagerSecurityConfig {
         LOG.info("adding allowedOrigins: {}", list);
 
         corsConfig.setAllowedOrigins(list);
-        //corsConfig.addAllowedMethod("*");
         corsConfig.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "OPTIONS"));
         corsConfig.addAllowedHeader("*");
         corsConfig.setAllowCredentials(true);
@@ -94,34 +84,10 @@ public class AuthManagerSecurityConfig {
         return source;
     }
 
-    private AuthenticationManager calloutAuthManager() {
-        ProviderManager providerManager = new ProviderManager(authenticationProvider);
-        providerManager.setEraseCredentialsAfterAuthentication(false);
-        return providerManager;
-    }
-
     private AuthenticationManager authenticationManager() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService());
-        authenticationProvider.setPasswordEncoder(passwordEncoder());
-
         ProviderManager providerManager = new ProviderManager(authenticationProvider);
         providerManager.setEraseCredentialsAfterAuthentication(false);
-
-
         return providerManager;
-    }
-
-    UserDetailsService userDetailsService() {
-        var user = User.withUsername("admin")
-                .password(passwordEncoder().encode("password"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(user);
-    }
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
 }

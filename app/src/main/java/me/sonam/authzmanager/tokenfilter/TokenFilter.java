@@ -22,49 +22,45 @@ import java.util.Map;
  * Don't add it manually to a webclient to avoid getting calling twice.
  * This is copied from authorization server project
  */
-@Service
+//@Service
 public class TokenFilter {
     private static final Logger LOG = LoggerFactory.getLogger(TokenFilter.class);
 
-    @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
+   // @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
     private String oauth2TokenEndpoint;
 
-
-    @Autowired
+   // @Autowired
     private JwtPath jwtPath;
 
     private WebClient.Builder webClientBuilder;
 
-    private RequestCache requestCache;
-    @Value("${auth-server.oauth2token.path:}")
-    private String accessTokenPath;
 
-    public TokenFilter(WebClient.Builder webClientBuilder) {
+    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint) {
         this.webClientBuilder = webClientBuilder;
-        //this.requestCache = requestCache;
+
+        this.jwtPath = jwtPath;
+        this.oauth2TokenEndpoint = oauth2TokenEndpoint;
     }
 
     public ExchangeFilterFunction renewTokenFilter() {
         return (request, next) -> {
             LOG.debug("request.path: {}", request.url().getPath());
-            if (request.url().getPath().equals(accessTokenPath)) {
-                LOG.debug("no need to request access token when going to that path: {}", request.url().getPath());
-                ClientRequest clientRequest = ClientRequest.from(request).build();
-                return next.exchange(clientRequest);
-            }
-            else {
-                LOG.info("going thru jwt request ") ;
-                for (JwtPath.JwtRequest jwt : jwtPath.getJwtRequest()) {
-                    LOG.debug("jwt.out: {}", jwt.getOut());
-                    if (request.url().getPath().matches(jwt.getOut())) {
+
+            LOG.info("going thru jwt request ") ;
+            for (JwtPath.JwtRequest jwt : jwtPath.getJwtRequest()) {
+                LOG.debug("jwt.out: {}", jwt.getOut());
+                String[] outMatches = jwt.getOut().split(",");
+                for (String outPath : outMatches) {
+                    LOG.info("outPath: {}", outPath);
+                    if (request.url().getPath().matches(outPath.trim())) {
                         LOG.info("path {} matches with outbound request matches: {}",
-                                jwt.getOut(), request.url().getPath());
+                                outPath, request.url().getPath());
                         LOG.info("make a token request");
 
                         final StringBuilder oauthEndpointWithScope = new StringBuilder(oauth2TokenEndpoint);
 
                         if (jwt.getAccessToken().getScopes() != null && !jwt.getAccessToken().getScopes().trim().isEmpty()) {
-                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes()).toString();
+                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes());
                         }
                         return getAccessToken(oauth2TokenEndpoint.toString(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
                                 .flatMap(accessToken -> {
@@ -77,16 +73,15 @@ public class TokenFilter {
                                                 LOG.info("added access-token to http header");
                                             }).build();
                                     return Mono.just(clientRequest);
-                                }).flatMap(clientRequest ->  next.exchange(clientRequest));
-                        //return next.exchange(clientRequest);
+                                }).flatMap(clientRequest -> next.exchange(clientRequest));
                     }
                 }
+            }
 
                 LOG.info("no outbound path match found");
                 ClientRequest filtered = ClientRequest.from(request)
                         .build();
                 return next.exchange(filtered);
-            }
         };
     }
 
