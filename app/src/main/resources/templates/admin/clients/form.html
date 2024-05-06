@@ -117,9 +117,9 @@
 
                 <div class="mb-3 row">
                     <label for="clientSecret" class="col-sm-4 col-form-label">Client secret</label>
-                    <div class="col-sm-5">
+                    <div class="col-sm-7">
                         <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
-                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" />
+                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"/>
                     </div>
                 </div>
                 <div class="mb-3 row">
@@ -130,8 +130,8 @@
                 </div>
                 <div class="mb-3 row">
                     <label for="clientName" class="col-sm-4 col-form-label">Client name</label>
-                    <div class="col-sm-5">
-                        <input type="text" class="form-control" id="clientName" th:field="*{clientName}" />
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="clientName" th:field="*{clientName}" readonly />
                     </div>
                 </div>
                 <div class="mb-3 row">

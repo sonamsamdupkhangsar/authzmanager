@@ -12,10 +12,10 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
-public class OauthClientWebHandler implements OauthClientHandler {
+public class OauthClientWebHandler /*implements OauthClientHandler*/ {
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientWebHandler.class);
 
-    private final OauthClientRoute oauthClientRoute;
+    /*private final OauthClientRoute oauthClientRoute;
     public OauthClientWebHandler(OauthClientRoute oauthClientRoute) {
         this.oauthClientRoute = oauthClientRoute;
     }
@@ -90,5 +90,5 @@ public class OauthClientWebHandler implements OauthClientHandler {
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(Map.of("error", "failed to get Oauth2 clients: "+ throwable.getMessage()));
                 });
-    }
+    }*/
 }

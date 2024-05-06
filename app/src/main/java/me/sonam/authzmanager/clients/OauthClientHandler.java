@@ -9,9 +9,11 @@ import reactor.core.publisher.Mono;
  */
 public interface OauthClientHandler {
 
+/*
     Mono<ServerResponse> createClient(ServerRequest serverRequest);
     Mono<ServerResponse> updateClient(ServerRequest serverRequest);
     Mono<ServerResponse> deleteClient(ServerRequest serverRequest);
     Mono<ServerResponse> getUserOauth2Clients(ServerRequest serverRequest);
+*/
 
 }

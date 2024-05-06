@@ -18,6 +18,8 @@ public class WebClientDevConfig {
     private String oauth2TokenEndpoint;
     @Value("${auth-server.oauth2token.path:}")
     private String accessTokenPath;
+    @Value("${auth-server.oauth2token.grantType}")
+    private String grantType;
     @Autowired
     private JwtPath jwtPath;
     private static final Logger LOG = LoggerFactory.getLogger(WebClientDevConfig.class);
@@ -38,7 +40,7 @@ public class WebClientDevConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint, grantType);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 

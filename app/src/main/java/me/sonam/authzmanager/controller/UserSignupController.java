@@ -1,7 +1,7 @@
 package me.sonam.authzmanager.controller;
 
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.clients.user.UserWebClient;
+import me.sonam.authzmanager.webclients.UserWebClient;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

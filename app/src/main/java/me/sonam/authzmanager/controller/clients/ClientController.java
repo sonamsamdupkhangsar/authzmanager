@@ -1,14 +1,14 @@
 package me.sonam.authzmanager.controller.clients;
 
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
-import me.sonam.authzmanager.clients.OauthClientRoute;
-import me.sonam.authzmanager.clients.OrganizationWebClient;
-import me.sonam.authzmanager.clients.RoleWebClient;
+import me.sonam.authzmanager.webclients.OauthClientWebClient;
+import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
+import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.clients.user.User;
-import me.sonam.authzmanager.clients.user.UserWebClient;
+import me.sonam.authzmanager.webclients.UserWebClient;
 import me.sonam.authzmanager.controller.admin.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
@@ -36,14 +36,14 @@ public class ClientController implements ClientUserPage {
     private static final Logger LOG = LoggerFactory.getLogger(ClientController.class);
 
     private OrganizationWebClient organizationWebClient;
-    private OauthClientRoute oauthClientWebClient;
+    private OauthClientWebClient oauthClientWebClient;
     private ClientOrganizationWebClient clientOrganizationWebClient;
     private UserWebClient userWebClient;
     private RoleWebClient roleWebClient;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
-    public ClientController(OauthClientRoute oauthClientWebClient,
+    public ClientController(OauthClientWebClient oauthClientWebClient,
                             OrganizationWebClient organizationWebClient,
                             ClientOrganizationWebClient clientOrganizationWebClient,
                             UserWebClient userWebClient, RoleWebClient roleWebClient) {
@@ -245,7 +245,7 @@ public class ClientController implements ClientUserPage {
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return setClientInModel(id, model, PATH)
-                .flatMap(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -321,7 +321,7 @@ public class ClientController implements ClientUserPage {
                 //find users that have this clientId with a role
                 .flatMap(objects -> {
                     List<UUID> userIds = objects.getT1().stream().map(User::getId).toList();
-                    return roleWebClient.getClientOrganiationUserWithRoles(id, objects.getT2().getId(), userIds)
+                    return roleWebClient.getClientOrganizationUserWithRoles(id, objects.getT2().getId(), userIds)
                             .switchIfEmpty(Mono.just(new ArrayList<ClientOrganizationUserWithRole>()))
                             .zipWith(Mono.just(objects.getT1()));
                 })

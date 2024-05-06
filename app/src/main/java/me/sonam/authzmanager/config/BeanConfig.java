@@ -1,8 +1,7 @@
 package me.sonam.authzmanager.config;
 
 import me.sonam.authzmanager.AuthenticationCallout;
-import me.sonam.authzmanager.clients.*;
-import me.sonam.authzmanager.clients.user.UserWebClient;
+import me.sonam.authzmanager.webclients.*;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +47,7 @@ public class BeanConfig {
     }
 
     @Bean
-    public OauthClientRoute oauthClientRoute() {
+    public OauthClientWebClient oauthClientRoute() {
         return new OauthClientWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
     }
 

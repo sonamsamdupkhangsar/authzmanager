@@ -20,7 +20,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 public class Router {
     private static final Logger LOG = LoggerFactory.getLogger(Router.class);
 
-    @Bean
+/*    @Bean
     public RouterFunction<ServerResponse> route(OauthClientHandler handler, UserHandler userHandler) {
         LOG.info("building authenticate router function");
         return RouterFunctions.route(POST("/authzmanager/authenticate").and(accept(MediaType.APPLICATION_JSON)),
@@ -35,5 +35,5 @@ public class Router {
                         handler::getUserOauth2Clients)
                 .andRoute(DELETE("/authzmanager/clients/{clientId}").and(accept(MediaType.APPLICATION_JSON)),
                         handler::deleteClient);
-    }
+    }*/
 }

@@ -1,15 +1,12 @@
-package me.sonam.authzmanager.clients;
+package me.sonam.authzmanager.webclients;
 
 
-import me.sonam.authzmanager.clients.user.UserWebClient;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.controller.admin.organization.OrganizationController;
 
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,7 +26,7 @@ public class OrganizationWebClient {
         this.organizationEndpoint = organizationEndpoint;
     }
 
-    public Mono<RestPage<Organization>> getMyOrganizations(UUID userId, Pageable pageable) {
+    public Mono<RestPage<Organization>> getOrganizationPageByOwner(UUID userId, Pageable pageable) {
         LOG.info("get organizations created/owned by this user");
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
@@ -76,7 +73,7 @@ public class OrganizationWebClient {
         LOG.info("get organization by id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(id);
-        LOG.info("get organization by idendpoint: {}", stringBuilder.toString());
+        LOG.info("get organization by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).
                 retrieve();
@@ -135,7 +132,7 @@ public class OrganizationWebClient {
         LOG.info("add user {} to organization {}", userId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
-        stringBuilder.append("/id/").append(organizationId).append("/users/userId/").append(userId);
+        stringBuilder.append("/").append(organizationId).append("/users/").append(userId);
 
         LOG.info("add user to organization endpoint: {}", stringBuilder);
 

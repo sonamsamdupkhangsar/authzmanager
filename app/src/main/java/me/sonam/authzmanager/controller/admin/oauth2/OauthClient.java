@@ -755,7 +755,7 @@ public class OauthClient {
 
             LOG.info("this RegisteredClient has not been created yet");
             LOG.info("copy clientIdUuid and append with .clientId");
-            clientId = clientIdUuid + "." + clientId;
+            clientId = clientIdUuid + "-" + clientId;
             LOG.info("id is null, prepend clientIdUuid to clientIdString: {}", clientId);
         }
         else {
@@ -766,7 +766,7 @@ public class OauthClient {
 
         RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id)
                 .clientId(clientId)
-                .clientSecret(clientSecret);
+                .clientSecret(clientSecret).clientName(clientId);
 
         for(String s: clientAuthenticationMethods) {
             switch (s) {

@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.clients;
+package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
@@ -28,7 +28,6 @@ public class ClientOrganizationWebClient {
     public Mono<String> addClientToOrganization(UUID clientsId, UUID organizationId) {
         LOG.info("add client {} to organization: {}", clientsId, organizationId);
 
-
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientOrganizationEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientOrganizationEndpoint)
@@ -50,7 +49,7 @@ public class ClientOrganizationWebClient {
                 clientsId, organizationId);
 
         StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint)
-                .append("/clientId/").append(clientsId).append("/organizationId/").append(organizationId);
+                .append(clientsId).append("/organizations/").append(organizationId);
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(clientsEndpoint.toString())
@@ -67,9 +66,7 @@ public class ClientOrganizationWebClient {
     }
 
     public Mono<ClientOrganization> getClientIdOrganizationIdMatch(List<Organization> organizationList, UUID clientsId) {
-        LOG.info("get a row with clientId and organizationId");
-
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/findRow");
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/organizations");
         LOG.info("calling auth-server find row with clientsId and organizationList endpoint {}", clientsEndpoint);
         List<UUID> organizationIds = organizationList.stream().map(Organization::getId).toList();
 
@@ -92,8 +89,8 @@ public class ClientOrganizationWebClient {
     public Mono<UUID> getOrganizationIdAssociatedWithClientId(UUID id) {
         LOG.info("calling ClientOrganization endpoint to get organizationId fro client.id: {}", id);
 
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/clients/id/")
-                .append(id).append("/organizations/id");
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint)
+                .append(id).append("/organizations/id/");
         LOG.info("calling auth-server get organizationId endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString()).retrieve();

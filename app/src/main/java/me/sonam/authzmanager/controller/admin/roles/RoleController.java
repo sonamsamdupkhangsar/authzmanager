@@ -1,13 +1,11 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
-import io.netty.handler.codec.socks.SocksRequestType;
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.clients.OrganizationWebClient;
-import me.sonam.authzmanager.clients.RoleWebClient;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
+import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -90,7 +88,7 @@ public class RoleController {
                     model.addAttribute("role", updateRole);
                     model.addAttribute("message", "role updated");
         })
-               .flatMap(role1 ->  organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+               .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                .flatMap(organizationRestPage -> {
             LOG.info("organizationList: {}", organizationRestPage);
             model.addAttribute("organizationPage", organizationRestPage);
@@ -112,7 +110,7 @@ public class RoleController {
 
         return roleWebClient.getRoleById(id)
                 .doOnNext(role ->{ model.addAttribute("role", role); LOG.info("role: {}", role);})
-                .flatMap(roles -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable).doOnNext(restPage -> {
+                .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
                             LOG.info("organizationList: {}", restPage);
 
                             model.addAttribute("organizationPage", restPage);
@@ -161,7 +159,7 @@ public class RoleController {
 
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return organizationWebClient.getMyOrganizations(userId.getUserId(), pageable).doOnNext(restPage -> {
+        return organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
             LOG.info("organizationList: {}", restPage);
 
             model.addAttribute("organizationPage", restPage);

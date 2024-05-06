@@ -1,6 +1,7 @@
-package me.sonam.authzmanager.clients.user;
+package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.AuthzManagerException;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public class UserWebClient {
     public Mono<User> getUserById(UUID id) {
         LOG.info("calling user-rest-service to get user by id: {}", id);
 
-        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/id/").append(id);
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/").append(id);
 
         LOG.info("user endpoint: {}", stringBuilder);
 
@@ -75,7 +76,7 @@ public class UserWebClient {
     public Mono<User> findByAuthentication(String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
 
-        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/")
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id")
                 .append(authenticationId);
 
         LOG.info("endpoint: {}", stringBuilder);

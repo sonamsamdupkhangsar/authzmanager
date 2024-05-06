@@ -41,8 +41,6 @@ public class AuthenticationCallout  implements AuthenticationProvider {
     public AuthenticationCallout(WebClient.Builder webClientBuilder, final String springAuthorizationServerAuthenticationEp) {
         this.webClientBuilder = webClientBuilder;
         this.springAuthorizationServerAuthenticationEp = springAuthorizationServerAuthenticationEp;
-        /*this.tokenFilter = tokenFilter;
-        this.webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();*/
     }
 
     @Override
@@ -65,7 +63,6 @@ public class AuthenticationCallout  implements AuthenticationProvider {
                 .bodyValue(Map.of("username", username, "password", password, "clientId", oauthClientId))
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
                 .retrieve();
-
 
         return responseSpec.bodyToMono(Map.class).map(roleMap -> {
             LOG.info("got response from auth-server authenticate call: {}", roleMap);  //returned roles delimited by space from auth-server authenticate endpoint  like "USER ADMIN"

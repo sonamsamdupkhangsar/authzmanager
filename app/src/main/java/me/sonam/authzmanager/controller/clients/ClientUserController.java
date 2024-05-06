@@ -1,7 +1,6 @@
 package me.sonam.authzmanager.controller.clients;
 
-import jakarta.ws.rs.Path;
-import me.sonam.authzmanager.clients.RoleWebClient;
+import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;

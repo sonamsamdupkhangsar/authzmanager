@@ -1,11 +1,11 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.clients.OrganizationWebClient;
-import me.sonam.authzmanager.clients.RoleWebClient;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
+import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
-import me.sonam.authzmanager.clients.user.UserWebClient;
+import me.sonam.authzmanager.webclients.UserWebClient;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class OrganizationController {
         pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        return organizationWebClient.getMyOrganizations(userId.getUserId(), pageable).doOnNext(restPage -> {
+        return organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
             LOG.info("organizationList: {}", restPage);
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));

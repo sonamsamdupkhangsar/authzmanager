@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.clients;
+package me.sonam.authzmanager.webclients;
 
 
 
@@ -22,15 +22,23 @@ public class RoleWebClient {
 
     private WebClient.Builder webClientBuilder;
     private String roleEndpoint;
+
     public RoleWebClient(WebClient.Builder webClientBuilder, String roleEndpoint) {
         this.webClientBuilder = webClientBuilder;
         this.roleEndpoint = roleEndpoint;
     }
+
+    /**
+     * this will retrieve roles created by this user-id
+     * @param userId
+     * @param pageable
+     * @return
+     */
     public Mono<RestPage<Role>> getRolesByUserId(UUID userId, Pageable pageable) {
         LOG.info("get roles for this ownerId: {}", userId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/userId/").append(userId)
+        stringBuilder.append("/user-id/").append(userId)
           .append("?page=").append(pageable.getPageNumber())
                 .append("&size=").append(pageable.getPageSize())
                 .append("&sortBy=name");
@@ -42,6 +50,12 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
     }
 
+    /**
+     * get associated roles for organization-id
+     * @param organizationId
+     * @param pageable
+     * @return
+     */
     public Mono<RestPage<Role>> getRolesByOrganizationId(UUID organizationId, Pageable pageable) {
         LOG.info("get roles for this organizationId: {}", organizationId);
 
@@ -58,7 +72,6 @@ public class RoleWebClient {
     }
 
     // use httpMethod for update or post
-
     public Mono<Role> updateRole(Role role, HttpMethod httpMethod) {
         LOG.info("update role: {}", role);
 
@@ -110,13 +123,11 @@ public class RoleWebClient {
      * @param userIds
      * @return
      */
-    public Mono<List<ClientOrganizationUserWithRole>> getClientOrganiationUserWithRoles(UUID clientId, UUID organizationId, List<UUID> userIds) {
+    public Mono<List<ClientOrganizationUserWithRole>> getClientOrganizationUserWithRoles(UUID clientId, UUID organizationId, List<UUID> userIds) {
         LOG.info("get an object that has the clientId, organizationId, a list of UserIds with their roles (id, name)");
 
-        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/client-organization-user-roles/clientId/{clientId}/organizationId/{organizationId}/userIds/{userIds}");
-
-        String endpoint = stringBuilder.toString().replace("{clientId}", clientId.toString())
+        String endpoint = (roleEndpoint + "/client-organization-users/client-id/{clientId}/organization-id/{organizationId}/user-ids/{userIds}")
+                .replace("{clientId}", clientId.toString())
                 .replace("{organizationId}", organizationId.toString());
 
         StringBuilder userIdString = new StringBuilder();
@@ -126,7 +137,8 @@ public class RoleWebClient {
                 userIdString.append(",");
             }
         }
-        LOG.info("userIdString: {}", userIdString);
+
+        LOG.debug("userIdString: {}", userIdString);
         endpoint = endpoint.replace("{userIds}", userIdString);
 
         LOG.info("get clientOrganizationUserWithRoles with endpoint: {}", endpoint);
@@ -139,7 +151,7 @@ public class RoleWebClient {
         LOG.info("add client organization user role: {}", clientOrganizationUserWithRole);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/client-organization-user-roles");
+        stringBuilder.append("/client-organization-users");
 
         LOG.info("add client-organization-user-roles endpoint: {}", stringBuilder);
 
@@ -157,7 +169,7 @@ public class RoleWebClient {
         LOG.info("delete client organization user role by its id: {}", id);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/client-organization-user-roles/id/{id}");
+        stringBuilder.append("/client-organization-users/{id}");
         String endpoint = stringBuilder.toString().replace("{id}", id.toString());
 
         LOG.info("delete client-organization-user-roles endpoint: {}", endpoint);

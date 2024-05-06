@@ -8,12 +8,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,16 +32,16 @@ public class TokenFilter {
 
    // @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
     private String oauth2TokenEndpoint;
-
+    private String grantType;
    // @Autowired
     private JwtPath jwtPath;
 
     private WebClient.Builder webClientBuilder;
 
 
-    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint) {
+    public TokenFilter(WebClient.Builder webClientBuilder, JwtPath jwtPath, String oauth2TokenEndpoint, String grantType) {
         this.webClientBuilder = webClientBuilder;
-
+        this.grantType = grantType;
         this.jwtPath = jwtPath;
         this.oauth2TokenEndpoint = oauth2TokenEndpoint;
     }
@@ -57,12 +61,7 @@ public class TokenFilter {
                                 outPath, request.url().getPath());
                         LOG.info("make a token request");
 
-                        final StringBuilder oauthEndpointWithScope = new StringBuilder(oauth2TokenEndpoint);
-
-                        if (jwt.getAccessToken().getScopes() != null && !jwt.getAccessToken().getScopes().trim().isEmpty()) {
-                            oauthEndpointWithScope.append("&scope=").append(jwt.getAccessToken().getScopes());
-                        }
-                        return getAccessToken(oauth2TokenEndpoint.toString(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
+                        return getAccessToken(oauth2TokenEndpoint.toString(), grantType, jwt.getAccessToken().getScopes(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
                                 .flatMap(accessToken -> {
 
                                     LOG.info("get accessToken: {}", accessToken);
@@ -85,9 +84,20 @@ public class TokenFilter {
         };
     }
 
-    private Mono<String> getAccessToken(final String oauthEndpoint, final String base64EncodeClientIdSecret) {
+    private Mono<String> getAccessToken(final String oauthEndpoint, String grantType, String scopes, final String base64EncodeClientIdSecret) {
         LOG.info("making a access-token request to endpoint: {}",oauthEndpoint);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", grantType);
+
+        List<String> scopeList = Arrays.stream(scopes.split(" ")).toList();
+        body.add("scopes", scopeList);
+
+        LOG.info("add body payload for grant type and scopes");
+
+
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(oauthEndpoint)
+                .bodyValue(body)
                 .headers(httpHeaders -> httpHeaders.setBasicAuth(base64EncodeClientIdSecret))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();

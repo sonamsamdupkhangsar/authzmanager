@@ -81,11 +81,11 @@ user-rest-service:
 auth-server:
   root: ${AUTH_SERVER}
   clients: /clients
-  clientOrganizations: /clientOrganizations
-  authenticate: /myauthenticate
+  clientOrganizations: /clients
+  authenticate: /authenticate
   oauth2token:
     path: /oauth2/token
-    params: ?grant_type=client_credentials
+    grantType: client_credentials
 
 authentication-rest-service:
   root: ${AUTHENTICATION_REST_SERVICE}/authentications

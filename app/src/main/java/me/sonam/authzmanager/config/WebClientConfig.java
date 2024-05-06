@@ -17,8 +17,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
     private static final Logger LOG = LoggerFactory.getLogger(WebClientConfig.class);
-    @Value("${auth-server.root}${auth-server.oauth2token.path}${auth-server.oauth2token.params:}")
+    @Value("${auth-server.root}${auth-server.oauth2token.path}")
     private String oauth2TokenEndpoint;
+    @Value("${auth-server.oauth2token.grantType}")
+    private String grantType;
+
     @Autowired
     private JwtPath jwtPath;
 
@@ -40,7 +43,7 @@ public class WebClientConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint, grantType);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 

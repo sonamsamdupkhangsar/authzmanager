@@ -1,8 +1,8 @@
 package me.sonam.authzmanager.controller.clients;
 
-import me.sonam.authzmanager.clients.ClientOrganizationWebClient;
-import me.sonam.authzmanager.clients.OauthClientWebClient;
-import me.sonam.authzmanager.clients.OrganizationWebClient;
+import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
+import me.sonam.authzmanager.webclients.OauthClientWebClient;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
 import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
@@ -57,7 +57,7 @@ public class ClientOrganizationController {
                         clientOrganization.getOrganizationId())
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully added to organization"))
                 .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
-                .flatMap(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -99,7 +99,7 @@ public class ClientOrganizationController {
         return clientOrganizationWebClient.deleteClientOrganizationAssociation(clientsId, organizationId)
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully removed from organization"))
                 .flatMap(organizationRestPage -> setClientInModel(clientsId, model, PATH))
-                .flatMap(s -> organizationWebClient.getMyOrganizations(userId.getUserId(), pageable))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
