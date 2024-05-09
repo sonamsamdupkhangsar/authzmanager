@@ -78,7 +78,10 @@ public class OrganizationWebClient {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).
                 retrieve();
 
-        return responseSpec.bodyToMono(Organization.class);
+        return responseSpec.bodyToMono(Organization.class).onErrorResume(throwable -> {
+            LOG.error("error occured on getting organization by id", throwable);
+            return Mono.empty();
+        });
     }
 
     public Mono<RestPage<UUID>> getUsersInOrganizationId(UUID id, Pageable pageable) {

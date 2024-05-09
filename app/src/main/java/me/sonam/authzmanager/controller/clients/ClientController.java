@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.clients;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
 import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
@@ -21,11 +22,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.result.view.Rendering;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -70,7 +73,7 @@ public class ClientController implements ClientUserPage {
     }
 
     //id is a UUID
-    @GetMapping("/id/{id}")
+    @GetMapping("/{id}")
     public Mono<String> getClientByClientId(@PathVariable("id") UUID id, Model model) {
         LOG.info("get client by id {}", id);
         final String PATH = "admin/clients/form";
@@ -102,6 +105,12 @@ public class ClientController implements ClientUserPage {
         });
     }
 
+    @GetMapping("/hello")
+    public Mono<Rendering> hello() {
+        final String PATH = "yoman";
+        LOG.info("returning yo man");
+        return Mono.just(Rendering.view("yoman.html").modelAttribute("client", "I am a client").build());
+    }
     /**
      * This will handle the client creation and client update.
      *
@@ -110,11 +119,14 @@ public class ClientController implements ClientUserPage {
      * @param model
      * @return
      */
-    @PostMapping
-    public Mono<String> updateClient(@Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
+    //I removed ModelAttribute("client") because test didn't work
+    @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute OauthClient client, BindingResult bindingResult, Model model) {
+
         LOG.info("update client");
         final String PATH = "admin/clients/form";
 
+        LOG.info("client: {}", client);
         if (bindingResult.hasErrors()) {
             LOG.info("client.getId: {}", client.getId());
             LOG.info("user didn't enter required fields: {}, allerror: {}", bindingResult.getFieldError(), bindingResult.getAllErrors());
@@ -183,11 +195,15 @@ public class ClientController implements ClientUserPage {
 
             OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
             LOG.info("oauthClient {}", oauthClient);
+
             model.addAttribute("client", oauthClient);
+            LOG.info("returning to path: {}", PATH);
+
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
             LOG.error("Failed to update client {}", throwable.getMessage());
             model.addAttribute("error", "Failed");
+
             return Mono.just(PATH);
         });
     }
@@ -211,7 +227,7 @@ public class ClientController implements ClientUserPage {
         });
     }
 
-    @DeleteMapping("/id/{id}")
+    @DeleteMapping("{id}")
     public Mono<String> deleteClientById(@PathVariable("id") UUID id, Model model) {
         LOG.info("delete client by id: {}", id);
         final String PATH = "/admin/clients/list";
@@ -219,7 +235,8 @@ public class ClientController implements ClientUserPage {
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
-        return oauthClientWebClient.deleteClient(id, userId.getUserId()).thenReturn(PATH)
+        return oauthClientWebClient.deleteClient(id, userId.getUserId())
+                .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     LOG.error("error occurred on deleting client by id: {}", id, throwable);
                     model.addAttribute("error", "Failed to delete by clientId");
@@ -232,13 +249,13 @@ public class ClientController implements ClientUserPage {
      * Get organizations created by the logged-in user
      *
      * @param model
-     * @param pageable
+     * @param userPageable
      * @return
      */
 
-    @GetMapping("id/{id}/organizations")
+    @GetMapping("{id}/organizations")
     public Mono<String> getOrganizations(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
-        LOG.info("get organizations created or owned by this user");
+        LOG.info("get organizations created or owned by this user-id: {}", id);
         final String PATH = "/admin/clients/organizations";
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
@@ -248,6 +265,8 @@ public class ClientController implements ClientUserPage {
                 .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
+                    LOG.info("print organization rest page as json: {}", getJson(restPage));
+
                     model.addAttribute("page", restPage);
                 }).flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
@@ -282,7 +301,7 @@ public class ClientController implements ClientUserPage {
      * @param userPageable
      * @return
      */
-    @GetMapping("id/{id}/users")
+    @GetMapping("{id}/users")
     public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         return setUsersAndsersInClientOrganizationUserRole(id, model, userPageable);
     }
@@ -295,7 +314,6 @@ public class ClientController implements ClientUserPage {
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
 
         return setClientInModel(id, model, PATH)
-
                 .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(id))
                 .flatMap(uuid -> organizationWebClient.getOrganizationById(uuid))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
@@ -327,6 +345,7 @@ public class ClientController implements ClientUserPage {
                 })
                 .doOnNext(objects -> { // objects = ClientOrganizationUserWithRole,users
                     List<User> usersInOrganizationList = objects.getT2();
+                    LOG.info("clientOrganizationUsreWithRoles: {}", objects.getT1());
 
                     List<ClientOrganizationUserWithRole> clientOrganizationUserWithRoleList = objects.getT1();
 
@@ -361,7 +380,21 @@ public class ClientController implements ClientUserPage {
                 .onErrorResume(throwable -> {
                     LOG.error("error occured: {}", throwable.getMessage());
                     model.addAttribute("error", "please select Organization for this client first.");
-                    return Mono.just("error");
+                    return Mono.just(PATH);
                 });
+    }
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    private String getJson(Object object) {
+        try {
+            String json = objectMapper.writeValueAsString(object);
+
+            return json;
+        }
+        catch (Exception e) {
+            LOG.error("error occued", e);
+            return null;
+        }
     }
 }

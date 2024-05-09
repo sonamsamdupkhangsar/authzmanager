@@ -18,7 +18,7 @@ import java.util.UUID;
  * this controller is for setting the Client Organization User Role
  */
 @Controller
-@RequestMapping("/admin/clients/id/{id}/users")
+@RequestMapping("/admin/clients/{id}/users")
 public class ClientUserController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientUserController.class);
     private RoleWebClient roleWebClient;
@@ -46,7 +46,7 @@ public class ClientUserController {
                 .thenReturn(PATH);
     }
 
-    @DeleteMapping("/client-organization-user-role/id/{roleId}")
+    @DeleteMapping("/client-organization-user-role/{roleId}")
     public Mono<String> deleteClientOrganizationUserRole(@PathVariable("id")UUID clientsId, @PathVariable("roleId") UUID roleId, Model model, Pageable userPageable) {
         LOG.info("delete client organization user role by id: {} in client.id: {}", roleId, clientsId);
         final String PATH = "/admin/clients/users";

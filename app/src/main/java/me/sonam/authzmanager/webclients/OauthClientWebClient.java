@@ -74,7 +74,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
     public Mono<Void> deleteClient(UUID id, UUID userId) {
         LOG.info("delete client by id: {} and ownerId: {}", id, userId);
 
-        StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint)
+        StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint).append("/")
                 .append(id).append("/user-id/").append(userId);
         LOG.info("calling auth-server delete client endpoint {}", deleteEndpoint);
 
@@ -134,7 +134,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
 
     
     public Mono<RegisteredClient> getOauthClientById(UUID id) {
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append(id);
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/").append(id);
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())

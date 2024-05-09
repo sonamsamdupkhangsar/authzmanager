@@ -73,7 +73,7 @@ public class ClientTest {
             LOG.info("not contains");
         }
     }
-    @Test
+    //@Test
     public void createRegisteredClient() {
         //RegisteredClient registeredClient = save("hello", "password");
         RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
@@ -82,10 +82,10 @@ public class ClientTest {
         oauthClient.setClientId("name");
         oauthClient.setRedirectUris("");
 
-        oauthClient.setAuthorizationGrantTypes(List.of(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase()));
+       /* oauthClient.setAuthorizationGrantTypes(List.of(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase()));
         oauthClient.setAuthenticationMethods(List.of(ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue().toUpperCase()));
         RegisteredClient registeredClient = oauthClient.getInitialRegisteredClient();
-        LOG.info("initialRegistedClient: {}", registeredClient);
+        LOG.info("initialRegistedClient: {}", registeredClient);*/
 
     }
 

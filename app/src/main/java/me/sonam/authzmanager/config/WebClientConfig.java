@@ -17,7 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
     private static final Logger LOG = LoggerFactory.getLogger(WebClientConfig.class);
-    @Value("${auth-server.root}${auth-server.oauth2token.path}")
+    @Value("${auth-server.root}${auth-server.contextPath}${auth-server.oauth2token.path}")
     private String oauth2TokenEndpoint;
     @Value("${auth-server.oauth2token.grantType}")
     private String grantType;

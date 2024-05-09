@@ -26,11 +26,11 @@ public class ClientOrganizationWebClient {
     }
 
     public Mono<String> addClientToOrganization(UUID clientsId, UUID organizationId) {
-        LOG.info("add client {} to organization: {}", clientsId, organizationId);
+        LOG.info("add client {} to organization: {} with endpoint: {}", clientsId, organizationId, clientOrganizationEndpoint);
 
-        LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientOrganizationEndpoint);
+        String clientOrganizations = new StringBuilder(clientOrganizationEndpoint).append("/organizations").toString();
 
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientOrganizationEndpoint)
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientOrganizations)
                 .bodyValue(new ClientOrganization(clientsId, organizationId))
                 .retrieve();
         return responseSpec.bodyToMono(String.class).map(string-> {
@@ -48,7 +48,7 @@ public class ClientOrganizationWebClient {
         LOG.info("delete clientOrganization association: clientId: {}, organizationId: {}",
                 clientsId, organizationId);
 
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint)
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/")
                 .append(clientsId).append("/organizations/").append(organizationId);
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
@@ -87,10 +87,10 @@ public class ClientOrganizationWebClient {
     }
 
     public Mono<UUID> getOrganizationIdAssociatedWithClientId(UUID id) {
-        LOG.info("calling ClientOrganization endpoint to get organizationId fro client.id: {}", id);
+        LOG.info("calling ClientOrganization endpoint to get organizationId from client.id: {}", id);
 
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint)
-                .append(id).append("/organizations/id/");
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/")
+                .append(id).append("/organizations/id");
         LOG.info("calling auth-server get organizationId endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString()).retrieve();
@@ -104,8 +104,8 @@ public class ClientOrganizationWebClient {
                     return uuid;
                 }).onErrorResume(throwable -> {
                     LOG.error("error occured: {}", throwable.getMessage());
-
-                    return Mono.empty();
+                    return Mono.error(new AuthzManagerException("No Organization selected"));
+                    //return Mono.empty();
                 });
     }
 

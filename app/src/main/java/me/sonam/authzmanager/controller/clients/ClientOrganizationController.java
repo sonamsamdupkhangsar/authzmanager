@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.clients;
 
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,8 +46,8 @@ public class ClientOrganizationController {
      * id is the client.id (not clientId)
      */
 
-    @PostMapping("client/id/{id}/organizations")
-    public Mono<String> addOrganizationToClient(@PathVariable("id") UUID id, ClientOrganization clientOrganization,
+    @PostMapping(path = "client/{id}/organizations")
+    public Mono<String> addOrganizationToClient(ClientOrganization clientOrganization, @PathVariable("id") UUID id,
                                                 Model model, final Pageable userPageable) {
         LOG.info("add organization to clientId: {}",clientOrganization);
         final String PATH = "/admin/clients/organizations";
@@ -53,6 +55,10 @@ public class ClientOrganizationController {
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
+        if (clientOrganization.getClientId() == null || clientOrganization.getOrganizationId() == null) {
+            LOG.error("clientId or organizationId in payload is null: {}", clientOrganization);
+            return Mono.error(new AuthzManagerException("clientOrganization.clientId or clientOrganization.organizationId cannot be null"));
+        }
         return clientOrganizationWebClient.addClientToOrganization(clientOrganization.getClientId(),
                         clientOrganization.getOrganizationId())
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully added to organization"))
@@ -86,7 +92,7 @@ public class ClientOrganizationController {
                 })
                 .then(Mono.just(PATH));
     }
-    @DeleteMapping("client/id/{id}/organizations/id/{organizationId}")
+    @DeleteMapping("client/{id}/organizations/{organizationId}")
     public Mono<String> deleteClientOrganizationAssociation(@PathVariable("id") UUID clientsId, @PathVariable("organizationId")UUID organizationId,
                                                             Model model,
                                                             final Pageable userPageable) {

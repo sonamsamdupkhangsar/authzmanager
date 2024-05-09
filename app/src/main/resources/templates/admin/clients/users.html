@@ -24,7 +24,7 @@
             xhttp.onload = function () {
                 let responseUrl = xhttp.responseURL;
 
-                let url = '/admin/clients/id/' + clientId + '/users?page=' + page;
+                let url = '/admin/clients/' + clientId + '/users?page=' + page;
                 console.log("redirecting to url: " + url);
                 window.location.replace(url);//"/admin/clients");
             };
@@ -63,20 +63,23 @@
             <div>
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" th:href="@{/admin/clients/id/{id}(id=${client.id})}">Client Details</a>
+                        <a class="nav-link" aria-current="page" th:href="@{/admin/clients/{id}(id=${client.id})}">Client Details</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/clients/id/{id}/organizations(id=${client.id})}">Add to
+                        <a class="nav-link" th:href="@{/admin/clients/{id}/organizations(id=${client.id})}">Add to
                             Organization</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/clients/id/{id}/users(id=${client.id})}">Set User
+                        <a class="nav-link active" th:href="@{/admin/clients/{id}/users(id=${client.id})}">Set User
                             Role</a>
                     </li>
                 </ul>
             </div>
 
-            <div class="col-sm mt-3">
+            <div class="col-sm mt-3" th:if="${error}">
+                <span th:text="${error}"></span>
+            </div>
+            <div class="col-sm mt-3" th:if="${organization}">
                 <p class="h5">Users in this client id and organization <b>[[${organization.name}]]</b></p>
 
                 <div class="col mt-5" th:if="${page}">
@@ -116,7 +119,7 @@
                             <td><span th:text="${userInClientOrganizationWithRole.user.authenticationId}"></span></td>
                             <td><span th:text="${userInClientOrganizationWithRole.user.role.name}"></span>
                                 <button type="button" th:with="clientId=${client.id}, myPage=${page.number},
-                                url=@{/admin/clients/id/{clientId}/users/client-organization-user-role/id/{id}?page={pageNumber}(clientId=${client.id},
+                                url=@{/admin/clients/{clientId}/users/client-organization-user-role/{id}?page={pageNumber}(clientId=${client.id},
                                 id=${userInClientOrganizationWithRole.id}, pageNumber=${page.number})}"
                                         th:onclick="sendDelete([[${url}]], [[${clientId}]], [[${myPage}]])"
                                           class="btn btn-primary">Remove Role</button>
@@ -131,7 +134,7 @@
                             <td><span th:text="${user.email}"></span></td>
                             <td><span th:text="${user.authenticationId}"></span></td>
                             <td>
-                            <form class="mt-3" action="#" method="post" th:action="@{/admin/clients/id/{id}/users/role(id=${client.id})}">
+                            <form class="mt-3" action="#" method="post" th:action="@{/admin/clients/{id}/users/role(id=${client.id})}">
                                 <input type="hidden" th:name="clientId" th:value="${client.id}" />
                                 <input type="hidden" th:name="organizationId" th:value="${organization.id}"/>
                                 <input type="hidden" th:name="user.id"  th:value="${user.id}"/>

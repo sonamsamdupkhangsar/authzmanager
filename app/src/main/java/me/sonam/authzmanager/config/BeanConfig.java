@@ -13,18 +13,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class BeanConfig {
-    @Value("${user-rest-service.root}")
+    @Value("${user-rest-service.root}${user-rest-service.contextPath}")
     private String userSignupEndpoint;
 
-    @Value("{authentication-rest-service.root}${authentication-rest-service.authenticate}")
+    @Value("${authentication-rest-service.root}${authentication-rest-service.authenticate}")
     private String authenticateEndpoint;
-    @Value("${auth-server.root}${auth-server.clients}")
+    @Value("${auth-server.root}${auth-server.contextPath}${auth-server.clients}")
     private String authServerClientsEndpoint;
 
-    @Value("${auth-server.root}${auth-server.clientOrganizations}")
+    @Value("${auth-server.root}${auth-server.contextPath}${auth-server.clientOrganizations}")
     private String authServerClientOrganizationsEndpoint;
 
-    @Value("${auth-server.root}${auth-server.authenticate}")
+    @Value("${auth-server.root}${auth-server.contextPath}${auth-server.authenticate}")
     private String springAuthorizationServerAuthenticationEp;
 
     @Value("${organization-rest-service.root}${organization-rest-service.contextPath}")
@@ -47,7 +47,7 @@ public class BeanConfig {
     }
 
     @Bean
-    public OauthClientWebClient oauthClientRoute() {
+    public OauthClientWebClient oauthClientWebClient() {
         return new OauthClientWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
     }
 

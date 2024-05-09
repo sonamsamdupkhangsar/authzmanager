@@ -65,27 +65,21 @@ public class ClientOrganizationUserWithRole {
         }
 
         ClientOrganizationUserWithRole that = (ClientOrganizationUserWithRole) object;
-        boolean value =  Objects.equals(user.getId(), that.user.getId());
-        LOG.info("object equals : {}", value);
-        return value;
+        return Objects.equals(user.getId(), that.user.getId());
     }
 
     @Override
     public int hashCode() {
-        LOG.info("hashhhhhh")
-;        int hash = Objects.hashCode(user.getId());
-        LOG.info("hash: {}", hash);
-        return hash;
+        return Objects.hashCode(user.getId());
     }
-
 
     @Override
     public String toString() {
-        return "ClientOrganziationUserWithRole{" +
-                "clientId=" + clientId +
+        return "ClientOrganizationUserWithRole{" +
+                "id=" + id +
+                ", clientId=" + clientId +
                 ", organizationId=" + organizationId +
                 ", user=" + user +
                 '}';
     }
-
 }

@@ -37,7 +37,7 @@
                 <span><a th:href="@{/admin/clients/createForm}">Create Client</a></span>
                 <ul>
                     <li th:each="pair : ${clientPairs}">
-                        <a th:text="${pair.value}" th:href="@{/admin/clients/id/{id}(id=${pair.key})}"></a>
+                        <a th:text="${pair.value}" th:href="@{/admin/clients/{id}(id=${pair.key})}"></a>
 
                     </li>
                 </ul>

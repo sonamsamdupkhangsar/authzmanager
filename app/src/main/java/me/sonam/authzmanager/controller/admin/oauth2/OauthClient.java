@@ -50,7 +50,7 @@ public class OauthClient {
     private ClientSettings clientSettings = new ClientSettings();
 
     private TokenSettings tokenSettings = new TokenSettings();
-    static class ClientSettings {
+    public static class ClientSettings {
         private boolean requireAuthorizationConsent;
         private boolean requireProofKey;
         private String jwkSetUrl;
@@ -696,7 +696,7 @@ public class OauthClient {
         return stringBuilder;
     }
 
-    public RegisteredClient getInitialRegisteredClient() {
+   /* public RegisteredClient getInitialRegisteredClient() {
         RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id).clientId(clientId)
                 .clientSecret(clientSecret);
 
@@ -747,7 +747,7 @@ public class OauthClient {
         registeredClientBuilder.mediateToken(true);
 
         return registeredClientBuilder.build();
-    }
+    }*/
 
     public RegisteredClient getRegisteredClient() {
         if (id == null || id.isEmpty()) {

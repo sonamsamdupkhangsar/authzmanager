@@ -1,8 +1,8 @@
 logging:
   level:
-    root: error
+    root: info
     me:
-      sonam: debug
+      sonam: info
 info:
   app:
     name: Springboot me.sonam.account.Application
@@ -41,12 +41,14 @@ user-rest-service:
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
-  root: http://localhost:9001/issuer
+  root: http://localhost:9001
+  contextPath: /issuer
   clients: /clients
+  clientOrganizations: /clients
   authenticate: /authenticate
   oauth2token:
     path: /oauth2/token
-    params: ?grant_type=client_credentials
+    grantType: client_credentials
 
 authentication-rest-service:
   root: http://localhost:{port}/authentications
@@ -55,6 +57,10 @@ authentication-rest-service:
 organization-rest-service:
   root: http://localhost:{port}
   contextPath: /organizations
+
+role-rest-service:
+  root: http://localhost:{port}
+  contextPath: /roles
 
 endpoint:
   user:
@@ -91,7 +97,12 @@ jwtrequest:
       scopes: message.read message.write
       base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
   - in:  /*
-    out: /organizations
+    out: /users,/users/id/(.)*,/users/(.)*,
+        /issuer/clients, /issuer/clients/(.)*,
+        /issuer/clientOrganizations/clients/id/(.)*/organizations/id, /issuer/clientOrganizations,
+        /issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*, /issuer/clientOrganizations/findRow,
+        /issuer/clientOrganizations/id/(.)*/organizationId/(.)*, /organizations, /organizations/(.)*,
+        /organizations/(.)*/users/(.)*, /roles, /roles/organizations/(.)*, /roles/(.)*
     accessToken:
       option: request
       scopes: message.read message.write

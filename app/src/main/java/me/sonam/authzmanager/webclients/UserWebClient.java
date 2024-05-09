@@ -52,11 +52,12 @@ public class UserWebClient {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(batchIdEnpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<User>>() {
-        }).onErrorResume(throwable -> {
-            LOG.error("no user with id: {}", ids, throwable);
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<User>>() {})
+                .onErrorResume(throwable -> {
+            LOG.error("no users with id: {}", ids, throwable);
             return Mono.empty();
         });
+
     }
 
     public Mono<User> getUserById(UUID id) {
@@ -76,7 +77,7 @@ public class UserWebClient {
     public Mono<User> findByAuthentication(String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
 
-        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id")
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id/")
                 .append(authenticationId);
 
         LOG.info("endpoint: {}", stringBuilder);

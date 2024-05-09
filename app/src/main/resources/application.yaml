@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    root: warn
+    root: error
     me.sonam: debug
 #    me.sonam.authzmanager: info
 #    me.sonam.authzmanager.tokenfilter: debug
@@ -55,7 +55,7 @@ permitpath:
 
 jwtrequest:
   - in:  /*
-    out: /authenticate
+    out: /issuer/authenticate
     accessToken:
       option: request
       scopes: ${REQUEST_SCOPES}
@@ -67,7 +67,12 @@ jwtrequest:
       scopes: ${REQUEST_SCOPES}
       base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
   - in:  /*
-    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,/issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,/issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,/issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,/organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,/roles/(.)*
+    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
+        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
+        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
+        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
+        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
+        /roles/(.)*
     accessToken:
       option: request
       scopes: ${REQUEST_SCOPES}
@@ -75,11 +80,13 @@ jwtrequest:
 
 
 user-rest-service:
-  root: ${USER_REST_SERVICE}/users
+  root: ${USER_REST_SERVICE}
+  contextPath: /users
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
   root: ${AUTH_SERVER}
+  contextPath: /issuer
   clients: /clients
   clientOrganizations: /clients
   authenticate: /authenticate

@@ -95,7 +95,6 @@ public class TokenFilter {
 
         LOG.info("add body payload for grant type and scopes");
 
-
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(oauthEndpoint)
                 .bodyValue(body)
                 .headers(httpHeaders -> httpHeaders.setBasicAuth(base64EncodeClientIdSecret))

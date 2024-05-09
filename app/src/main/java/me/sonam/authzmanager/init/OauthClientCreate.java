@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Configuration
+//@Configuration
 public class OauthClientCreate {
 
     private static final Logger LOG = LoggerFactory.getLogger(OauthClientCreate.class);
