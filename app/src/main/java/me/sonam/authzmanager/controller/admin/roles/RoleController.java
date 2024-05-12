@@ -45,7 +45,6 @@ public class RoleController {
             LOG.info("roleList: {}", restPage.getSize());
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
-
     }
 
     @GetMapping("/new")
@@ -109,35 +108,27 @@ public class RoleController {
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return roleWebClient.getRoleById(id)
-                .doOnNext(role ->{ model.addAttribute("role", role); LOG.info("role: {}", role);})
+                .doOnNext(role -> {
+                    model.addAttribute("role", role);
+                    LOG.info("role: {}", role);
+                })
                 .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
-                            LOG.info("organizationList: {}", restPage);
+                    LOG.info("organizationList: {}", restPage);
 
-                            model.addAttribute("organizationPage", restPage);
-                        }))
+                    model.addAttribute("organizationPage", restPage);
+                }))
                 .thenReturn(PATH);
     }
 
     /**
-     * get all roles in this role id
+     * delete method is called by a Javascript Ajax call. After the delete method call, the ajax will display the '/admin/roles/list' page
+     * @param roleId
      * @param model
      * @return
      */
-  //  @GetMapping("/role/{roleId}")
-  /*  public Mono<String> getRoleRoles(@PathVariable("roleId")UUID roleId, Model model) {
-        LOG.info("return createForm");
-        final String PATH = "/admin/roles/list";
-
-        return roleWebClient.getRoles(roleId).doOnNext(restPage -> {
-            LOG.info("roleList: {}", restPage);
-            model.addAttribute("page", restPage);
-        }).then(Mono.just(PATH));
-    }*/
-
-
     @DeleteMapping("/{id}")
     public Mono<String> delete(@PathVariable("id") UUID roleId, Model model) {
-        final String PATH = "admin/roles/role";
+        final String PATH = "admin/dashboard";//display dashboard template as it doesn't require any data in the model
         LOG.info("delete role by id {}", roleId);
 
         return roleWebClient.deleteRole(roleId).doOnNext(s -> {
@@ -149,20 +140,5 @@ public class RoleController {
                     model.addAttribute("error", "failed to delete role");
                     return Mono.just(PATH);
         });
-    }
-
-    @GetMapping("/{id}/organizations")
-    public Mono<String> getOrganizationsCreatedByThis(@PathVariable("id")UUID roleId, Model model, Pageable pageable) {
-        final String PATH = "admin/roles/form";
-        LOG.info("get organizations for this userId and associated to this role");
-        pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
-
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        return organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
-            LOG.info("organizationList: {}", restPage);
-
-            model.addAttribute("organizationPage", restPage);
-        }).then(Mono.just(PATH));
     }
 }

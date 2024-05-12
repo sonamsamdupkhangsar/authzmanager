@@ -1,6 +1,5 @@
 package me.sonam.authzmanager.controller;
 
-import me.sonam.authzmanager.clients.OauthClientRoute;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;

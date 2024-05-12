@@ -43,7 +43,7 @@ public class OrganizationWebClient {
     // use httpMethod for update or post
 
     public Mono<Organization> updateOrganization(Organization organization, HttpMethod httpMethod) {
-        LOG.info("create organization: {}", organization);
+        LOG.info("create organization: {} with endpoint: {}", organization, organizationEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(organizationEndpoint)
                 .bodyValue(organization)
@@ -132,12 +132,12 @@ public class OrganizationWebClient {
     }
 
     public Mono<Map<String, String>> removeUserFromOrganization(UUID userId, UUID organizationId) {
-        LOG.info("add user {} to organization {}", userId, organizationId);
+        LOG.info("remove user {} from organization {}", userId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(organizationId).append("/users/").append(userId);
 
-        LOG.info("add user to organization endpoint: {}", stringBuilder);
+        LOG.info("remove user from organization endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
                 .retrieve();

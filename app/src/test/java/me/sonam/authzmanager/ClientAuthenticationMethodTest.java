@@ -1,6 +1,6 @@
 package me.sonam.authzmanager;
 
-import me.sonam.authzmanager.controller.admin.oauth2.ClientAuthenticationMethod;
+import me.sonam.authzmanager.oauth2.ClientAuthenticationMethod;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

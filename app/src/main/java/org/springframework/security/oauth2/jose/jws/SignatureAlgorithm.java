@@ -1,6 +1,6 @@
 package org.springframework.security.oauth2.jose.jws;
 
-import me.sonam.authzmanager.controller.admin.oauth2.JwsAlgorithm;
+import me.sonam.authzmanager.oauth2.JwsAlgorithm;
 
 public enum SignatureAlgorithm implements JwsAlgorithm {
     RS256("RS256"),

@@ -45,7 +45,7 @@ public class OrganizationController {
      */
     @GetMapping
     public Mono<String> getOrganizations(Model model, Pageable pageable) {
-        LOG.info("return createForm");
+        LOG.info("get organizations");
         final String PATH = "/admin/organizations/list";
         pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -56,7 +56,7 @@ public class OrganizationController {
         }).then(Mono.just(PATH));
     }
 
-    @GetMapping("/new")
+    @GetMapping("/form")
     public Mono<String> getCreateForm(Model model) {
         LOG.info("return createForm");
         final String PATH = "admin/organizations/form";
@@ -119,9 +119,16 @@ public class OrganizationController {
                 .thenReturn(PATH);
     }
 
+    /**
+     * delete operation in the Thymeleaf is called thru a Ajax Java script call.
+     * Just return the dashboard template after execution.
+     * @param organizationId
+     * @param model
+     * @return
+     */
     @DeleteMapping("/{id}")
     public Mono<String> delete(@PathVariable("id") UUID organizationId, Model model) {
-        final String PATH = "admin/organizations/organization";
+        final String PATH = "admin/dashboard";
         LOG.info("delete organization by id {}", organizationId);
 
         return organizationWebClient.deleteOrganization(organizationId).doOnNext(s -> {
@@ -209,16 +216,16 @@ public class OrganizationController {
 
     @PostMapping("/{id}/users/add")
     public Mono<String> updateUserOrganization(@ModelAttribute("user") User user, Model model, Pageable pageable) {
-        final String PATH ="admin/organizations/user";
+        final String PATH = "admin/organizations/user";
         LOG.info("update user by authenticationId: {} to this organization", user);
 
         if (user.getOrganizationChoice().getSelected()) {
-            LOG.info("if the organization choice checkebox was selected");
+            LOG.info("add user to organization");
 
             return addUserToOrganization(PATH, user, model);
         }
         else {
-            LOG.info("else if the organization checkbox was not selected");
+            LOG.info("remove user from organization");
             return removeUserFromOrganization(PATH, user, model);
         }
     }

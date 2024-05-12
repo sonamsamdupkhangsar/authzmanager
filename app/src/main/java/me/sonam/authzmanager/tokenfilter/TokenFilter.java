@@ -55,16 +55,14 @@ public class TokenFilter {
                 LOG.debug("jwt.out: {}", jwt.getOut());
                 String[] outMatches = jwt.getOut().split(",");
                 for (String outPath : outMatches) {
-                    LOG.info("outPath: {}", outPath);
+                    LOG.debug("outPath: {}", outPath);
                     if (request.url().getPath().matches(outPath.trim())) {
-                        LOG.info("path {} matches with outbound request matches: {}",
+                        LOG.info("make a token request for path {} matches with outbound request matches: {}",
                                 outPath, request.url().getPath());
-                        LOG.info("make a token request");
 
                         return getAccessToken(oauth2TokenEndpoint.toString(), grantType, jwt.getAccessToken().getScopes(), jwt.getAccessToken().getBase64EncodedClientIdSecret())
                                 .flatMap(accessToken -> {
-
-                                    LOG.info("get accessToken: {}", accessToken);
+                                    LOG.info("got accessToken: {}", accessToken);
                                     ClientRequest clientRequest = ClientRequest.from(request)
                                             .headers(headers -> {
                                                 headers.set(HttpHeaders.ORIGIN, request.headers().getFirst(HttpHeaders.ORIGIN));
@@ -93,7 +91,7 @@ public class TokenFilter {
         List<String> scopeList = Arrays.stream(scopes.split(" ")).toList();
         body.add("scopes", scopeList);
 
-        LOG.info("add body payload for grant type and scopes");
+        LOG.debug("add body payload for grant type and scopes");
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(oauthEndpoint)
                 .bodyValue(body)

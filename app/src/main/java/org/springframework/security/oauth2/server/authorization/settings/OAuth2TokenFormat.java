@@ -1,6 +1,6 @@
 package org.springframework.security.oauth2.server.authorization.settings;
 
-import me.sonam.authzmanager.controller.admin.oauth2.SpringAuthorizationServerVersion;
+import me.sonam.authzmanager.oauth2.SpringAuthorizationServerVersion;
 import org.springframework.util.Assert;
 
 import java.io.Serializable;

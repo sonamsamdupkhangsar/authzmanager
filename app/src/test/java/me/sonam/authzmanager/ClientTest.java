@@ -2,8 +2,8 @@ package me.sonam.authzmanager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.sonam.authzmanager.controller.admin.oauth2.*;
-import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.oauth2.*;
+import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

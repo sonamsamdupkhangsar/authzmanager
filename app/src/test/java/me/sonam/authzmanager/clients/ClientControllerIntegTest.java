@@ -6,10 +6,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import me.sonam.authzmanager.Application;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.clients.user.User;
-import me.sonam.authzmanager.controller.admin.oauth2.OauthClient;
-import me.sonam.authzmanager.controller.admin.oauth2.OidcScopes;
-import me.sonam.authzmanager.controller.admin.oauth2.RegisteredClient;
-import me.sonam.authzmanager.controller.admin.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.oauth2.OauthClient;
+import me.sonam.authzmanager.oauth2.OidcScopes;
+import me.sonam.authzmanager.oauth2.ClientSettings;
+import me.sonam.authzmanager.oauth2.RegisteredClient;
+import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.controller.clients.ClientController;
@@ -508,7 +509,7 @@ public class ClientControllerIntegTest {
         objectMapper.registerModule(new JavaTimeModule());
         try {
             String json = objectMapper.writeValueAsString(object);
-            LOG.info("json for oauthClient: {}", json);
+            LOG.info("json for object: {}", json);
             return json;
         } catch (JsonProcessingException e) {
             LOG.error("error occured", e);
@@ -531,8 +532,8 @@ public class ClientControllerIntegTest {
         oauthClient.setScopes(scopes);
 
         oauthClient.setRedirectUris("http://www.sonam.cloud");
-        me.sonam.authzmanager.controller.admin.oauth2.ClientSettings.Builder clientSettings1Builder =
-                me.sonam.authzmanager.controller.admin.oauth2.ClientSettings.builder();
+        ClientSettings.Builder clientSettings1Builder =
+                ClientSettings.builder();
         clientSettings1Builder.requireAuthorizationConsent(true);
         clientSettings1Builder.requireProofKey(true);
 
