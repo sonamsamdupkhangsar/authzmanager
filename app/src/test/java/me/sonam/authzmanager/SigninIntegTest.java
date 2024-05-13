@@ -91,9 +91,9 @@ public class SigninIntegTest {
 
         final String jwtString= "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJzb25hbSIsImlzcyI6InNvbmFtLmNsb3VkIiwiYXVkIjoic29uYW0uY2xvdWQiLCJqdGkiOiJmMTY2NjM1OS05YTViLTQ3NzMtOWUyNy00OGU0OTFlNDYzNGIifQ.KGFBUjghvcmNGDH0eM17S9pWkoLwbvDaDBGAx2AyB41yZ_8-WewTriR08JdjLskw1dsRYpMh9idxQ4BS6xmOCQ";
 
-        final String jwtTokenMsg = " {\"access_token\":\""+jwtString+"\"}";
+      /*  final String jwtTokenMsg = " {\"access_token\":\""+jwtString+"\"}";
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody(jwtTokenMsg));
+                .setResponseCode(200).setBody(jwtTokenMsg));*/
 
         //{userId=326aed2a-4c14-42d1-aceb-1feb58fd5c9c, message=authentication success, roles=}
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
@@ -103,15 +103,11 @@ public class SigninIntegTest {
         Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
         LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());
 
-        LOG.info("take first request");
-        RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        LOG.info("should be acesstoken path for recordedRequest: {}", recordedRequest.getPath());
-        AssertionsForClassTypes.assertThat(recordedRequest.getPath()).startsWith("/oauth2/token?grant_type=client_credentials");
-        AssertionsForClassTypes.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
 
-        recordedRequest = mockWebServer.takeRequest();
-        assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
-        assertThat(recordedRequest.getPath()).startsWith("/authenticate");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+
+        AssertionsForClassTypes.assertThat(recordedRequest.getPath()).startsWith("/issuer/authenticate");
+        AssertionsForClassTypes.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
 
         LOG.info("assert that the page returned after login is admin/dashboard");
         assertThat(page.getUrl().toString()).isEqualTo("http://localhost:"+randomPort+"/admin/dashboard");
