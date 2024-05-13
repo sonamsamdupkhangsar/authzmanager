@@ -47,7 +47,14 @@ public class OrganizationController {
     public Mono<String> getOrganizations(Model model, Pageable pageable) {
         LOG.info("get organizations");
         final String PATH = "/admin/organizations/list";
-        pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
+        int pageSize = 5;
+
+        if (pageable.getPageSize() < 100) {
+            pageSize = pageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        pageable = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
@@ -109,7 +116,14 @@ public class OrganizationController {
     public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/roles";
         LOG.info("get roles for organization by id: {}", id);
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+
+        int pageSize = 5;
+
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
         return organizationWebClient.getOrganizationById(id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
@@ -149,8 +163,13 @@ public class OrganizationController {
     public Mono<String> getUserForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
         LOG.info("get users for organization by id: {}", id);
+        int pageSize = 5;
 
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5);
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
 
         return organizationWebClient.getOrganizationById(id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))

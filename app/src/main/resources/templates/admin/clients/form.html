@@ -54,10 +54,10 @@
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="@{/admin/clients/{id}">Client Details</a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${client.id != null}">
                     <a class="nav-link" th:href="@{/admin/clients/{id}/organizations(id=${client.id})}">Add to Organization</a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${client.id != null}">
                     <a class="nav-link" th:href="@{/admin/clients/{id}/users(id=${client.id})}">Set User Role</a>
                 </li>
             </ul>

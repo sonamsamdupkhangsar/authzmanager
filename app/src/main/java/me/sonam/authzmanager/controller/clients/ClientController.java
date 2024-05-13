@@ -257,8 +257,14 @@ public class ClientController implements ClientUserPage {
     public Mono<String> getOrganizations(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         LOG.info("get organizations created or owned by this user-id: {}", id);
         final String PATH = "/admin/clients/organizations";
+        int pageSize = 5;
 
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return setClientInModel(id, model, PATH)
@@ -310,8 +316,14 @@ public class ClientController implements ClientUserPage {
     public Mono<String> setUsersAndsersInClientOrganizationUserRole(UUID id, Model model, Pageable userPageable) {
         LOG.info("get client users relationships");
         final String PATH = "/admin/clients/users";
+        int pageSize = 5;
 
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
         return setClientInModel(id, model, PATH)
                 .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(id))

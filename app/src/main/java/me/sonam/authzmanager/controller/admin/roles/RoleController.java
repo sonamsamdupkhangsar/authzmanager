@@ -36,7 +36,14 @@ public class RoleController {
     public Mono<String> getRolesByUserId(Model model, Pageable pageable) {
         final String PATH = "admin/roles/list";
         LOG.info("get roles by owner id");
-        pageable = PageRequest.of(pageable.getPageNumber(), 5, Sort.by("name"));
+        int pageSize = 5;
+
+        if (pageable.getPageSize() < 100) {
+            pageSize = pageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        pageable = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("name"));
 
         LOG.info("pageable: {}", pageable);
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
