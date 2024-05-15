@@ -3,6 +3,7 @@ package me.sonam.authzmanager.webclients;
 
 
 import me.sonam.authzmanager.clients.user.ClientOrganizationUserRole;
+import me.sonam.authzmanager.controller.admin.roles.RoleOrganization;
 import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.rest.RestPage;
@@ -103,7 +104,7 @@ public class RoleWebClient {
         LOG.info("get role by id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/").append(id);
-        LOG.info("get role by idendpoint: {}", stringBuilder);
+        LOG.info("get role by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).
                 retrieve();
@@ -175,6 +176,32 @@ public class RoleWebClient {
         LOG.info("delete client-organization-user-roles endpoint: {}", endpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(endpoint).retrieve();
+        return responseSpec.bodyToMono(String.class);
+    }
+
+    public Mono<RoleOrganization> addRoleToOrganization(RoleOrganization roleOrganization) {
+        LOG.info("add role to organization");
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/organizations");
+
+
+        LOG.info("add role to organization endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
+                .bodyValue(roleOrganization).retrieve();
+        return responseSpec.bodyToMono(RoleOrganization.class);
+    }
+
+    public Mono<String> deleteRoleOrganization(UUID roleId, UUID organizationId) {
+        LOG.info("delete roleOrganization by id");
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint).append("/").append(roleId);
+        stringBuilder.append("/organizations/").append(organizationId);
+
+        LOG.info("delete roleOrganization ndpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString()).retrieve();
         return responseSpec.bodyToMono(String.class);
     }
 }

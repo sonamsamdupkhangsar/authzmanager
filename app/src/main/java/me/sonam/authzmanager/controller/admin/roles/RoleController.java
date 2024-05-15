@@ -68,8 +68,14 @@ public class RoleController {
     public Mono<String> updateRole(@Valid  @ModelAttribute("role") Role role, BindingResult bindingResult, Model model, Pageable userPageable) {
         final String PATH = "admin/roles/form";
         HttpMethod httpMethod = HttpMethod.POST;
+        int pageSize = 5;
 
-        Pageable pageable  = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        Pageable pageable  = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
         if (role.getId() == null) {
             LOG.info("no id, this is for create");
@@ -97,7 +103,8 @@ public class RoleController {
                .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
                .flatMap(organizationRestPage -> {
             LOG.info("organizationList: {}", organizationRestPage);
-            model.addAttribute("organizationPage", organizationRestPage);
+            //model.addAttribute("organizationPage", organizationRestPage);
+                   model.addAttribute("page", organizationRestPage);
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
            model.addAttribute("role", role2);
@@ -110,8 +117,14 @@ public class RoleController {
     public Mono<String> getRoleById(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         final String PATH = "admin/roles/form";
         LOG.info("get role by id: {}", id);
+        int pageSize = 5;
 
-        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 100, Sort.by("name"));
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return roleWebClient.getRoleById(id)
@@ -122,7 +135,8 @@ public class RoleController {
                 .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
 
-                    model.addAttribute("organizationPage", restPage);
+                  //  model.addAttribute("organizationPage", restPage);
+                    model.addAttribute("page", restPage);
                 }))
                 .thenReturn(PATH);
     }

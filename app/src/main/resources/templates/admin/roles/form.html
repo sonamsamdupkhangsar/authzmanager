@@ -59,7 +59,10 @@
 
             <ul class="nav nav-tabs">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="#">Roles</a>
+                    <a class="nav-link active" aria-current="page" th:href="@{/admin/roles/{id}(id=${role.id})}">Roles</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" th:href="@{/admin/roles/{id}/organizations(id=${role.id})}">Assign to Organization</a>
                 </li>
             </ul>
             <div class="row">
@@ -90,7 +93,7 @@
                         </div>
 
 
-                        <div class="mb-3" th:if="${organizationPage}">
+                       <!-- <div class="mb-3" th:if="${organizationPage}">
                             <label for="selectOrg" class="form-label">Organization</label>
                             <div>
                                 <select id="selectOrg" th:field="*{roleOrganization.organizationId}">
@@ -99,7 +102,8 @@
                                     </option>
                                 </select>
                             </div>
-                        </div>
+                        </div>-->
+
                         <div class="mb-3 mt-5">
                             <button type="submit" class="btn btn-primary mb-3">Submit</button>
                             <button type="reset" class="btn btn-secondary mb-3">Reset</button>

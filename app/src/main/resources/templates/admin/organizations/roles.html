@@ -85,11 +85,11 @@
                         </div>
                     </div>
                     <div class="col-sm-4 mt-4">
-                        <ul>
+                        <ol class="list-group list-group-numbered">
                             <li th:each="role : ${page.content}">
                                 <a th:text="${role.name}" th:href="@{/admin/roles/{id}(id=${role.id})}"></a>
                             </li>
-                        </ul>
+                        </ol>
                     </div>
                 </div>
             </div>

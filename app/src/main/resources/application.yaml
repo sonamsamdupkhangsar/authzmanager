@@ -5,6 +5,8 @@ logging:
   level:
     root: error
     me.sonam: debug
+    me.sonam.authzmanager.tokenfilter: error
+
 #    me.sonam.authzmanager: info
 #    me.sonam.authzmanager.tokenfilter: debug
 #    org.springframework.web: info
@@ -72,7 +74,7 @@ jwtrequest:
         /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
         /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
         /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
-        /roles/(.)*
+        /roles/(.)*, /roles/organizations/(.)*
     accessToken:
       option: request
       scopes: ${REQUEST_SCOPES}

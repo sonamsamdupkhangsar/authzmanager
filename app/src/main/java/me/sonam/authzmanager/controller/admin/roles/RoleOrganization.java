@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
+import me.sonam.authzmanager.controller.admin.organization.Organization;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
@@ -13,8 +14,16 @@ public class RoleOrganization {
 
     private UUID roleId;
     private UUID organizationId;
-
+    private boolean selected;
+    private Organization organization;
     public RoleOrganization() {
+    }
+
+    public RoleOrganization(UUID id, UUID roleId, UUID organizationId, boolean selected) {
+        this.id = id;
+        this.roleId = roleId;
+        this.organizationId = organizationId;
+        this.selected = selected;
     }
 
     public UUID getId() {
@@ -39,6 +48,22 @@ public class RoleOrganization {
 
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
+    public Organization getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
     }
 
     @Override

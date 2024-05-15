@@ -51,10 +51,6 @@ public class BeanConfig {
         return new OauthClientWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
     }
 
-    /*@Bean
-    public OauthClientHandler oauthClientHandler() {
-        return new OauthClientWebHandler(oauthClientRoute());
-    }*/
 
     @Bean
     public AuthenticationCallout authenticationCallout() {
