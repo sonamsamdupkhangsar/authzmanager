@@ -13,8 +13,8 @@ import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.roles.Role;
-import me.sonam.authzmanager.controller.clients.ClientController;
-import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.controller.admin.clients.ClientController;
+import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
@@ -359,7 +359,7 @@ public class ClientControllerIntegTest {
                 .setResponseCode(200).setBody("{\"access_token\": \"eyJraWQiOiJlOGQ3MjIzMC1iMDgwLTRhZjEtODFkOC0zMzE3NmNhMTM5ODIiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI3NzI1ZjZmZC1kMzk2LTQwYWYtOTg4Ni1jYTg4YzZlOGZjZDgiLCJhdWQiOiI3NzI1ZjZmZC1kMzk2LTQwYWYtOTg4Ni1jYTg4YzZlOGZjZDgiLCJuYmYiOjE3MTQ3NTY2ODIsImlzcyI6Imh0dHA6Ly9teS1zZXJ2ZXI6OTAwMSIsImV4cCI6MTcxNDc1Njk4MiwiaWF0IjoxNzE0NzU2NjgyLCJqdGkiOiI0NDBlZDY0My00MzdkLTRjOTMtYTZkMi1jNzYxNjFlNDRlZjUifQ.fjqgoczZbbmcnvYpVN4yakpbplp7EkDyxslvar5nXBFa6mgIFcZa29fwIKfcie3oUMQ8MDWxayak5PZ_QIuHwTvKSWHs0WL91ljf-GT1sPi1b4gDKf0rJOwi0ClcoTCRIx9-WGR6t2BBR1Rk6RGF2MW7xKw8M-RMac2A2mPEPJqoh4Pky1KgxhZpEXixegpAdQIvBgc0KBZeQme-ZzTYugB8EPUmGpMlfd-zX_vcR1ijxi8e-LRRJMqmGkc9GXfrH7MOKNQ_nu6pc6Gish2v_iuUEcpPHXrfqzGb9IHCLvfuLSaTDcYKYjQaEUAp-1uDW8-5posjiUV2eBiU48ajYg\", \"token_type\":\"Bearer\", \"expires_in\":\"299\"}"));
 
          Role role = new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleCareTaker", UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), null);
-        me.sonam.authzmanager.controller.clients.carrier.User user = new me.sonam.authzmanager.controller.clients.carrier.User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), role);
+        me.sonam.authzmanager.controller.admin.clients.carrier.User user = new me.sonam.authzmanager.controller.admin.clients.carrier.User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), role);
         List<ClientOrganizationUserWithRole> clientOrganizations = List.of(
                 new ClientOrganizationUserWithRole(UUID.fromString("f8b36547-9f1e-4905-b726-e50e76a9076b"), UUID.fromString("18a528d0-8686-4ecc-ae7e-fba9a8654f5b"), user));
 

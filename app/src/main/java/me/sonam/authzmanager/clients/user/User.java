@@ -17,6 +17,15 @@ public class User {
     private Boolean active;
     private Boolean userAuthAccountCreated;
     private OrganizationChoice organizationChoice = new OrganizationChoice();
+    private Boolean searchable;
+
+    public Boolean getSearchable() {
+        return searchable;
+    }
+
+    public void setSearchable(Boolean searchable) {
+        this.searchable = searchable;
+    }
 
     public User(UUID id, String email) {
         this.id = id;
@@ -112,14 +121,14 @@ public class User {
     public String toString() {
         return "User{" +
                 "id=" + id +
-               /* ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +*/
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 ", email='" + email + '\'' +
-             /*   ", authenticationId='" + authenticationId + '\'' +
+                ", authenticationId='" + authenticationId + '\'' +
                 ", active=" + active +
                 ", userAuthAccountCreated=" + userAuthAccountCreated +
-                ", organizationChoice=" + organizationChoice +*/
+                ", organizationChoice=" + organizationChoice +
+                ", searchable=" + searchable +
                 '}';
     }
-
 }

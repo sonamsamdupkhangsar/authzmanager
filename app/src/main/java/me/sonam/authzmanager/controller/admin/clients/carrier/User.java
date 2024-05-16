@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.clients.carrier;
+package me.sonam.authzmanager.controller.admin.clients.carrier;
 
 import me.sonam.authzmanager.controller.admin.roles.Role;
 

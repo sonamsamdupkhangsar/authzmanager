@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.clients;
+package me.sonam.authzmanager.controller.admin.clients;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.ui.Model;

@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.clients.carrier;
+package me.sonam.authzmanager.controller.admin.clients.carrier;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;

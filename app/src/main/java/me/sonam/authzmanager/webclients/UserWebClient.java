@@ -105,4 +105,17 @@ public class UserWebClient {
             return Mono.error(new AuthzManagerException(errorMessage));//Mono.just(new User());
         });
     }
+
+    public Mono<String> updateProfile(User user) {
+        LOG.info("update user profile");
+
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
+
+        LOG.info("endpoint: {}", stringBuilder);
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .bodyValue(user).accept(MediaType.APPLICATION_JSON)
+                .retrieve();
+
+        return responseSpec.bodyToMono(String.class);
+    }
 }

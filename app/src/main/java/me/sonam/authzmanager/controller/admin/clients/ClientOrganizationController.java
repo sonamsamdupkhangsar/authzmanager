@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.clients;
+package me.sonam.authzmanager.controller.admin.clients;
 
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;

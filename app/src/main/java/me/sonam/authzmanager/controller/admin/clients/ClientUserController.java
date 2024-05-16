@@ -1,7 +1,7 @@
-package me.sonam.authzmanager.controller.clients;
+package me.sonam.authzmanager.controller.admin.clients;
 
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

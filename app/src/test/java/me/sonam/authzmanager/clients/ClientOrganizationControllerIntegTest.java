@@ -10,7 +10,7 @@ import me.sonam.authzmanager.oauth2.OidcScopes;
 import me.sonam.authzmanager.oauth2.ClientSettings;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
-import me.sonam.authzmanager.controller.clients.ClientController;
+import me.sonam.authzmanager.controller.admin.clients.ClientController;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;

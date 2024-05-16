@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.controller.clients;
+package me.sonam.authzmanager.controller.admin.clients;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -7,7 +7,7 @@ import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
-import me.sonam.authzmanager.controller.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import me.sonam.authzmanager.oauth2.AuthorizationGrantType;
