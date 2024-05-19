@@ -49,6 +49,7 @@ public class AuthManagerSecurityConfig {
                         authorize.requestMatchers("/actuator/**").permitAll()
                                 .requestMatchers("/api/health/readiness").permitAll()
                                 .requestMatchers("/signup").permitAll()
+                                .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

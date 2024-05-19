@@ -26,6 +26,11 @@ public class AuthzManagerController {
         return "login/login";
     }
 
+    @GetMapping
+    public String getIndex() {
+        LOG.info("return index page");
+        return "index";
+    }
 
 
 

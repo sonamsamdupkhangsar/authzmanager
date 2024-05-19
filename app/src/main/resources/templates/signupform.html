@@ -66,9 +66,9 @@
         </div>
 
         <div class="form-floating mb-3">
-            <p th:if="${#fields.hasErrors('password')}" class="error">Please enter password</p>
+            <p th:if="${#fields.hasErrors('password')}" class="error">Please enter password with 8 characters astleast</p>
             <input type="password" class="form-control" autocomplete="new-password" id="password" th:field="*{password}" placeholder="password">
-            <label for="password">Password</label>
+            <label for="password">Password of 8 characters atleast</label>
         </div>
         <div>
             <button id="submitButton" class="w-100 btn btn-lg btn-primary btn-block" type="submit">Sign up</button>

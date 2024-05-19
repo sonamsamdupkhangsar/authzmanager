@@ -53,7 +53,7 @@
         <div class="col-sm">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="@{/admin/clients/{id}">Client Details</a>
+                    <a class="nav-link active" aria-current="page" href="#">Client Details</a>
                 </li>
                 <li class="nav-item" th:if="${client.id != null}">
                     <a class="nav-link" th:href="@{/admin/clients/{id}/organizations(id=${client.id})}">Add to Organization</a>

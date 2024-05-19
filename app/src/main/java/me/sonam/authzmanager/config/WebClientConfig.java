@@ -50,17 +50,3 @@ public class WebClientConfig {
         return webClientBuilder;
     }
 }
-
-  /*   @LoadBalanced
-       @Bean("webClientWithTokenFilter")
-       public WebClient.Builder webClientBuilderNoFilter() {
-           LOG.info("creating a WebClient.Builder with tokenFilter set");
-           WebClient.Builder webClientBuilder = webClientBuilderForTokenFilter();
-
-           TokenFilter tokenFilter = new TokenFilter(webClientBuilder, jwtPath, oauth2TokenEndpoint);
-           //WebClient.Builder webClientBuilder = WebClient.builder();
-           webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
-
-           return webClientBuilder;
-       }
-   */

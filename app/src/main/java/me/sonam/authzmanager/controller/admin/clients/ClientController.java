@@ -121,7 +121,7 @@ public class ClientController implements ClientUserPage {
      */
     //I removed ModelAttribute("client") because test didn't work
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute OauthClient client, BindingResult bindingResult, Model model) {
+    public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
 
         LOG.info("update client");
         final String PATH = "admin/clients/form";
@@ -130,6 +130,7 @@ public class ClientController implements ClientUserPage {
         if (bindingResult.hasErrors()) {
             LOG.info("client.getId: {}", client.getId());
             LOG.info("user didn't enter required fields: {}, allerror: {}", bindingResult.getFieldError(), bindingResult.getAllErrors());
+
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }

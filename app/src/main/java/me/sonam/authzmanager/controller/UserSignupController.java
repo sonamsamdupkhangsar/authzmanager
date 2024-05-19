@@ -49,7 +49,6 @@ public class UserSignupController {
         if (bindingResult.hasErrors()) {
             LOG.info("user didn't enter required fields");
             model.addAttribute("error", "Data validation failed");
-         //   model.addAttribute("signupUser", userSignup);
             return Mono.just(PATH);
         }
         return userWebClient.signupUser(userSignup)
