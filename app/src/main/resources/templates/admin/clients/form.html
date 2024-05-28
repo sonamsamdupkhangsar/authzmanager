@@ -25,6 +25,28 @@
               };
               xhttp.send();
           }
+
+        function showSecretDiv(checkbox, currentDiv, newDiv) {
+            console.log('make editable called');
+            // Get the checkbox
+            var checkBox = document.getElementById(checkbox);
+            // Get the output text
+           var currentDivElement = document.getElementById(currentDiv); //existing client secret div (encrypted)
+           var newDivElement = document.getElementById(newDiv);  // new client secret div
+
+            // If the checkbox is checked, display the output text
+            if (checkBox.checked == true){
+              console.log('checkbox is checked set password field to empty');
+              //text.style.display = "block";
+              newDivElement.style.display = "inline";
+
+              currentDivElement.style.display = "none";
+
+            } else {
+              //text.style.display = "none";
+            }
+        }
+
     </script>
 </head>
 <body>
@@ -112,21 +134,30 @@
                 <div class="mb-3 row">
                     <label for="clientIssuedAt" class="col-sm-4 col-form-label">Client issued at</label>
                     <div class="col-sm-5">
-                        <input type="text" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
+                        <input type="datetime-local" class="form-control" id="clientIssuedAt" th:field="*{clientIdIssuedAt}" />
                     </div>
                 </div>
 
-                <div class="mb-3 row">
-                    <label for="clientSecret" class="col-sm-4 col-form-label">Client secret</label>
-                    <div class="col-sm-7">
+                <div class="mb-5 row" id="currentSecretDiv">
+                    <label for="clientSecret" class="col-sm-4 col-form-label">Client secret <span th:if="*{not #strings.isEmpty(id)}">(encrypted)</span></label>
+                    <div class="col-sm-4">
                         <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
                         <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"/>
                     </div>
                 </div>
+
+                <div class="mb-3 row" id="newSecretDiv" th:if="*{not #strings.isEmpty(id)}">
+                    <label for="newClientSecret" class="col-sm-4 col-form-label">Enter New Client secret</label>
+                    <div class="col-sm-3">
+                        <p th:if="${#fields.hasErrors('newClientSecret')}" class="text-danger">Please enter new client secret</p>
+                        <input type="text" class="form-control" id="newClientSecret" th:field="*{newClientSecret}"/> <span>(Warning: this will overwrite your existing secret)</span>
+                    </div>
+                </div>
+
                 <div class="mb-3 row">
                     <label for="clientSecretExpiresAt" class="col-sm-4 col-form-label">Client secret expires at</label>
                     <div class="col-sm-5">
-                        <input type="text" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
+                        <input type="datetime-local" class="form-control" id="clientSecretExpiresAt" th:field="*{clientSecretExpiresAt}" />
                     </div>
                 </div>
                 <div class="mb-3 row">
@@ -329,7 +360,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3 row" th:if="*{id}">
+                <div class="mb-3 row">
                     <label class="col-sm-4 col-form-label">Token Mediation</label>
                     <div class="col-sm-5">
                         <div class="form-check">

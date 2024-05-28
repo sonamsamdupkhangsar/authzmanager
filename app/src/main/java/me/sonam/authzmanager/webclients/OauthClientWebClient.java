@@ -60,6 +60,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server update client call: {}", responseMap);
+            LOG.info("clientIdIssuedAt from authorization: {}", responseMap.get("clientIdIssuedAt"));
 
             return registeredClientUtil.build(responseMap);
         }).onErrorResume(throwable -> {

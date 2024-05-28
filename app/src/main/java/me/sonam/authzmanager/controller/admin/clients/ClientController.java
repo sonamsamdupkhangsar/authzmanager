@@ -124,6 +124,7 @@ public class ClientController implements ClientUserPage {
     public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
 
         LOG.info("update client");
+        LOG.info("newClientSecret: {}", client.getNewClientSecret());
         final String PATH = "admin/clients/form";
 
         LOG.info("client: {}", client);
@@ -141,7 +142,7 @@ public class ClientController implements ClientUserPage {
         LOG.info("get map from client");
 
         RegisteredClient registeredClient = null;
-        LOG.info("client.authgranttrypes: {}", client.getAuthorizationGrantTypes());
+        LOG.info("client.getAuthorizationGrantTypes: {}", client.getAuthorizationGrantTypes());
 
         if (client.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase())) {
             LOG.info("authorizationGrantTypes contains Authorization_Code");
@@ -167,6 +168,7 @@ public class ClientController implements ClientUserPage {
             }
 
             registeredClient = client.getRegisteredClient();
+            LOG.info("registeredClient.newClientSecret: {}", registeredClient.getNewClientSecret());
         } catch (Exception e) {
             LOG.error("exception occured when creating client: {}", e.getMessage());
 
@@ -190,9 +192,12 @@ public class ClientController implements ClientUserPage {
 
         map.put("userId", userId.getUserId().toString());
         LOG.info("map is {}", map);
+        LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
+
 
         return oauthClientWebClient.updateClient(map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
+            LOG.info("updatedRegisteredClient.clientIdIssuedAt: ", updatedRegisteredClient.getClientIdIssuedAt());
 
             OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
             LOG.info("oauthClient {}", oauthClient);

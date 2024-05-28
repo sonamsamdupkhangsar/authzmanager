@@ -7,7 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 
-import java.time.Duration;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.*;
 import java.util.*;
 
 public class OauthClient {
@@ -21,6 +24,7 @@ public class OauthClient {
     private String clientIdIssuedAt;
     //@NotEmpty(message="secret cannot be empty")
     private String clientSecret;
+    private String newClientSecret;
     private String clientSecretExpiresAt;
     private String clientName;
     //private String clientAuthenticationMethods;
@@ -89,7 +93,13 @@ public class OauthClient {
         }
     }
 
+    public String getNewClientSecret() {
+        return newClientSecret;
+    }
 
+    public void setNewClientSecret(String newClientSecret) {
+        this.newClientSecret = newClientSecret;
+    }
 
     public static class TokenSettings {
         //long represents the duration in seconds
@@ -595,13 +605,34 @@ public class OauthClient {
         OauthClient oauthClient = new OauthClient();
         oauthClient.setId(registeredClient.getId());
         oauthClient.setClientId(registeredClient.getClientId());
+
+        if (registeredClient.getClientIdIssuedAt() != null) {
+            Instant clientIdIssuedAt = registeredClient.getClientIdIssuedAt();
+            LOG.info("use localDateTime without timezone to set in calendar ui, before conversion to localTime {}", clientIdIssuedAt);
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(clientIdIssuedAt, ZoneId.systemDefault());
+
+            Instant instant = localDateTime.toInstant(ZoneOffset.UTC);
+            LOG.info("instant: {}, localDateTime: {}", instant, localDateTime);
+
+            oauthClient.setClientIdIssuedAt(localDateTime.toString());
+            LOG.info("oauthClient.clientIdIssuedAt: {}", oauthClient.getClientIdIssuedAt());
+        }
+        if (registeredClient.getClientSecretExpiresAt() != null) {
+            Instant clientSecretExpiresAt = registeredClient.getClientSecretExpiresAt();
+            LOG.info("use localDateTime without timezone to set in calendar ui, before conversion to localTime {}", clientSecretExpiresAt);
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(clientSecretExpiresAt, ZoneId.systemDefault());
+            Instant instant = localDateTime.toInstant(ZoneOffset.UTC);
+
+            LOG.info("instant: {}, localDateTime: {}", instant, localDateTime);
+            oauthClient.setClientSecretExpiresAt(localDateTime.toString());
+            LOG.info("oauthClient.clientSecretExpiresAt: {}", oauthClient.getClientSecretExpiresAt());
+        }
+
         oauthClient.setMediateToken(registeredClient.isMediateToken());
 
         oauthClient.setClientName(registeredClient.getClientName());
         oauthClient.setClientSecret(registeredClient.getClientSecret());
-        if (registeredClient.getClientSecretExpiresAt() != null) {
-            oauthClient.setClientSecretExpiresAt(registeredClient.getClientSecretExpiresAt().toString());
-        }
+
         oauthClient.setRedirectUris(toCsvString(registeredClient.getRedirectUris()));
         oauthClient.setPostLogoutRedirectUris(toCsvString(registeredClient.getPostLogoutRedirectUris()));
 
@@ -745,6 +776,29 @@ public class OauthClient {
 
         return registeredClientBuilder.build();
     }*/
+   public DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
+
+   private Instant getInstant(String dateString) {
+       if (dateString == null || dateString.isEmpty()) {
+           LOG.warn("dateString is null/empty: {}", dateString);
+           return null;
+       }
+
+       try {
+            Date date = formatter.parse(dateString);
+            LOG.info("date: {}, dateString: {}", date, dateString);
+            Instant dateInstant = date.toInstant();
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+
+            LOG.info("dateInstant {} vs localDateTime instant {}, for dateString: {}", dateInstant, localDateTime, dateString);
+            return dateInstant;
+            //return localDateTime.toInstant(ZoneOffset.UTC);
+       }
+       catch (ParseException e) {
+           LOG.error("failed to parse clientIdIssuedAt to dateformat", e);
+           return null;
+       }
+   }
 
     public RegisteredClient getRegisteredClient() {
         if (id == null || id.isEmpty()) {
@@ -762,8 +816,25 @@ public class OauthClient {
         LOG.info("clientId: {}", clientId);
 
         RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id)
-                .clientId(clientId)
-                .clientSecret(clientSecret).clientName(clientId);
+                .clientId(clientId).clientSecret(clientSecret).clientName(clientId)
+                .newClientSecret(newClientSecret);
+
+        registeredClientBuilder.clientIdIssuedAt(getInstant(clientIdIssuedAt));
+        registeredClientBuilder.clientSecretExpiresAt(getInstant(clientSecretExpiresAt));
+
+       /* if (!clientIdIssuedAt.isEmpty()) {
+            try {
+                Date date = formatter.parse(clientIdIssuedAt);
+                LOG.info("date: {}, clientIdIssuedAt: {}", date, clientIdIssuedAt);
+                LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+
+                registeredClientBuilder.clientIdIssuedAt(localDateTime.toInstant(ZoneOffset.UTC));
+
+                LOG.info("localDateTime.toInstant(ZoneOffset.UTC): {}", localDateTime.toInstant(ZoneOffset.UTC));
+            } catch (ParseException e) {
+                LOG.error("failed to parse clientIdIssuedAt to dateformat", e);
+            }
+        }*/
 
         for(String s: clientAuthenticationMethods) {
             switch (s) {
