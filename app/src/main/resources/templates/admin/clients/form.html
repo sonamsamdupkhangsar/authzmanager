@@ -26,27 +26,27 @@
               xhttp.send();
           }
 
-        function showSecretDiv(checkbox, currentDiv, newDiv) {
-            console.log('make editable called');
+        function enableTokenMediateCheckbox(newClientSecretText, mediateTokenCheckBox) {
+            console.log('check to make mediateToken checkbox editable');
             // Get the checkbox
-            var checkBox = document.getElementById(checkbox);
-            // Get the output text
-           var currentDivElement = document.getElementById(currentDiv); //existing client secret div (encrypted)
-           var newDivElement = document.getElementById(newDiv);  // new client secret div
+            var text = document.getElementById(newClientSecretText);
 
-            // If the checkbox is checked, display the output text
-            if (checkBox.checked == true){
-              console.log('checkbox is checked set password field to empty');
-              //text.style.display = "block";
-              newDivElement.style.display = "inline";
+            var checkBox = document.getElementById(mediateTokenCheckBox);
 
-              currentDivElement.style.display = "none";
-
-            } else {
-              //text.style.display = "none";
+            console.log('checkBox: '+ checkBox);
+            // If newClient secret text contain text enable mediateToken checkbox
+            if (text.value != '') {
+              console.log("newClientSecret contains text, enable checkbox");
+              //checkBox.style.display = "inline";
+              checkBox.disabled = false;
+            }
+            else {
+              console.log("newClientSecret is empty, make checkbox unchecked and readonly");
+              //checkBox.style.display = 'none';
+              checkBox.checked = false;
+                checkBox.disabled = true;
             }
         }
-
     </script>
 </head>
 <body>
@@ -150,8 +150,9 @@
                     <label for="newClientSecret" class="col-sm-4 col-form-label">Enter New Client secret</label>
                     <div class="col-sm-3">
                         <p th:if="${#fields.hasErrors('newClientSecret')}" class="text-danger">Please enter new client secret</p>
-                        <input type="text" class="form-control" id="newClientSecret" th:field="*{newClientSecret}"/> <span>(Warning: this will overwrite your existing secret)</span>
+                        <input type="text" class="form-control" id="newClientSecret" th:field="*{newClientSecret}" onchange="enableTokenMediateCheckbox('newClientSecret', 'mediateToken')"/>
                     </div>
+                    <p class="text-danger">(Warning: this will overwrite your existing secret)</p>
                 </div>
 
                 <div class="mb-3 row">
@@ -364,8 +365,8 @@
                     <label class="col-sm-4 col-form-label">Token Mediation</label>
                     <div class="col-sm-5">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="mediateToken" th:field="*{mediateToken}" />
-                            <label class="form-label">Select for token mediation</label>
+                            <input class="form-check-input" type="checkbox" id="mediateToken" th:field="*{mediateToken}" disabled  />
+                            <label class="form-label">only available at secret setting</label>
                         </div>
                     </div>
                 </div>
