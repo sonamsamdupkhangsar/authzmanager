@@ -80,13 +80,15 @@ postgres:
 
 envs:
   - name: DB_SSLMODE
-    value: REQUIRE
+    value: "REQUIRE"
   - name: API_GATEWAY
-    value: https://api-gateway.sonam.cloud
+    value: "https://api-gateway.sonam.cloud"
   - name: ISSUER_URI
-    value: https://authorization.sonam.cloud/issuer
+    value: "https://authorization.sonam.cloud/issuer"
   - name: OAUTH_AUDIENCES
-    value: oauth-client
+    value: "oauth-client"
+  - name: SERVER_PORT
+    value: "8080"
 
 
 health:
@@ -104,17 +106,9 @@ health:
     failureThreshold: 5
 
 secretFiles:
-  - file: account-rest-service
-    keys:
-      - key: email.from
-        name: EMAIL_FROM
   - file: service-service-client-credential-flow-secret
     keys:
       - key: base64EncodedClientIdSecret
         name: BASE64_CLIENT_ID_SECRET
       - key: scopes
         name: REQUEST_SCOPES
-  - file: newrelic-secret
-    keys:
-      - key: newrelic.license_key
-        name: NEW_RELIC_LICENSE_KEY
