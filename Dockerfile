@@ -17,8 +17,6 @@ ARG DEPENDENCY=/workspace/app/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-COPY --from=build /workspace/app/newrelic/newrelic.jar /app/newrelic/newrelic.jar
-COPY --from=build /workspace/app/newrelic/newrelic.yml /app/newrelic/newrelic.yml
 
 ENTRYPOINT ["java", "-cp","app:app/lib/*","me.sonam.authzmanager.Application"]
 
