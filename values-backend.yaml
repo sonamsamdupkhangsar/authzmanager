@@ -42,12 +42,12 @@ istio:
   enabled: false
 
 ingress:
-  enabled: false
+  enabled: true
   ingressClass: nginx
   hosts:
-    - host: account-rest-service.sonam.cloud
+    - host: authzmanager.sonam.cloud
       paths:
-        - path: /login/
+        - path: /
           pathType: Prefix
   tls:
     - secretName: sonam.cloud
