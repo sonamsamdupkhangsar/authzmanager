@@ -10,7 +10,7 @@ image:
 imagePullSecrets:
   - name: github-regcred
 nameOverride: ""
-fullnameOverride: "account-rest-service"
+fullnameOverride: "authzmanager"
 
 serviceAccount:
   # Specifies whether a service account should be created
