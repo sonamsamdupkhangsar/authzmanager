@@ -17,8 +17,6 @@ logging:
 spring:
   main:
     allow-bean-definition-overriding: true
-  profiles:
-    active: local
   application:
     name: authzmanager
   mvc:
