@@ -84,6 +84,8 @@ public class SigninIntegTest {
     @Test
     public void login() throws Exception {
         LOG.info("login to login/login.html");
+        this.webClient.getOptions().setCssEnabled(false);
+        this.webClient.getOptions().setJavaScriptEnabled(false);
         // Log in
        // this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         //set redirection false so we can login manually with code below
