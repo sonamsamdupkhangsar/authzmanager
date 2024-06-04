@@ -10,11 +10,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.util.StringUtils;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 
 public class RegisteredClientUtil {
     private static final Logger LOG = LoggerFactory.getLogger(RegisteredClientUtil.class);
     private final ObjectMapper objectMapper;
+    public DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
 
     public RegisteredClientUtil() {
         this.objectMapper = JsonMapper.builder().findAndAddModules().build();
@@ -58,6 +66,9 @@ public class RegisteredClientUtil {
         map.put("id", registeredClient.getId());
         map.put("clientId", registeredClient.getClientId());
         map.put("clientSecret", registeredClient.getClientSecret());
+        map.put("newClientSecret", registeredClient.getNewClientSecret());
+        map.put("clientIdIssuedAt", registeredClient.getClientIdIssuedAt());
+        map.put("clientSecretExpiresAt", registeredClient.getClientSecretExpiresAt());
         map.put("clientName", registeredClient.getClientName());
         map.put("clientAuthenticationMethods", StringUtils.collectionToCommaDelimitedString(clientAuthenticationMethods));
         map.put("authorizationGrantTypes", StringUtils.collectionToCommaDelimitedString(authorizationGrantTypes));
@@ -114,7 +125,8 @@ public class RegisteredClientUtil {
             mediateToken = Boolean.parseBoolean(map.get("mediateToken").toString());
         }
 
-        return RegisteredClient.withId(id)
+
+        RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id)
                 .clientId((String)map.get("clientId"))
                 .clientSecret((String)map.get("clientSecret"))
                 .clientName((String)map.get("clientName"))
@@ -144,8 +156,53 @@ public class RegisteredClientUtil {
                 )
                 .clientSettings(ClientSettings.withSettings(parseMap(map.get("clientSettings").toString())).build())
                 .tokenSettings(TokenSettings.withSettings(parseMap(map.get("tokenSettings").toString())).build())
-                .mediateToken(mediateToken).build();
+                .mediateToken(mediateToken);
 
+        if (map.get("clientIdIssuedAt") != null) {
+            registeredClientBuilder.clientIdIssuedAt(getInstant(map.get("clientIdIssuedAt").toString()));
+        }
+
+        if (map.get("clientSecretExpiresAt") != null) {
+            registeredClientBuilder.clientSecretExpiresAt(getInstant(map.get("clientSecretExpiresAt").toString()));
+        }
+
+
+     /*   if (map.get("clientIdIssuedAt") != null) {
+            try {
+                Date date = formatter.parse(map.get("clientIdIssuedAt").toString());
+                LOG.info("date {} in instant: {}", date, date.toInstant());
+
+                LOG.info("set clientIdIssuedAt: {}", date.toInstant());
+                registeredClientBuilder.clientIdIssuedAt(date.toInstant());
+            } catch (ParseException e) {
+                LOG.error("failed to parse clientIdIssuedAt value to Instant", e);
+            }
+        }
+        else {
+            LOG.info("clientIdIssuedAt is null");
+        }*/
+        return registeredClientBuilder.build();
+    }
+
+    private Instant getInstant(String dateString) {
+        if (dateString == null || dateString.isEmpty()) {
+            LOG.warn("dateString is null/empty: {}", dateString);
+            return null;
+        }
+
+        try {
+            Date date = formatter.parse(dateString);
+            LOG.info("date: {}, dateString: {}", date, dateString);
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+
+            Instant instant = localDateTime.toInstant(ZoneOffset.UTC);
+            LOG.info("instant: {}", instant);
+            return instant;
+        }
+        catch (ParseException e) {
+            LOG.error("failed to parse clientIdIssuedAt to dateformat", e);
+            return null;
+        }
     }
 
     private static AuthorizationGrantType resolveAuthorizationGrantType(String authorizationGrantType) {

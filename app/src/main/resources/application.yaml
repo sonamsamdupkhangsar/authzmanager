@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    root: error
+    root: warn
     me.sonam: debug
     me.sonam.authzmanager.tokenfilter: error
 
@@ -17,8 +17,6 @@ logging:
 spring:
   main:
     allow-bean-definition-overriding: true
-  profiles:
-    active: local
   application:
     name: authzmanager
   mvc:
@@ -27,30 +25,11 @@ spring:
         enabled: true
   thymeleaf: # to enable hot reload of Thymeleaf templates
     cache: false
-#    mode: HTML
-#    encoding: UTF-8
-#    prefix: file:src/main/resources/templates/
-#  resources: # Static resources
-#    static-locations: file:src/main/resources/static/
-#    cache:
-#      period: 0
-#  r2dbc:
-#    url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
-#    username: ${POSTGRES_USERNAME}
-#    password: ${POSTGRES_PASSWORD}
-#    properties:
-#      sslMode: ${DB_SSLMODE}
-#  jpa:
-#    properties:
-#      hibernate:
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
-#    generate-ddl: true
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
-          audiences: ${OAUTH_AUDIENCES}
 
 permitpath:
   - path: /authzmanager/api/health/*

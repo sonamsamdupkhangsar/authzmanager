@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.webclients;
 
 
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 
 import me.sonam.authzmanager.rest.RestPage;
@@ -96,7 +97,11 @@ public class OrganizationWebClient {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).
                 retrieve();
 
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<UUID>>() {});
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<UUID>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("error retrieving users in organization by id", throwable);
+                    return Mono.error(throwable);
+                });
     }
 
     public Mono<Boolean> userExistsInOrganization(UUID userId, UUID organizationId) {

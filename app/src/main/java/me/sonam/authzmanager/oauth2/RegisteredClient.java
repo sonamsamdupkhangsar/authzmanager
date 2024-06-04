@@ -18,6 +18,7 @@ public class RegisteredClient implements Serializable {
     private String clientId;
     private Instant clientIdIssuedAt;
     private String clientSecret;
+    private String newClientSecret;
     private Instant clientSecretExpiresAt;
     private String clientName;
     private Set<ClientAuthenticationMethod> clientAuthenticationMethods;
@@ -30,6 +31,14 @@ public class RegisteredClient implements Serializable {
     private boolean mediateToken;
 
     protected RegisteredClient() {
+    }
+
+    public String getNewClientSecret() {
+        return newClientSecret;
+    }
+
+    public void setNewClientSecret(String newClientSecret) {
+        this.newClientSecret = newClientSecret;
     }
 
     public void setMediateToken(boolean value) {
@@ -110,8 +119,25 @@ public class RegisteredClient implements Serializable {
         return Objects.hash(new Object[]{this.id, this.clientId, this.clientIdIssuedAt, this.clientSecret, this.clientSecretExpiresAt, this.clientName, this.clientAuthenticationMethods, this.authorizationGrantTypes, this.redirectUris, this.postLogoutRedirectUris, this.scopes, this.clientSettings, this.tokenSettings});
     }
 
+    @Override
     public String toString() {
-        return "RegisteredClient {id='" + this.id + "', clientId='" + this.clientId + "', clientName='" + this.clientName + "', clientAuthenticationMethods=" + this.clientAuthenticationMethods + ", authorizationGrantTypes=" + this.authorizationGrantTypes + ", redirectUris=" + this.redirectUris + ", postLogoutRedirectUris=" + this.postLogoutRedirectUris + ", scopes=" + this.scopes + ", clientSettings=" + this.clientSettings + ", tokenSettings=" + this.tokenSettings + "}";
+        return "RegisteredClient{" +
+                "id='" + id + '\'' +
+                ", clientId='" + clientId + '\'' +
+                ", clientIdIssuedAt=" + clientIdIssuedAt +
+                ", clientSecret='" + clientSecret + '\'' +
+                ", newClientSecret='" + newClientSecret + '\'' +
+                ", clientSecretExpiresAt=" + clientSecretExpiresAt +
+                ", clientName='" + clientName + '\'' +
+                ", clientAuthenticationMethods=" + clientAuthenticationMethods +
+                ", authorizationGrantTypes=" + authorizationGrantTypes +
+                ", redirectUris=" + redirectUris +
+                ", postLogoutRedirectUris=" + postLogoutRedirectUris +
+                ", scopes=" + scopes +
+                ", clientSettings=" + clientSettings +
+                ", tokenSettings=" + tokenSettings +
+                ", mediateToken=" + mediateToken +
+                '}';
     }
 
     public static Builder withId(String id) {
@@ -134,6 +160,7 @@ public class RegisteredClient implements Serializable {
         private String clientId;
         private Instant clientIdIssuedAt;
         private String clientSecret;
+        private String newClientSecret;
         private Instant clientSecretExpiresAt;
         private String clientName;
         private final Set<ClientAuthenticationMethod> clientAuthenticationMethods = new HashSet();
@@ -202,6 +229,10 @@ public class RegisteredClient implements Serializable {
 
         public Builder clientSecret(String clientSecret) {
             this.clientSecret = clientSecret;
+            return this;
+        }
+        public Builder newClientSecret(String newClientSecret) {
+            this.newClientSecret = newClientSecret;
             return this;
         }
 
@@ -329,6 +360,7 @@ public class RegisteredClient implements Serializable {
             registeredClient.clientSettings = this.clientSettings;
             registeredClient.tokenSettings = this.tokenSettings;
             registeredClient.mediateToken = this.mediateToken;
+            registeredClient.newClientSecret = this.newClientSecret;
             return registeredClient;
         }
 

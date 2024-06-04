@@ -3,9 +3,11 @@ package me.sonam.authzmanager.webclients;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.controller.util.MyPair;
+import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -60,6 +62,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server update client call: {}", responseMap);
+            LOG.info("clientIdIssuedAt from authorization: {}", responseMap.get("clientIdIssuedAt"));
 
             return registeredClientUtil.build(responseMap);
         }).onErrorResume(throwable -> {
@@ -92,17 +95,19 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
      * @return return a list of clientId strings
      */
     
-    public Mono<List<MyPair<String, String>>> getUserClientIds(UUID userId) {
+    public Mono<RestPage<MyPair<String, String>>> getUserClientIds(UUID userId, Pageable pageable) {
         LOG.info("get user '{}' clients", userId);
 
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/users/")
-                .append(userId.toString());
+                .append(userId.toString()).append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize())
+                .append("&sortBy=clientName");
         LOG.info("calling auth-server get clientIds for userId endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .retrieve();
 
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<MyPair<String, String>>>() {}).map(list-> {
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<MyPair<String, String>>>() {}).map(list-> {
             LOG.info("got back response from auth-server for List of Pairs with id and client name call: {}", list);
             return list;
         }).onErrorResume(throwable -> {

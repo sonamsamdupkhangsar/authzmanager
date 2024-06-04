@@ -10,3 +10,18 @@ spring:
 eureka:
   client:
       enabled: false
+
+#internal naming used for service discovery
+
+USER_REST_SERVICE: http://user-rest-service
+AUTHENTICATION_REST_SERVICE: http://authentication-rest-service
+AUTH_SERVER: http://authorization-server
+ORGANIZATION_REST_SERVICE: http://organization-rest-service
+ROLE_REST_SERVICE: http://role-rest-service
+
+allowedOrigins: https://api-gateway.sonam.cloud
+
+ISSUER_ADDRESS: http://api-gateway:9001
+
+ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+OAUTH_AUDIENCES: oauth-client

@@ -53,6 +53,7 @@ public class AuthManagerSecurityConfig {
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
+               // .oauth2Login(Customizer.withDefaults());
                 .formLogin(httpSecurityFormLoginConfigurer ->
                         httpSecurityFormLoginConfigurer.loginPage("/login/login.html")
                                 .defaultSuccessUrl("/admin/dashboard", true) // use this to forward with this address in browser
