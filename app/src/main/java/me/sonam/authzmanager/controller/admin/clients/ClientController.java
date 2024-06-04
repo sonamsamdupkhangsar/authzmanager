@@ -215,16 +215,24 @@ public class ClientController implements ClientUserPage {
     }
 
     @GetMapping
-    public Mono<String> getLoggedInUserClients(Model model) {
+    public Mono<String> getLoggedInUserClients(Model model, Pageable userPageable) {
         LOG.info("get this logged-in users clients only");
+        int pageSize = 5;
+
+        if (userPageable.getPageSize() < 100) {
+            pageSize = userPageable.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
+
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
         final String PATH = "/admin/clients/list";
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
-        return oauthClientWebClient.getUserClientIds(userId.getUserId()).flatMap(pairs -> {
+        return oauthClientWebClient.getUserClientIds(userId.getUserId(), pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId.getUserId());
-            model.addAttribute("clientPairs", pairs);
+            model.addAttribute("page", page);
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
             LOG.error("error occued on calling get user clientIds: {}", throwable);
