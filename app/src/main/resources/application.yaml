@@ -5,7 +5,7 @@ logging:
   level:
     root: warn
     me.sonam: debug
-    me.sonam.authzmanager.tokenfilter: error
+    me.sonam.authzmanager.tokenfilter: debug
 
 spring:
   main:
