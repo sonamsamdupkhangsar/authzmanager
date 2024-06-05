@@ -1,9 +1,9 @@
 package me.sonam.authzmanager.config;
 
 import me.sonam.authzmanager.AuthenticationCallout;
-import me.sonam.authzmanager.webclients.*;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
+import me.sonam.authzmanager.webclients.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

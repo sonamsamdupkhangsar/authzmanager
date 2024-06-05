@@ -21,7 +21,7 @@ ROLE_REST_SERVICE: http://role-rest-service
 
 allowedOrigins: https://api-gateway.sonam.cloud
 
-ISSUER_ADDRESS: http://api-gateway:9001
+ISSUER_ADDRESS: http://authorization.sonam.cloud
 
 ISSUER_URI: ${ISSUER_ADDRESS}/issuer
 OAUTH_AUDIENCES: oauth-client
