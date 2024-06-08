@@ -24,28 +24,27 @@ spring:
 #        jwt:
 #          issuer-uri: ${ISSUER_URI}
 
-#      client:
-#        registration:
-#          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
-#            client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
-#            client-secret: hello
-#            client-authentication-method: client_secret_basic
-#            authorization-grant-type: authorization_code
-#            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-#            #client-name: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
-#            #client-authentication-method: client_secret_basic
-#            scope:
-#              - openid
-#              - profile
-#        provider:
-#          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
-#            #authorization-uri: http://api-gateway:8087/oauth2-token-mediator/authorize
-#            #token-uri: http://api-gateway:8087/oauth2-token-mediator/token
-#            authorization-uri: http://api-gateway:9001/issuer/oauth2/authorize
-#            token-uri: http://api-gateway:9001/issuer/oauth2/token
-#            user-info-uri: http://api-gateway:9001/issuer/userinfo
-#            jwk-set-uri: http://api-gateway:9001/issuer/oauth2/jwks
-#            userNameAttribute: sub
+      client:
+        registration:
+          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
+            client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+            client-secret: hello
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            #client-name: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+            #client-authentication-method: client_secret_basic
+            scope:
+              - openid
+              - profile
+        provider:
+          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
+            authorization-uri: http://api-gateway:9001/issuer/oauth2/authorize
+            token-uri: http://api-gateway:9001/issuer/oauth2/token
+            user-info-uri: http://api-gateway:9001/issuer/userinfo
+            jwk-set-uri: http://api-gateway:9001/issuer/oauth2/jwks
+            userNameAttribute: sub
+
 
 permitpath:
   - path: /authzmanager/api/health/*

@@ -227,6 +227,7 @@ public class ClientController implements ClientUserPage {
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
         final String PATH = "/admin/clients/list";
+        LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
         UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         LOG.info("userId: {}", userId.getUserId());
 
