@@ -50,29 +50,33 @@ permitpath:
   - path: /authzmanager/api/health/*
 
 jwtrequest:
-  - in:  /*
-    out: /issuer/authenticate
+  - out: /(.)*
     accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-  - in:  /*
-    out: /organizations
-    accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-  - in:  /*
-    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
-        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
-        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
-        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
-        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
-        /roles/(.)*, /roles/organizations/(.)*
-    accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+      option: forward
+
+#  - in:  /*
+#    out: /issuer/authenticate
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+#  - in:  /*
+#    out: /organizations
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+#  - in:  /*
+#    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
+#        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
+#        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
+#        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
+#        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
+#        /roles/(.)*, /roles/organizations/(.)*
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
 
 
 user-rest-service:

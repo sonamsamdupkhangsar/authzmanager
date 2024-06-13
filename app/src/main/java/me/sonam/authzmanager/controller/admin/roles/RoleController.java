@@ -1,9 +1,12 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.oauth2.ConfigurationSettingNames;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.user.UserId;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,10 +30,12 @@ public class RoleController {
 
     private RoleWebClient roleWebClient;
     private OrganizationWebClient organizationWebClient;
+    private TokenService tokenService;
 
-    public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient) {
+    public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient, TokenService tokenService) {
         this.roleWebClient = roleWebClient;
         this.organizationWebClient = organizationWebClient;
+        this.tokenService = tokenService;
     }
 
     @GetMapping
@@ -46,9 +52,12 @@ public class RoleController {
         pageable = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("name"));
 
         LOG.info("pageable: {}", pageable);
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userIdAttribute = oidcUser.getAttribute("userId");
+        LOG.info("oidc.userId: {}", userIdAttribute);
+        UUID userId = UUID.fromString(userIdAttribute);
 
-        return roleWebClient.getRolesByUserId(userId.getUserId(), pageable).doOnNext(restPage -> {
+        return roleWebClient.getRolesByUserId(getAccessToken(), userId, pageable).doOnNext(restPage -> {
             LOG.info("roleList: {}", restPage.getSize());
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
@@ -89,18 +98,23 @@ public class RoleController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userIdAttribute = oidcUser.getAttribute("userId");
+        LOG.info("oidc.userId: {}", userIdAttribute);
+        UUID userId = UUID.fromString(userIdAttribute);
 
-        Role role2 = new Role(role.getId(), role.getName(), userId.getUserId(), role.getRoleOrganization());
+        Role role2 = new Role(role.getId(), role.getName(), userId, role.getRoleOrganization());
 
         LOG.info("role : {}", role);
 
-       return roleWebClient.updateRole(role2, httpMethod).doOnNext(updateRole -> {
+        final String accessToken = getAccessToken();
+
+       return roleWebClient.updateRole(accessToken, role2, httpMethod).doOnNext(updateRole -> {
                     LOG.info("got back response: {}", updateRole);
                     model.addAttribute("role", updateRole);
                     model.addAttribute("message", "role updated");
         })
-               .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
+               .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
                .flatMap(organizationRestPage -> {
             LOG.info("organizationList: {}", organizationRestPage);
             //model.addAttribute("organizationPage", organizationRestPage);
@@ -125,14 +139,18 @@ public class RoleController {
         }
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
+        LOG.info("userId: {}", userId);
 
-        return roleWebClient.getRoleById(id)
+        final String accessToken = getAccessToken();
+
+        return roleWebClient.getRoleById(accessToken, id)
                 .doOnNext(role -> {
                     model.addAttribute("role", role);
                     LOG.info("role: {}", role);
                 })
-                .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).doOnNext(restPage -> {
+                .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
 
                   //  model.addAttribute("organizationPage", restPage);
@@ -152,7 +170,7 @@ public class RoleController {
         final String PATH = "admin/dashboard";//display dashboard template as it doesn't require any data in the model
         LOG.info("delete role by id {}", roleId);
 
-        return roleWebClient.deleteRole(roleId).doOnNext(s -> {
+        return roleWebClient.deleteRole(getAccessToken(), roleId).doOnNext(s -> {
                     model.addAttribute("message", "deleted role");
                 })
                 .then(Mono.just(PATH))
@@ -161,5 +179,12 @@ public class RoleController {
                     model.addAttribute("error", "failed to delete role");
                     return Mono.just(PATH);
         });
+    }
+
+    private String getAccessToken() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+
+        return accessToken;
     }
 }

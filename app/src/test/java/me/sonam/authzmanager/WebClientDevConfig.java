@@ -2,6 +2,7 @@ package me.sonam.authzmanager;
 
 import me.sonam.authzmanager.tokenfilter.JwtPath;
 import me.sonam.authzmanager.tokenfilter.TokenFilter;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,10 @@ public class WebClientDevConfig {
     private String grantType;
     @Autowired
     private JwtPath jwtPath;
+
+    @Autowired
+    private TokenService tokenService;
+
     private static final Logger LOG = LoggerFactory.getLogger(WebClientDevConfig.class);
 
     @Bean("regular")
@@ -40,7 +45,7 @@ public class WebClientDevConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint, grantType);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint, grantType, tokenService);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 

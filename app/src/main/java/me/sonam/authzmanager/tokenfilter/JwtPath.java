@@ -26,37 +26,15 @@ public class JwtPath {
 
     }
 
-    public void mapInAsKey() {
-        jwtrequest.forEach(jwtRequest -> {
-            if(map.get(jwtRequest.getIn()) == null) {
-                map.put(jwtRequest.getIn(), List.of(jwtRequest.getOut()));
-            }
-            else {
-                map.put(jwtRequest.in, List.of(map.get(jwtRequest.getIn()).add(jwtRequest.getOut())));
-            }
-        });
-    }
-
-
-
     public static class JwtRequest {
-        private String in;
         private String out;
         private AccessToken accessToken;
 
         public JwtRequest() {
         }
 
-        public String getIn() {
-            return in;
-        }
-
         public String getOut() {
             return out;
-        }
-
-        public void setIn(String in) {
-            this.in = in;
         }
 
         public void setOut(String out) {
@@ -74,7 +52,6 @@ public class JwtPath {
         @Override
         public String toString() {
             return "JwtRequest{" +
-                    "in='" + in + '\'' +
                     ", out='" + out + '\'' +
                     ", accessToken='" + accessToken + '\'' +
                     '}';

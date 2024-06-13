@@ -7,5 +7,5 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface ClientUserPage {
-    Mono<String> setUsersAndsersInClientOrganizationUserRole(UUID id, Model model, Pageable userPageable);
+    Mono<String> setUsersAndsersInClientOrganizationUserRole(String accessToken, UUID id, Model model, Pageable userPageable);
 }

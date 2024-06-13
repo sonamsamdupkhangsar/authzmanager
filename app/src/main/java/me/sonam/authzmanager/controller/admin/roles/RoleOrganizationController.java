@@ -2,6 +2,7 @@ package me.sonam.authzmanager.controller.admin.roles;
 
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.user.UserId;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -29,10 +31,12 @@ public class RoleOrganizationController {
     private RoleWebClient roleWebClient;
     private OrganizationWebClient organizationWebClient;
     final String PATH = "admin/roles/organizations";
+    private TokenService tokenService;
 
-    public RoleOrganizationController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient) {
+    public RoleOrganizationController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient, TokenService tokenService) {
         this.roleWebClient = roleWebClient;
         this.organizationWebClient = organizationWebClient;
+        this.tokenService = tokenService;
     }
 
     @GetMapping
@@ -46,14 +50,18 @@ public class RoleOrganizationController {
         }
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
+        LOG.info("userId: {}", userId);
 
-        return roleWebClient.getRoleById(id)
+        final String accessToken = getAccessToken();
+
+        return roleWebClient.getRoleById(accessToken, id)
                 .doOnNext(role -> {
                     model.addAttribute("role", role);
                     LOG.info("role: {}", role);
                 })
-                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).zipWith(Mono.just(role))
+                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).zipWith(Mono.just(role))
                 .doOnNext(objects -> {
                     LOG.info("organizationList: {}", objects.getT1());
 
@@ -99,18 +107,23 @@ public class RoleOrganizationController {
         }
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userIdAttribute = oidcUser.getAttribute("userId");
+        LOG.info("oidc.userId: {}", userIdAttribute);
+        UUID userId = UUID.fromString(userIdAttribute);
 
-        return roleWebClient.addRoleToOrganization(roleOrganization)
+        final String accessToken = getAccessToken();
+
+        return roleWebClient.addRoleToOrganization(accessToken, roleOrganization)
                 .doOnNext(roleOrganization1 -> {
                     LOG.info("added role to organization");
                     model.addAttribute("message", "assigned role to organization successfully");
-                }).flatMap(roleOrganization1 -> roleWebClient.getRoleById(id))
+                }).flatMap(roleOrganization1 -> roleWebClient.getRoleById(accessToken, id))
                 .doOnNext(role -> {
                     model.addAttribute("role", role);
                     LOG.info("role: {}", role);
                 })
-                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).zipWith(Mono.just(role))
+                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).zipWith(Mono.just(role))
                         .doOnNext(objects -> {
                             LOG.info("organizationList: {}", objects.getT1());
                             model.addAttribute("page", objects.getT1());
@@ -131,18 +144,23 @@ public class RoleOrganizationController {
         }
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userIdAttribute = oidcUser.getAttribute("userId");
+        LOG.info("oidc.userId: {}", userIdAttribute);
+        UUID userId = UUID.fromString(userIdAttribute);
 
-        return roleWebClient.deleteRoleOrganization(roleId, organizationId)
+        final String accessToken = getAccessToken();
+
+        return roleWebClient.deleteRoleOrganization(accessToken, roleId, organizationId)
                 .doOnNext(string -> {
                     LOG.info("deleted roleOrganization");
                     model.addAttribute("message", "delete roleOrganization successfully");
-                }).flatMap(roleOrganization1 -> roleWebClient.getRoleById(organizationId))
+                }).flatMap(roleOrganization1 -> roleWebClient.getRoleById(accessToken, organizationId))
                 .doOnNext(role -> {
                     model.addAttribute("role", role);
                     LOG.info("role: {}", role);
                 })
-                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable).zipWith(Mono.just(role))
+                .flatMap(role -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).zipWith(Mono.just(role))
                         .doOnNext(objects -> {
                             LOG.info("organizationList: {}", objects.getT1());
                             model.addAttribute("page", objects.getT1());
@@ -151,4 +169,10 @@ public class RoleOrganizationController {
 
     }
 
+    private String getAccessToken() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+
+        return accessToken;
+    }
 }
