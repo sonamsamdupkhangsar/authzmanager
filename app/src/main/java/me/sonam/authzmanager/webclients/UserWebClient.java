@@ -111,7 +111,7 @@ public class UserWebClient {
     }
 
     public Mono<String> updateProfile(String accessToken, User user) {
-        LOG.info("update user profile");
+        LOG.info("update user profile using accessToken: {}", accessToken);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
 

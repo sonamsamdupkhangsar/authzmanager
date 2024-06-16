@@ -134,7 +134,7 @@
                     <label for="clientSecret" class="col-sm-4 col-form-label">Client secret <span th:if="*{not #strings.isEmpty(id)}">(encrypted)</span></label>
                     <div class="col-sm-4">
                         <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
-                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"/>
+                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"  onchange="enableTokenMediateCheckbox('clientSecret', 'mediateToken')"/>
                     </div>
                 </div>
 

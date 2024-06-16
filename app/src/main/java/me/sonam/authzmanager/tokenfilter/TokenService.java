@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,8 +39,22 @@ public class TokenService {
                 accessToken.getTokenValue(), refreshTokenValue);
     }
 
+    public String getAccessToken() throws UserNotAuthenticatedException {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+
+        }
+        else {
+            var accessToken = getAccessToken(authentication);
+        }
+
+        return "";
+    }
+
     public OAuth2AccessToken getAccessToken(Authentication authentication) {
         var authorizedClient = this.getAuthorizedClient(authentication);
+        LOG.info("authorizedClient: {}", authorizedClient);
         if (authorizedClient != null) {
             OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
             LOG.info("accessToken: {}", accessToken);
@@ -48,7 +63,7 @@ public class TokenService {
             }
         }
         else {
-            LOG.error("authorizedClient is null");
+            LOG.error("authorizedClient is null, authentication: {}", authentication);
         }
         return null;
     }
@@ -65,12 +80,22 @@ public class TokenService {
     }
 
     private OAuth2AuthorizedClient getAuthorizedClient(Authentication authentication) {
+        LOG.info("get Oauth2AuthorizedClient: {}", authentication);
         if (authentication instanceof OAuth2AuthenticationToken) {
+            LOG.info("is Oauth2AuthenticationToken type");
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            LOG.info("got oauthToken");
             String clientRegistrationId = oauthToken.getAuthorizedClientRegistrationId();
             String principalName = oauthToken.getName();
-            return authorizedClientService
+            LOG.info("returning OAuth2AuthorizedClient: clientRegistrationId: {}, principalName: {}",
+                    clientRegistrationId, principalName);
+            OAuth2AuthorizedClient oAuth2AuthorizedClient = authorizedClientService
                     .loadAuthorizedClient(clientRegistrationId, principalName);
+            LOG.info("oauth2AuthorizedClient to return: {}", oAuth2AuthorizedClient);
+            return oAuth2AuthorizedClient;
+        }
+        else {
+            LOG.error("returning null, authentication is not an instanceof OAuth2AuthenticationToken: {}", authentication);
         }
         return null;
     }

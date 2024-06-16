@@ -72,7 +72,7 @@ public class TokenFilter {
     private Mono<ClientResponse> getClientRequest(ClientRequest request, ExchangeFunction next, JwtPath.JwtRequest jwt, String outPath) {
         LOG.info("clientRequest");
         if (jwt.getAccessToken().getOption().equals(JwtPath.JwtRequest.AccessToken.JwtOption.forward)) {
-            LOG.error("authentication is null, forward request as is");
+            LOG.error("forward request as is");
             ClientRequest filtered = ClientRequest.from(request)
                     .build();
             return next.exchange(filtered);

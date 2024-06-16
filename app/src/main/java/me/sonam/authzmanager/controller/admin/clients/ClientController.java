@@ -73,9 +73,6 @@ public class ClientController implements ClientUserPage {
         LOG.info("return createForm");
         final String PATH = "admin/clients/form";
 
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        LOG.info("userId: {}", userId.getUserId());
-
         OauthClient oauthClient = new OauthClient();
         oauthClient.setClientIdUuid(UUID.randomUUID());
 
@@ -249,12 +246,12 @@ public class ClientController implements ClientUserPage {
         final String PATH = "/admin/clients/list";
         LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = getAccessToken(authentication);
 
         return oauthClientWebClient.getUserClientIds(accessToken, userId, pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId);
@@ -470,6 +467,21 @@ public class ClientController implements ClientUserPage {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
 
+        LOG.info("accessToken: {}", accessToken);
         return accessToken;
+    }
+
+    private String getAccessToken(Authentication authentication) {
+        LOG.info("get access token");
+        OAuth2AccessToken oAuth2AccessToken = tokenService.getAccessToken(authentication);
+        LOG.info("got oauth2AccessToken: {}", oAuth2AccessToken);
+        if (oAuth2AccessToken != null) {
+            LOG.info("returning token: {}", oAuth2AccessToken.getTokenValue());
+            return oAuth2AccessToken.getTokenValue();
+        }
+        else {
+            LOG.error("returning null, oauth2AccessToken is null");
+            return null;
+        }
     }
 }
