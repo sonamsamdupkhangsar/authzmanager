@@ -39,10 +39,10 @@ spring:
               - profile
         provider:
           b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
-            authorization-uri: http://api-gateway:9001/issuer/oauth2/authorize
-            token-uri: http://api-gateway:9001/issuer/oauth2/token
-            user-info-uri: http://api-gateway:9001/issuer/userinfo
-            jwk-set-uri: http://api-gateway:9001/issuer/oauth2/jwks
+            authorization-uri: ${ISSUER_URI}/oauth2/authorize
+            token-uri: ${ISSUER_URI}/oauth2/token
+            user-info-uri: ${ISSUER_URI}/userinfo
+            jwk-set-uri: ${ISSUER_URI}/oauth2/jwks
             userNameAttribute: sub
 
 
