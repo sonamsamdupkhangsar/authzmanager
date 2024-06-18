@@ -41,7 +41,7 @@ public class ClientUserController {
         final String PATH = "/admin/clients/users";
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
 
         return roleWebClient.addClientOrganizationUserRole(accessToken, clientOrganizationUserWithRole)
                 .doOnNext(clientOrganizationUserRole -> LOG.info("saved client organization role"))
@@ -57,7 +57,7 @@ public class ClientUserController {
         final String PATH = "/admin/clients/users";
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
 
         return roleWebClient.deleteClientOrganizationUserRole(accessToken, roleId)
                         .flatMap(s -> {

@@ -84,7 +84,7 @@ public class AuthenticationCallout  implements AuthenticationProvider {
 
             UUID userId = UUID.fromString(roleMap.get("userId").toString());
 
-            final UserDetails principal = new UserId(userId, username, password, grantedAuths);
+            final UserDetails principal = new UserId(userId.toString(), username, password, grantedAuths);
 
             return new UsernamePasswordAuthenticationToken(principal, password, grantedAuths);
         }).onErrorResume(throwable -> {

@@ -57,7 +57,9 @@ public class RoleController {
         LOG.info("oidc.userId: {}", userIdAttribute);
         UUID userId = UUID.fromString(userIdAttribute);
 
-        return roleWebClient.getRolesByUserId(getAccessToken(), userId, pageable).doOnNext(restPage -> {
+        final String accessToken = tokenService.getAccessToken();
+
+        return roleWebClient.getRolesByUserId(accessToken, userId, pageable).doOnNext(restPage -> {
             LOG.info("roleList: {}", restPage.getSize());
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
@@ -107,7 +109,7 @@ public class RoleController {
 
         LOG.info("role : {}", role);
 
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
        return roleWebClient.updateRole(accessToken, role2, httpMethod).doOnNext(updateRole -> {
                     LOG.info("got back response: {}", updateRole);
@@ -143,7 +145,7 @@ public class RoleController {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return roleWebClient.getRoleById(accessToken, id)
                 .doOnNext(role -> {
@@ -169,8 +171,9 @@ public class RoleController {
     public Mono<String> delete(@PathVariable("id") UUID roleId, Model model) {
         final String PATH = "admin/dashboard";//display dashboard template as it doesn't require any data in the model
         LOG.info("delete role by id {}", roleId);
+        final String accessToken = tokenService.getAccessToken();
 
-        return roleWebClient.deleteRole(getAccessToken(), roleId).doOnNext(s -> {
+        return roleWebClient.deleteRole(accessToken, roleId).doOnNext(s -> {
                     model.addAttribute("message", "deleted role");
                 })
                 .then(Mono.just(PATH))
@@ -181,10 +184,4 @@ public class RoleController {
         });
     }
 
-    private String getAccessToken() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
-
-        return accessToken;
-    }
 }

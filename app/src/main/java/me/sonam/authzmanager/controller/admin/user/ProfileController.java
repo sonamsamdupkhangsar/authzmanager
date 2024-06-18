@@ -35,7 +35,9 @@ public class ProfileController {
     public Mono<String> getProfile(Model model) {
         LOG.info("get profile for the logged in user");
 
-        return userWebClient.getUserById(getAccessToken(), getUserId())
+        final String accessToken = tokenService.getAccessToken();
+
+        return userWebClient.getUserById(accessToken, getUserId())
                 .doOnNext(user -> {
                     LOG.info("got user: {}", user);
             model.addAttribute("user", user);
@@ -45,7 +47,7 @@ public class ProfileController {
     @PostMapping
     public Mono<String> updateProfile(User user, Model model) {
         LOG.info("update profile for the logged in user: {}", user);
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return userWebClient.updateProfile(accessToken, user)
                 .doOnNext(s -> LOG.info("updated profile: {}", s))
@@ -55,13 +57,6 @@ public class ProfileController {
                     model.addAttribute("user", user1);
                 })
                 .thenReturn(PATH);
-    }
-
-    private String getAccessToken() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
-
-        return accessToken;
     }
 
     public UUID getUserId() {

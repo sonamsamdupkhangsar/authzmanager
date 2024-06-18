@@ -39,17 +39,26 @@ public class TokenService {
                 accessToken.getTokenValue(), refreshTokenValue);
     }
 
-    public String getAccessToken() throws UserNotAuthenticatedException {
+    public String getAccessToken() {
+        LOG.info("getAccessToken");
         var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            OAuth2AccessToken oAuth2AccessToken = getAccessToken(authentication);
+            if (oAuth2AccessToken != null) {
+                String accessToken = oAuth2AccessToken.getTokenValue();
 
-        if (authentication == null) {
-
+                LOG.info("accessToken: {}", accessToken);
+                return accessToken;
+            }
+            else {
+                LOG.error("oAuth2AccessToken is null, return null");
+                return null;
+            }
         }
         else {
-            var accessToken = getAccessToken(authentication);
+            LOG.error("authentication is null, return null for accessToken");
+            return null;
         }
-
-        return "";
     }
 
     public OAuth2AccessToken getAccessToken(Authentication authentication) {

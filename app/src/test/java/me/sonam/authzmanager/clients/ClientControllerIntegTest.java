@@ -18,6 +18,7 @@ import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganization
 import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.when;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
@@ -62,6 +65,9 @@ public class ClientControllerIntegTest {
 
     @Autowired
     private WebTestClient webTestClient;
+
+    @Mock
+    private TokenService tokenService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -129,6 +135,8 @@ public class ClientControllerIntegTest {
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(json));
+
+        when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.get()
                 .uri("/admin/clients/"+oauthClient.getId())

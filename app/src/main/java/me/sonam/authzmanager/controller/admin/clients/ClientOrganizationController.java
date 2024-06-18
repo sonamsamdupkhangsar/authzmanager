@@ -68,7 +68,7 @@ public class ClientOrganizationController {
         LOG.info("userId: {}", userId);
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
 
         return clientOrganizationWebClient.addClientToOrganization(accessToken, clientOrganization.getClientId(),
                         clientOrganization.getOrganizationId())
@@ -116,7 +116,7 @@ public class ClientOrganizationController {
         LOG.info("userId: {}", userId);
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
 
 
         return clientOrganizationWebClient.deleteClientOrganizationAssociation(accessToken, clientsId, organizationId)

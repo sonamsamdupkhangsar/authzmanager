@@ -76,10 +76,10 @@ public class UserWebClient {
     }
 
 
-    public Mono<User> findByAuthentication(String accessToken, String authenticationId) {
+    public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
 
-        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id/")
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
                 .append(authenticationId);
 
         LOG.info("endpoint: {}", stringBuilder);

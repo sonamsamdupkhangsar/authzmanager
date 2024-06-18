@@ -86,17 +86,20 @@ public class ClientController implements ClientUserPage {
         LOG.info("get client by id {}", id);
         final String PATH = "admin/clients/form";
 
-        DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        LOG.info("authentication: {}", SecurityContextHolder.getContext().getAuthentication());
+
+       /* DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = defaultOidcUser.getAttribute("userId");
 
-        LOG.info("userId: {}", userIdString);
-        String accessToken = getAccessToken();
+        LOG.info("userId: {}", userIdString);*/
+        String accessToken = tokenService.getAccessToken();
 
         return setClientInModel(accessToken, id, model, PATH).thenReturn(PATH);
     }
 
     private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
-
+        LOG.info("set client in model with accesssToken: {}", accessToken);
 
         return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient);
@@ -125,6 +128,7 @@ public class ClientController implements ClientUserPage {
         LOG.info("returning yo man");
         return Mono.just(Rendering.view("yoman.html").modelAttribute("client", "I am a client").build());
     }
+
     /**
      * This will handle the client creation and client update.
      *
@@ -210,7 +214,7 @@ public class ClientController implements ClientUserPage {
         LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();
 
         return oauthClientWebClient.updateClient(accessToken, map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
@@ -251,7 +255,7 @@ public class ClientController implements ClientUserPage {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        String accessToken = getAccessToken(authentication);
+        String accessToken = tokenService.getAccessToken();
 
         return oauthClientWebClient.getUserClientIds(accessToken, userId, pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId);
@@ -273,8 +277,7 @@ public class ClientController implements ClientUserPage {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();
 
 
         return oauthClientWebClient.deleteClient(accessToken, id, userId)
@@ -297,7 +300,7 @@ public class ClientController implements ClientUserPage {
 
     @GetMapping("{id}/organizations")
     public Mono<String> getOrganizations(
-                                         @PathVariable("id") UUID id, Model model, Pageable userPageable) {
+            @PathVariable("id") UUID id, Model model, Pageable userPageable) {
         LOG.info("get organizations created or owned by this user-id: {}", id);
         final String PATH = "/admin/clients/organizations";
         int pageSize = 5;
@@ -314,7 +317,7 @@ public class ClientController implements ClientUserPage {
         UUID userId = UUID.fromString(userIdString);
 
 
-        String accessToken = getAccessToken();
+        String accessToken = tokenService.getAccessToken();
 
         return setClientInModel(accessToken, id, model, PATH)
                 .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
@@ -327,16 +330,15 @@ public class ClientController implements ClientUserPage {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
                     return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
-                    .switchIfEmpty(Mono.just(new ClientOrganization()))
+                            .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganization -> {
-                                for(Organization organization: organizationRestPage.getContent()) {
+                                for (Organization organization : organizationRestPage.getContent()) {
                                     if (id.equals(clientOrganization.getClientId()) &&
                                             organization.getId().equals(clientOrganization.getOrganizationId())) {
                                         ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, true);
                                         LOG.info("found a match and add the clientOrganization to list");
                                         clientOrganizationList.add(clientOrganization1);
-                                    }
-                                    else {
+                                    } else {
                                         ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, false);
                                         LOG.info("add clientOrganization to list");
                                         clientOrganizationList.add(clientOrganization1);
@@ -345,12 +347,13 @@ public class ClientController implements ClientUserPage {
                                 LOG.info("add clientOrganizations as modelAttribute: {}", clientOrganizationList);
                                 model.addAttribute("clientOrganizations", clientOrganizationList);
                             });
-        }).thenReturn(PATH);
+                }).thenReturn(PATH);
     }
 
     /**
      * When user clicks on the User tab in Clients page
      * get users in the clients' organization.
+     *
      * @param id
      * @param model
      * @param userPageable
@@ -359,7 +362,7 @@ public class ClientController implements ClientUserPage {
     @GetMapping("{id}/users")
     public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
+        String accessToken = tokenService.getAccessToken();
 
         return setUsersAndsersInClientOrganizationUserRole(accessToken, id, model, userPageable);
     }
@@ -431,7 +434,7 @@ public class ClientController implements ClientUserPage {
                     }).toList();
 
                     LOG.info("remove from userMap user that is already assigned to a clientOrganizationUserWithRole");
-                    for(ClientOrganizationUserWithRole clientOrganizationUserWithRole: clientOrganizationUserWithRoleList) {
+                    for (ClientOrganizationUserWithRole clientOrganizationUserWithRole : clientOrganizationUserWithRoleList) {
                         User user = userMap.remove(clientOrganizationUserWithRole.getUser().getId());
                         LOG.info("removed user: {}", user);
                     }
@@ -456,31 +459,8 @@ public class ClientController implements ClientUserPage {
             String json = objectMapper.writeValueAsString(object);
 
             return json;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("error occued", e);
-            return null;
-        }
-    }
-
-    private String getAccessToken() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
-
-        LOG.info("accessToken: {}", accessToken);
-        return accessToken;
-    }
-
-    private String getAccessToken(Authentication authentication) {
-        LOG.info("get access token");
-        OAuth2AccessToken oAuth2AccessToken = tokenService.getAccessToken(authentication);
-        LOG.info("got oauth2AccessToken: {}", oAuth2AccessToken);
-        if (oAuth2AccessToken != null) {
-            LOG.info("returning token: {}", oAuth2AccessToken.getTokenValue());
-            return oAuth2AccessToken.getTokenValue();
-        }
-        else {
-            LOG.error("returning null, oauth2AccessToken is null");
             return null;
         }
     }

@@ -409,7 +409,7 @@ public class OrganizationControllerIntegTest {
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/johnbadmash");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/profile/authentication-id/johnbadmash");
 
 
         recordedRequest = mockWebServer.takeRequest();

@@ -67,7 +67,8 @@ public class OrganizationController {
         LOG.info("oidc.userId: {}", userIdString);
         UUID userId = UUID.fromString(userIdString);
 
-        return organizationWebClient.getOrganizationPageByOwner(getAccessToken(), userId, pageable).doOnNext(restPage -> {
+        final String accessToken = tokenService.getAccessToken();
+        return organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).doOnNext(restPage -> {
             LOG.info("organizationList: {}", restPage);
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
@@ -106,7 +107,9 @@ public class OrganizationController {
         Organization org = new Organization(organization.getId(), organization.getName(), userId);
         LOG.info("create organization from organization: {}", organization);
 
-        return organizationWebClient.updateOrganization(getAccessToken(), org, httpMethod).flatMap(organization1 -> {
+        final String accessToken = tokenService.getAccessToken();
+
+        return organizationWebClient.updateOrganization(accessToken, org, httpMethod).flatMap(organization1 -> {
             LOG.info("got back response: {}", organization1);
             model.addAttribute("organization", organization1);
             return Mono.just(PATH);
@@ -118,7 +121,8 @@ public class OrganizationController {
         final String PATH = "admin/organizations/form";
         LOG.info("get organization by id: {}", id);
 
-        return organizationWebClient.getOrganizationById(getAccessToken(), id)
+        final String accessToken = tokenService.getAccessToken();
+        return organizationWebClient.getOrganizationById(accessToken, id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .thenReturn(PATH);
     }
@@ -136,7 +140,7 @@ public class OrganizationController {
             LOG.info("taking page size from pageable: {}", pageSize);
         }
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
-        String accessToken = getAccessToken();
+        String accessToken = tokenService.getAccessToken();
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, id, pageable))
@@ -157,7 +161,9 @@ public class OrganizationController {
         final String PATH = "admin/dashboard";
         LOG.info("delete organization by id {}", organizationId);
 
-        return organizationWebClient.deleteOrganization(getAccessToken(), organizationId).doOnNext(s -> {
+        final String accessToken = tokenService.getAccessToken();
+
+        return organizationWebClient.deleteOrganization(accessToken, organizationId).doOnNext(s -> {
                     model.addAttribute("message", "deleted organization");
                 })
                 .then(Mono.just(PATH))
@@ -182,7 +188,7 @@ public class OrganizationController {
             LOG.info("taking page size from pageable: {}", pageSize);
         }
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-        String accessToken = getAccessToken();
+        String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
@@ -204,7 +210,7 @@ public class OrganizationController {
                                                    @ModelAttribute("username") String authenticationId, final Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
         LOG.info("find user by authenticationId: {}", authenticationId);
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.getOrganizationById(accessToken, organizationId)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
@@ -227,7 +233,7 @@ public class OrganizationController {
                                 model.addAttribute("users", users);
                             }).thenReturn(organization);
                 })
-                .flatMap(organization -> userWebClient.findByAuthentication(accessToken, authenticationId))
+                .flatMap(organization -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId))
                 .doOnNext(user -> {
                     LOG.info("found user: {}", user);
                     model.addAttribute("message", "Found user with username '" + authenticationId + "'");
@@ -285,7 +291,7 @@ public class OrganizationController {
 
     private Mono<String> addUserToOrganization(final String PATH, User user, Model model, Pageable userPageable) {
         LOG.info("add user to organization: {}", user);
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.addUserToOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
                 .doOnNext(stringStringMap -> model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId()))
@@ -328,7 +334,7 @@ public class OrganizationController {
 
     private Mono<String> removeUserFromOrganization(final String PATH, User user, Model model, Pageable userPageable) {
         LOG.info("remove user from organization: {}", user);
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.removeUserFromOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
                 .doOnNext(stringStringMap -> model.addAttribute("message", "user removed from organization successfully with username: "+user.getAuthenticationId()))
@@ -369,10 +375,4 @@ public class OrganizationController {
                 }).thenReturn(PATH);
     }
 
-    private String getAccessToken() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
-
-        return accessToken;
-    }
 }

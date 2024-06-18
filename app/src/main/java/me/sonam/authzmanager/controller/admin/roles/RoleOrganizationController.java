@@ -54,7 +54,7 @@ public class RoleOrganizationController {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return roleWebClient.getRoleById(accessToken, id)
                 .doOnNext(role -> {
@@ -112,7 +112,7 @@ public class RoleOrganizationController {
         LOG.info("oidc.userId: {}", userIdAttribute);
         UUID userId = UUID.fromString(userIdAttribute);
 
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return roleWebClient.addRoleToOrganization(accessToken, roleOrganization)
                 .doOnNext(roleOrganization1 -> {
@@ -149,7 +149,7 @@ public class RoleOrganizationController {
         LOG.info("oidc.userId: {}", userIdAttribute);
         UUID userId = UUID.fromString(userIdAttribute);
 
-        final String accessToken = getAccessToken();
+        final String accessToken = tokenService.getAccessToken();
 
         return roleWebClient.deleteRoleOrganization(accessToken, roleId, organizationId)
                 .doOnNext(string -> {
@@ -169,10 +169,4 @@ public class RoleOrganizationController {
 
     }
 
-    private String getAccessToken() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken(authentication).getTokenValue();
-
-        return accessToken;
-    }
 }
