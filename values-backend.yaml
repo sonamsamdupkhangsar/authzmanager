@@ -112,3 +112,5 @@ secretFiles:
         name: BASE64_CLIENT_ID_SECRET
       - key: scopes
         name: REQUEST_SCOPES
+      - key: authzmanagerInitialSecret
+        name: AUTHZMANAGER_INITIAL_SECRET
