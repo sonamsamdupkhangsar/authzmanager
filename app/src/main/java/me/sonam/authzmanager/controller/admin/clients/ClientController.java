@@ -250,7 +250,6 @@ public class ClientController implements ClientUserPage {
         final String PATH = "/admin/clients/list";
         LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
