@@ -2,23 +2,13 @@ package me.sonam.authzmanager.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -27,7 +17,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-
+/**
+ * this is the security configuration to use OAuth2 for login and permit access to health endpoints, signup.
+ */
 @Configuration
 @EnableWebSecurity
 public class AuthManagerSecurityConfig {
@@ -36,12 +28,6 @@ public class AuthManagerSecurityConfig {
     @Value("${allowedOrigins}")
     private String allowedOrigins; //csv allow origins
 
-    @Autowired
-    private AuthenticationProvider authenticationProvider;
-
-    /*public AuthManagerSecurityConfig(AuthenticationProvider authenticationProvider) {
-        this.authenticationProvider = authenticationProvider;
-    }*/
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -53,17 +39,7 @@ public class AuthManagerSecurityConfig {
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
-               // .oauth2Login(Customizer.withDefaults());
-                .formLogin(httpSecurityFormLoginConfigurer ->
-                        httpSecurityFormLoginConfigurer.loginPage("/login/login.html")
-                                .defaultSuccessUrl("/admin/dashboard", true) // use this to forward with this address in browser
-                                .permitAll()
-                )
-                .logout(httpSecurityLogoutConfigurer -> httpSecurityLogoutConfigurer
-                        .logoutUrl("/admin/logout")
-                        .logoutSuccessUrl("/login/login.html")
-                )
-                .authenticationManager(authenticationManager());
+               .oauth2Login(Customizer.withDefaults());
 
         return http.cors(Customizer.withDefaults()).build();
     }
@@ -85,11 +61,4 @@ public class AuthManagerSecurityConfig {
         source.registerCorsConfiguration("/**", corsConfig);
         return source;
     }
-
-    private AuthenticationManager authenticationManager() {
-        ProviderManager providerManager = new ProviderManager(authenticationProvider);
-        providerManager.setEraseCredentialsAfterAuthentication(false);
-        return providerManager;
-    }
-
 }

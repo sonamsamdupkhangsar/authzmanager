@@ -5,14 +5,7 @@ logging:
   level:
     root: warn
     me.sonam: debug
-    me.sonam.authzmanager.tokenfilter: error
-
-#    me.sonam.authzmanager: info
-#    me.sonam.authzmanager.tokenfilter: debug
-#    org.springframework.web: info
-#    org.springframework.security: info
-#    org.springframework.security.oauth2: info
-#    org.springframework.boot.autoconfigure: warn
+    me.sonam.authzmanager.tokenfilter: debug
 
 spring:
   main:
@@ -27,37 +20,63 @@ spring:
     cache: false
   security:
     oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${ISSUER_URI}
+#      resourceserver:
+#        jwt:
+#          issuer-uri: ${ISSUER_URI}
+
+      client:
+        registration:
+          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
+            client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+            client-secret: ${AUTHZMANAGER_INITIAL_SECRET}
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            #client-name: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+            #client-authentication-method: client_secret_basic
+            scope:
+              - openid
+              - profile
+        provider:
+          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
+            authorization-uri: ${ISSUER_URI}/oauth2/authorize
+            token-uri: ${ISSUER_URI}/oauth2/token
+            user-info-uri: ${ISSUER_URI}/userinfo
+            jwk-set-uri: ${ISSUER_URI}/oauth2/jwks
+            userNameAttribute: sub
+
 
 permitpath:
   - path: /authzmanager/api/health/*
 
 jwtrequest:
-  - in:  /*
-    out: /issuer/authenticate
+  - out: /(.)*
     accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-  - in:  /*
-    out: /organizations
-    accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-  - in:  /*
-    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
-        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
-        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
-        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
-        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
-        /roles/(.)*, /roles/organizations/(.)*
-    accessToken:
-      option: request
-      scopes: ${REQUEST_SCOPES}
-      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+      option: forward
+
+#  - in:  /*
+#    out: /issuer/authenticate
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+#  - in:  /*
+#    out: /organizations
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
+#  - in:  /*
+#    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
+#        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
+#        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
+#        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
+#        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
+#        /roles/(.)*, /roles/organizations/(.)*
+#    accessToken:
+#      option: request
+#      scopes: ${REQUEST_SCOPES}
+#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
 
 
 user-rest-service:
@@ -91,3 +110,5 @@ role-rest-service:
 allowedOrigins: ${allowedOrigins}
 
 oauthClientId: authzmanager-client
+
+issuerUri: ${ISSUER_URI}

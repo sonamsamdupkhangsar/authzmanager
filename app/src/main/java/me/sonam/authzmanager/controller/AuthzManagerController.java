@@ -20,7 +20,7 @@ public class AuthzManagerController {
 
      @GetMapping("/login/login.html")
     public String getLogin(Model model) {
-        LOG.info("return login page");
+        LOG.trace("return login page");
 
         model.addAttribute("name", "hello");
         return "login/login";

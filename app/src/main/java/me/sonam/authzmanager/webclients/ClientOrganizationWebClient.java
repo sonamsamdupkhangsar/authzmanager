@@ -25,12 +25,13 @@ public class ClientOrganizationWebClient {
         this.clientOrganizationEndpoint = clientOrganizationEndpoint;
     }
 
-    public Mono<String> addClientToOrganization(UUID clientsId, UUID organizationId) {
+    public Mono<String> addClientToOrganization(String accessToken, UUID clientsId, UUID organizationId) {
         LOG.info("add client {} to organization: {} with endpoint: {}", clientsId, organizationId, clientOrganizationEndpoint);
 
         String clientOrganizations = new StringBuilder(clientOrganizationEndpoint).append("/organizations").toString();
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientOrganizations)
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(new ClientOrganization(clientsId, organizationId))
                 .retrieve();
         return responseSpec.bodyToMono(String.class).map(string-> {
@@ -44,7 +45,7 @@ public class ClientOrganizationWebClient {
         });
     }
 
-    public Mono<String> deleteClientOrganizationAssociation(UUID clientsId, UUID organizationId) {
+    public Mono<String> deleteClientOrganizationAssociation(String accessToken, UUID clientsId, UUID organizationId) {
         LOG.info("delete clientOrganization association: clientId: {}, organizationId: {}",
                 clientsId, organizationId);
 
@@ -53,6 +54,7 @@ public class ClientOrganizationWebClient {
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(clientsEndpoint.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(String.class).map(string-> {
             LOG.info("got back response from auth-server delete client and organization id call: {}", string);
@@ -65,7 +67,7 @@ public class ClientOrganizationWebClient {
         });
     }
 
-    public Mono<ClientOrganization> getClientIdOrganizationIdMatch(List<Organization> organizationList, UUID clientsId) {
+    public Mono<ClientOrganization> getClientIdOrganizationIdMatch(String accessToken, List<Organization> organizationList, UUID clientsId) {
         StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/organizations");
         LOG.info("calling auth-server find row with clientsId and organizationList endpoint {}", clientsEndpoint);
         List<UUID> organizationIds = organizationList.stream().map(Organization::getId).toList();
@@ -73,6 +75,7 @@ public class ClientOrganizationWebClient {
         MyPair<UUID, List<UUID>> myPair = new MyPair<>(clientsId, organizationIds);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(clientsEndpoint.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(myPair).retrieve();
 
         return responseSpec.bodyToMono(ClientOrganization.class).map(clientOrganization-> {
@@ -86,14 +89,15 @@ public class ClientOrganizationWebClient {
         });
     }
 
-    public Mono<UUID> getOrganizationIdAssociatedWithClientId(UUID id) {
+    public Mono<UUID> getOrganizationIdAssociatedWithClientId(String accessToken, UUID id) {
         LOG.info("calling ClientOrganization endpoint to get organizationId from client.id: {}", id);
 
         StringBuilder clientsEndpoint = new StringBuilder(this.clientOrganizationEndpoint).append("/")
                 .append(id).append("/organizations/id");
         LOG.info("calling auth-server get organizationId endpoint {}", clientsEndpoint);
 
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString()).retrieve();
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
 
         return responseSpec.bodyToMono(UUID.class)
                         .switchIfEmpty(Mono.error(

@@ -13,7 +13,7 @@
     <!-- Content here -->
     <div class="p-5 m-4 bg-secondary-subtle rounded-3">
         <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/admin/logout}">Logout</a></button>
+        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
     </div>
     <div class="row p-3">
         <div class="col-2">
@@ -22,6 +22,7 @@
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
+                <li class="nav-item"><a class="nav-link"th:href="@{/admin/users}">Your Profile</a></li>
             </ul>
         </div>
         <div class="col-sm">
@@ -34,7 +35,7 @@
                 You can associate the OAuth2 Client with an Organization.  Organization is a way to
                 group your roles and assign the roles to users.</p>
 
-                THe following is a demo of how this works all together.
+                The following is a demo of how this works all together.
 
                 Steps:
                 Step 1:  Create an <a class="nav-link" th:href="@{/admin/organizations}">Organizations</a>.  This Organization

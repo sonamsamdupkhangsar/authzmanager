@@ -10,9 +10,9 @@ import java.lang.annotation.RetentionPolicy;
 public @interface WithMockCustomUser {
 
     String userId();
-    String username() default "rob";
+    String username() default "";
 
-    String name() default "Rob Winch";
+    String name() default "";
     String password();
     String role();
 }

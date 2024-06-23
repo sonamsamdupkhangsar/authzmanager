@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.clients;
 
 import me.sonam.authzmanager.AuthzManagerException;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -30,13 +32,16 @@ public class ClientOrganizationController {
     private ClientOrganizationWebClient clientOrganizationWebClient;
     private OrganizationWebClient organizationWebClient;
     private OauthClientWebClient oauthClientWebClient;
+    private TokenService tokenService;
 
     public ClientOrganizationController(ClientOrganizationWebClient clientOrganizationWebClient,
                                         OrganizationWebClient organizationWebClient,
-                                        OauthClientWebClient oauthClientWebClient) {
+                                        OauthClientWebClient oauthClientWebClient,
+                                        TokenService tokenService) {
         this.clientOrganizationWebClient = clientOrganizationWebClient;
         this.organizationWebClient = organizationWebClient;
         this.oauthClientWebClient = oauthClientWebClient;
+        this.tokenService = tokenService;
     }
 
     
@@ -52,17 +57,24 @@ public class ClientOrganizationController {
         final String PATH = "/admin/clients/organizations";
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (clientOrganization.getClientId() == null || clientOrganization.getOrganizationId() == null) {
             LOG.error("clientId or organizationId in payload is null: {}", clientOrganization);
             return Mono.error(new AuthzManagerException("clientOrganization.clientId or clientOrganization.organizationId cannot be null"));
         }
-        return clientOrganizationWebClient.addClientToOrganization(clientOrganization.getClientId(),
+
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
+        LOG.info("userId: {}", userId);
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
+
+        return clientOrganizationWebClient.addClientToOrganization(accessToken, clientOrganization.getClientId(),
                         clientOrganization.getOrganizationId())
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully added to organization"))
-                .flatMap(organizationRestPage -> setClientInModel(id, model, PATH))
-                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
+                .flatMap(organizationRestPage -> setClientInModel(accessToken, id, model, PATH))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -70,7 +82,7 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(organizationRestPage.getContent(), id)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
                                 for (Organization organization : organizationRestPage.getContent()) {
@@ -99,12 +111,18 @@ public class ClientOrganizationController {
         final String PATH = "/admin/clients/organizations";
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
-        UserId userId = (UserId) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
+        LOG.info("userId: {}", userId);
 
-        return clientOrganizationWebClient.deleteClientOrganizationAssociation(clientsId, organizationId)
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
+
+
+        return clientOrganizationWebClient.deleteClientOrganizationAssociation(accessToken, clientsId, organizationId)
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully removed from organization"))
-                .flatMap(organizationRestPage -> setClientInModel(clientsId, model, PATH))
-                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId.getUserId(), pageable))
+                .flatMap(organizationRestPage -> setClientInModel(accessToken, clientsId, model, PATH))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -112,7 +130,7 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(organizationRestPage.getContent(), clientsId)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), clientsId)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
                                 for (Organization organization : organizationRestPage.getContent()) {
@@ -135,8 +153,8 @@ public class ClientOrganizationController {
     }
 
 
-    private Mono<String> setClientInModel(UUID id, Model model, final String PATH) {
-        return oauthClientWebClient.getOauthClientById(id).map(registeredClient -> {
+    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
+        return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient);
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);

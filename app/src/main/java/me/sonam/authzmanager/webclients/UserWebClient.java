@@ -35,7 +35,7 @@ public class UserWebClient {
 
     }
 
-    public Mono<List<User>> getUserByBatchOfIds(List<UUID> ids) {
+    public Mono<List<User>> getUserByBatchOfIds(String accessToken, List<UUID> ids) {
         LOG.info("calling user-rest-service to get batch of users by ids: {}", ids);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/ids/");
@@ -50,6 +50,7 @@ public class UserWebClient {
         LOG.info("user endpoint: {}", batchIdEnpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(batchIdEnpoint)
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<List<User>>() {})
@@ -60,7 +61,7 @@ public class UserWebClient {
 
     }
 
-    public Mono<User> getUserById(UUID id) {
+    public Mono<User> getUserById(String accessToken, UUID id) {
         LOG.info("calling user-rest-service to get user by id: {}", id);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/").append(id);
@@ -68,20 +69,23 @@ public class UserWebClient {
         LOG.info("user endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
         return responseSpec.bodyToMono(User.class);
     }
 
 
-    public Mono<User> findByAuthentication(String authenticationId) {
+    public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
 
-        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id/")
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
                 .append(authenticationId);
 
         LOG.info("endpoint: {}", stringBuilder);
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString()).accept(MediaType.APPLICATION_JSON)
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
         return responseSpec.bodyToMono(User.class).onErrorResume(throwable -> {
@@ -106,13 +110,14 @@ public class UserWebClient {
         });
     }
 
-    public Mono<String> updateProfile(User user) {
-        LOG.info("update user profile");
+    public Mono<String> updateProfile(String accessToken, User user) {
+        LOG.info("update user profile using accessToken: {}", accessToken);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(user).accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
