@@ -3,44 +3,69 @@ package me.sonam.authzmanager.tokenfilter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This is a property object for `jwtrequest`
  */
 @Component
 @ConfigurationProperties
-public class JwtPath {
-    private List<JwtRequest> jwtrequest = new ArrayList();
+public class TokenRequestFilter {
+    private final List<RequestFilter> requestFilters = new ArrayList<>();
 
-    public List<JwtRequest> getJwtRequest() {
-        return jwtrequest;
+    public List<RequestFilter> getRequestFilters() {
+        return requestFilters;
     }
 
-    private Map<String, List> map = new HashMap<>();
-
-    public JwtPath() {
+    public TokenRequestFilter() {
 
     }
 
-    public static class JwtRequest {
+    public static class RequestFilter {
+        private String in;
         private String out;
+        private String inHttpMethods;
+        private Set<String> inHttpMethodSet = new HashSet<>();
+        private Set<String> inSet = new HashSet<>();
+        private Set<String> outSet = new HashSet<>();
         private AccessToken accessToken;
 
-        public JwtRequest() {
+        public RequestFilter() {
         }
 
         public String getOut() {
             return out;
         }
-
-        public void setOut(String out) {
-            this.out = out;
+        public String getIn() {
+            return in;
         }
 
+        public void setIn(String in) {
+            this.in = in;
+            String[] inArray = in.split(",");
+            inSet = Arrays.stream(inArray).map(String::trim).collect(Collectors.toSet());
+        }
+        public Set<String> getInSet() {
+            return this.inSet;
+        }
+        public void setOut(String out) {
+            this.out = out;
+            String[] outArray = out.split(",");
+            outSet = Arrays.stream(outArray).map(String::trim).collect(Collectors.toSet());
+        }
+        public Set<String> getOutSet() {
+            return this.outSet;
+        }
+        public Set<String> getInHttpMethodSet() {
+            return this.inHttpMethodSet;
+        }
+
+        public void setInHttpMethods(String inHttpMethods) {
+            this.inHttpMethods = inHttpMethods;
+            String[] httpMethodArray = inHttpMethods.split(",");
+            inHttpMethodSet = Arrays.stream(httpMethodArray).map(String::trim).map(String::toLowerCase).collect(Collectors.toSet());
+        }
         public AccessToken getAccessToken() {
             return accessToken;
         }
@@ -51,8 +76,13 @@ public class JwtPath {
 
         @Override
         public String toString() {
-            return "JwtRequest{" +
+            return "RequestFilter{" +
+                    "in='" + in + '\'' +
+                    ", inSet='" + inSet + '\'' +
                     ", out='" + out + '\'' +
+                    ", outSet='" + outSet +'\'' +
+                    ", inHttpMethods='" + inHttpMethods + '\'' +
+                    ", inHttpMethodSet='" + inHttpMethodSet + '\'' +
                     ", accessToken='" + accessToken + '\'' +
                     '}';
         }

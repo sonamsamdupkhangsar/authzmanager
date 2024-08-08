@@ -4,15 +4,11 @@ import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.rest.RestPage;
-import me.sonam.authzmanager.tokenfilter.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -111,6 +107,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .append("&sortBy=clientName");
         LOG.info("calling auth-server get clientIds for userId endpoint {}", clientsEndpoint);
 
+        LOG.info("add accessToken to the header webClient {}", accessToken);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
@@ -158,9 +155,30 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
 
             return registeredClientUtil.build(map);
         }).onErrorResume(throwable -> {
+            LOG.debug("exception ig getting oauth client by id", throwable);
             String errorMessage = "auth-server get clientId by clientId failed: " +
                     throwable.getMessage();
             LOG.error(errorMessage);
+            return Mono.error(throwable);
+        });
+    }
+
+    public Mono<String> deleteClient(String accessToken) {
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint);
+        LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(clientsEndpoint.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+        return responseSpec.bodyToMono(String.class).map(string-> {
+            LOG.info("deleted user client information, response from authorization server: {}", string);
+
+            return string;
+        }).onErrorResume(throwable -> {
+            String errorMessage = "failed to delete client information for user: " +
+                    throwable.getMessage();
+            LOG.error(errorMessage);
+            LOG.debug("exception: ", throwable);
             return Mono.error(throwable);
         });
     }

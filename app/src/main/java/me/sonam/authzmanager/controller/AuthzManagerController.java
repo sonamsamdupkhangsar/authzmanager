@@ -18,20 +18,23 @@ public class AuthzManagerController {
         return "greeting";
     }
 
-     @GetMapping("/login/login.html")
-    public String getLogin(Model model) {
-        LOG.trace("return login page");
-
-        model.addAttribute("name", "hello");
-        return "login/login";
-    }
-
     @GetMapping
     public String getIndex() {
         LOG.info("return index page");
         return "index";
     }
 
+    @GetMapping("/logmeout")
+    public String getLogout() {
+        LOG.info("return logout");
+        return "logmeout";
+    }
 
 
+    @GetMapping("/oauth2-login-error")
+    public String loginError() {
+        LOG.info("login error occurred");
+
+        return "oauth2-login-error";
+    }
 }

@@ -13,7 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class BeanConfig {
-    @Value("${user-rest-service.root}${user-rest-service.contextPath}")
+    @Value("${user-rest-service.root}${user-rest-service.context}")
     private String userSignupEndpoint;
 
     @Value("${authentication-rest-service.root}${authentication-rest-service.authenticate}")
@@ -32,6 +32,9 @@ public class BeanConfig {
 
     @Value("${role-rest-service.root}${role-rest-service.contextPath}")
     private String rolesEndpoint;
+
+    @Value("${account-rest-service.accountDelete}")
+    private String deleteMyAccountEndpoint;
 
     @Autowired
     @Qualifier("regular")
@@ -75,5 +78,10 @@ public class BeanConfig {
     @Bean
     public ClientOrganizationWebClient clientOrganizationWebClient() {
         return new ClientOrganizationWebClient(webClientWithTokenFilter, authServerClientOrganizationsEndpoint);
+    }
+
+    @Bean
+    public AccountWebClient accountWebClient() {
+        return new AccountWebClient(webClientWithTokenFilter, deleteMyAccountEndpoint);
     }
 }

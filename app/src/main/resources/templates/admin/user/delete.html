@@ -17,7 +17,8 @@
             xhttp.onload = function () {
                 let responseURL = xhttp.responseURL;
                 console.log("Redirecting to:", responseURL);
-                window.location.replace("/admin/clients");
+                 alert ("Your data has been deleted, logging you out");
+                 window.location.replace("/logout");
             };
             xhttp.send();
         }
@@ -44,10 +45,10 @@
         <div class="col-sm">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="#">Your profile</a>
+                    <a class="nav-link" aria-current="page" href="#">Your profile</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" aria-current="page" th:href="@{/admin/users/delete}">Delete My Data</a>
+                    <a class="nav-link active" aria-current="page" href="#">Delete My Data</a>
                 </li>
             </ul>
 
@@ -62,54 +63,31 @@
                 </div>
             </div>
             <div class="col mt-4">
-                <form action="#" th:action="@{/admin/users}" th:object="${user}" method="post">
-                    <input type="hidden" th:field="*{id}"/>
-                    <div class="mb-3 error text-danger" th:if="${#fields.hasErrors}">
-                    <span>Failed to update profile.
-                        Please check the data validation errors.</span>
-                        <ul>
-                            <li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
-                        </ul>
-                    </div>
+                <p class="text-left">Click the following button to delete your data from the system.
+                This action is not reversible.  Once deleted your user information from the system will not exist anymore.
+                </p>
+                <button type="button" th:with="url=@{/admin/users/delete}" th:onclick="sendDelete([[${url}]])"
+                        class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+                    Delete my account</button>
+            </div>
 
-                    <div class="mb-3 row">
-                        <label for="firstName" class="col-sm-4 col-form-label">first name</label>
-                        <div class="col-sm-5">
-                            <input type="text" class="form-control" id="firstName" th:field="*{firstName}"/>
+            <div class="modal"  id="exampleModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Modal title</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your data has been deleted.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                         </div>
                     </div>
-
-                    <div class="mb-3 row">
-                        <label for="lastName" class="col-sm-4 col-form-label">last name</label>
-                        <div class="col-sm-7">
-                            <input type="text" class="form-control" id="lastName" th:field="*{lastName}"/>
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label for="email" class="col-sm-4 col-form-label">email</label>
-                        <div class="col-sm-5">
-                            <input type="email" class="form-control" id="email" th:field="*{email}" readonly/>
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label for="authenticationId" class="col-sm-4 col-form-label">username</label>
-                        <div class="col-sm-7">
-                            <input type="text" class="form-control" id="authenticationId" th:field="*{authenticationId}" readonly/>
-                        </div>
-                    </div>
-                    <div class="mb-3 row">
-                        <label for="searchable" class="col-sm-4 col-form-label">Searchable (leave unchecked so others cannot look you up)</label>
-                        <div class="col-sm-1">
-                            <input type="checkbox" class="form-check-input" id="searchable" th:field="*{searchable}"/>
-                        </div>
-                    </div>
-
-
-                    <div class="mb-3">
-                        <button type="submit" class="btn btn-primary m-3">Submit</button>
-                        <button type="reset" class="btn btn-secondary m-3">Reset</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>

@@ -49,39 +49,7 @@ spring:
 permitpath:
   - path: /authzmanager/api/health/*
 
-jwtrequest:
-  - out: /(.)*
-    accessToken:
-      option: forward
-
-#  - in:  /*
-#    out: /issuer/authenticate
-#    accessToken:
-#      option: request
-#      scopes: ${REQUEST_SCOPES}
-#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-#  - in:  /*
-#    out: /organizations
-#    accessToken:
-#      option: request
-#      scopes: ${REQUEST_SCOPES}
-#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-#  - in:  /*
-#    out: /users,/users/id/(.)*,/users/(.)*,/issuer/clients/(.)*,
-#        /issuer/clients,/issuer/clientOrganizations/clients/id/(.)*/organizations/id,
-#        /issuer/clientOrganizations,/issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*,
-#        /issuer/clientOrganizations/findRow,/issuer/clientOrganizations/id/(.)*/organizationId/(.)*,
-#        /organizations,/organizations/(.)*,/organizations/(.)*/users/(.)*,/roles,/roles/organizations/(.)*,
-#        /roles/(.)*, /roles/organizations/(.)*
-#    accessToken:
-#      option: request
-#      scopes: ${REQUEST_SCOPES}
-#      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
-
-
-user-rest-service:
-  root: ${USER_REST_SERVICE}
-  contextPath: /users
+requestFilters:
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
@@ -93,6 +61,10 @@ auth-server:
   oauth2token:
     path: /oauth2/token
     grantType: client_credentials
+
+user-rest-service:
+  root: ${USER_REST_SERVICE}
+  context: /users
 
 authentication-rest-service:
   root: ${AUTHENTICATION_REST_SERVICE}/authentications
@@ -106,6 +78,10 @@ role-rest-service:
   root: ${ROLE_REST_SERVICE}
   contextPath: /roles
 
+account-rest-service:
+  root: ${ACCOUNT_REST_SERVICE}
+  context: ${account-rest-service.root}/accounts
+  accountDelete: ${account-rest-service.context}/delete
 
 allowedOrigins: ${allowedOrigins}
 

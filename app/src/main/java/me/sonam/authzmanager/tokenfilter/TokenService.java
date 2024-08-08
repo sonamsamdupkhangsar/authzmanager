@@ -1,5 +1,7 @@
 package me.sonam.authzmanager.tokenfilter;
 
+import com.netflix.discovery.converters.Auto;
+import me.sonam.authzmanager.webclients.TokenWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,12 +9,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 public class TokenService {
@@ -21,6 +26,11 @@ public class TokenService {
 
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
+
+
+    @Autowired
+    private OAuth2AuthorizedClientManager authorizedClientManager;
+
 
     //@PreAuthorize("hasAuthority('SCOPE_profile')")
     private String getJwtToken() {
@@ -47,7 +57,7 @@ public class TokenService {
             if (oAuth2AccessToken != null) {
                 String accessToken = oAuth2AccessToken.getTokenValue();
 
-                LOG.info("accessToken: {}", accessToken);
+                LOG.info("returning accessToken: {}", accessToken);
                 return accessToken;
             }
             else {
@@ -66,9 +76,18 @@ public class TokenService {
         LOG.info("authorizedClient: {}", authorizedClient);
         if (authorizedClient != null) {
             OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
-            LOG.info("accessToken: {}", accessToken);
+
             if (accessToken != null) {
+                LOG.info("accessToken is not null, returning accessToken object");
+                Instant.now();
+                if (accessToken.getExpiresAt().isBefore(Instant.now())) {
+                    LOG.info("access token has expired, get a new refresh token");
+
+                }
                 return accessToken;
+            }
+            else {
+                LOG.info("accessToken object is null: {}", accessToken);
             }
         }
         else {

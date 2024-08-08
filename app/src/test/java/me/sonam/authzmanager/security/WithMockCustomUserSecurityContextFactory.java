@@ -4,10 +4,14 @@ import me.sonam.authzmanager.user.UserId;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
@@ -33,8 +37,12 @@ public class WithMockCustomUserSecurityContextFactory implements WithSecurityCon
                 Instant.now().plusSeconds(60), Map.of("role", "USER_ROLE", "sub", "sonam", "userId", customUser.userId()));
         DefaultOidcUser principal = new DefaultOidcUser(grantedAuths, idToken);
 
-        Authentication auth =
-                UsernamePasswordAuthenticationToken.authenticated(principal, "password", principal.getAuthorities());
+       // OAuth2AuthenticatedPrincipal auth = new DefaultOAuth2AuthenticatedPrincipal("sonam", Map.of("role", "USER_ROLE"),
+        //        AuthorityUtils.createAuthorityList("SCOPE_message:read"));;
+
+          Authentication auth =       //  UsernamePasswordAuthenticationToken.authenticated(principal, "password", principal.getAuthorities());
+        new OAuth2AuthenticationToken(principal, principal.getAuthorities(),  "clientId");
+
         context.setAuthentication(auth);
         return context;
     }

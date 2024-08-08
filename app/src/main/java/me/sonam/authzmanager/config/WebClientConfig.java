@@ -1,7 +1,7 @@
 package me.sonam.authzmanager.config;
 
 
-import me.sonam.authzmanager.tokenfilter.JwtPath;
+import me.sonam.authzmanager.tokenfilter.TokenRequestFilter;
 import me.sonam.authzmanager.tokenfilter.TokenFilter;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import org.slf4j.Logger;
@@ -22,9 +22,10 @@ public class WebClientConfig {
     private String oauth2TokenEndpoint;
     @Value("${auth-server.oauth2token.grantType}")
     private String grantType;
-
+    @Value("${auth-server.oauth2token.issuerTokenPath:}")
+    private String accessTokenPath;
     @Autowired
-    private JwtPath jwtPath;
+    private TokenRequestFilter tokenRequestFilter;
 
     @Autowired
     private TokenService tokenService;
@@ -47,7 +48,7 @@ public class WebClientConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), jwtPath, oauth2TokenEndpoint, grantType, tokenService);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), tokenRequestFilter, oauth2TokenEndpoint, grantType, accessTokenPath);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 
