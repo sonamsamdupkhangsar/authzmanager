@@ -38,11 +38,12 @@ public class AuthManagerSecurityConfig {
                                 .requestMatchers("/api/health/readiness").permitAll()
                                 .requestMatchers("/signup").permitAll()
                                 .requestMatchers("/oauth2-login-error").permitAll()
+                                .requestMatchers("/userlogout").permitAll()
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .logout(httpSecurityLogoutConfigurer ->
-                        httpSecurityLogoutConfigurer.logoutSuccessUrl("/logmeout")
+                        httpSecurityLogoutConfigurer.logoutSuccessUrl("/userlogout")
                                 .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.ALL)))
 
                 )

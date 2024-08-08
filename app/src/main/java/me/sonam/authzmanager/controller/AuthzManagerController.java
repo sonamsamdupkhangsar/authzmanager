@@ -24,10 +24,10 @@ public class AuthzManagerController {
         return "index";
     }
 
-    @GetMapping("/logmeout")
+    @GetMapping("/userlogout")
     public String getLogout() {
         LOG.info("return logout");
-        return "logmeout";
+        return "userlogout";
     }
 
 

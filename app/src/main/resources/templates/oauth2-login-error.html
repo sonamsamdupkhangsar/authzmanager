@@ -32,13 +32,19 @@
     <div class="row">
         <div class="col-2">
             <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Login</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/signup}">Signup</a></li>
             </ul>
         </div>
         <div class="col-sm">
             <div class="m-4">
-                <span class="h3">Error occurred during Oauth login</span>
+                <p class="h3">Error occurred during Oauth login.</p>
+
+                <p>
+                    Did you delete your account and tried to login?  It is possible that you have deleted your account
+                    and now trying to login using the session.
+                </p>
             </div>
         </div>
     </div>
