@@ -44,12 +44,16 @@ public class AuthManagerSecurityConfig {
                 )
                 .logout(httpSecurityLogoutConfigurer ->
                         httpSecurityLogoutConfigurer.logoutSuccessUrl("/userlogout")
-                                .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.ALL)))
+                                .deleteCookies("JSESSIONID").invalidateHttpSession(true)
+                                .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter( ClearSiteDataHeaderWriter.Directive.CACHE,
+                                        ClearSiteDataHeaderWriter.Directive.COOKIES,
+                                        ClearSiteDataHeaderWriter.Directive.STORAGE)))
 
                 )
 
                 .csrf(AbstractHttpConfigurer::disable)
-               .oauth2Login(Customizer.withDefaults()).oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()));
+               .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()));
 
         return http.cors(Customizer.withDefaults()).build();
     }

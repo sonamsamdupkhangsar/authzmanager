@@ -19,7 +19,7 @@ public class CustomOAuth2AuthenticationFailureHandler implements AuthenticationF
         // Handle the error here
         // You can log the error, redirect to a custom error page, or return a JSON response
         // For example, redirect to a custom error page:
-        LOG.error("error occured during login", exception);
+        LOG.error("error occurred during login", exception);
 
         response.sendRedirect("/oauth2-login-error");
     }
