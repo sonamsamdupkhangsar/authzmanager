@@ -76,7 +76,6 @@ public class RegisteredClientUtil {
         map.put("scopes", StringUtils.collectionToCommaDelimitedString(registeredClient.getScopes()));
         map.put("clientSettings",writeMap(registeredClient.getClientSettings().getSettings()));
         map.put("tokenSettings", writeMap(registeredClient.getTokenSettings().getSettings()));
-        map.put("mediateToken", registeredClient.isMediateToken());
         LOG.info("map contains: {}", map);
         return map;
     }

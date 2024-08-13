@@ -28,7 +28,6 @@ public class RegisteredClient implements Serializable {
     private Set<String> scopes;
     private ClientSettings clientSettings;
     private TokenSettings tokenSettings;
-    private boolean mediateToken;
 
     protected RegisteredClient() {
     }
@@ -41,20 +40,12 @@ public class RegisteredClient implements Serializable {
         this.newClientSecret = newClientSecret;
     }
 
-    public void setMediateToken(boolean value) {
-        this.mediateToken = value;
-    }
-
     public String getId() {
         return this.id;
     }
 
     public String getClientId() {
         return this.clientId;
-    }
-
-    public boolean isMediateToken() {
-        return mediateToken;
     }
 
     @Nullable
@@ -136,7 +127,6 @@ public class RegisteredClient implements Serializable {
                 ", scopes=" + scopes +
                 ", clientSettings=" + clientSettings +
                 ", tokenSettings=" + tokenSettings +
-                ", mediateToken=" + mediateToken +
                 '}';
     }
 
@@ -359,7 +349,6 @@ public class RegisteredClient implements Serializable {
             registeredClient.scopes = Collections.unmodifiableSet(new HashSet(this.scopes));
             registeredClient.clientSettings = this.clientSettings;
             registeredClient.tokenSettings = this.tokenSettings;
-            registeredClient.mediateToken = this.mediateToken;
             registeredClient.newClientSecret = this.newClientSecret;
             return registeredClient;
         }

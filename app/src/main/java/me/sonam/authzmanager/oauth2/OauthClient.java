@@ -44,10 +44,6 @@ public class OauthClient {
     @Size(max = 200)
     private String customScopes;
 
-    //private String scopes;
-
-    //private Map<String, Boolean> clientSettings = new HashMap<>();
-   // private String clientSettings;
     private ClientSettings clientSettings = new ClientSettings();
 
     private TokenSettings tokenSettings = new TokenSettings();
@@ -187,7 +183,6 @@ public class OauthClient {
                     '}';
         }
     }
-    private boolean mediateToken;
     private List<String> availableScopes = new ArrayList<>();
 
     public OauthClient() {
@@ -440,14 +435,6 @@ public class OauthClient {
         return oidcScopes;
     }
 
-    public boolean isMediateToken() {
-        return this.mediateToken;
-    }
-
-    public void setMediateToken(boolean mediateToken) {
-        this.mediateToken = mediateToken;
-    }
-
     public void setCustomScopes(String customScopes) {
         this.customScopes = customScopes;
     }
@@ -476,119 +463,9 @@ public class OauthClient {
                 ", customScopes='" + customScopes + '\'' +
                 ", clientSettings=" + clientSettings +
                 ", tokenSettings=" + tokenSettings +
-                ", mediateToken=" + mediateToken +
                 ", availableScopes=" + availableScopes +
                 '}';
     }
-   /*  public Map<String, Object> getMap() {
-        LOG.info("get map");
-        Map<String, Object> map = new HashMap<>(Map.of("clientId", clientId, "clientIdIssuedAt", clientIdIssuedAt,
-                "clientSecret", clientSecret, "clientSecretExpiresAt", clientSecretExpiresAt,
-                "clientName", clientName,
-                 "redirectUris", redirectUris,
-                "postLogoutRedirectUris", postLogoutRedirectUris
-        ));
-        map.put("clientAuthenticationMethods", toClientAuthenticationMethods(clientAuthenticationMethods));
-        map.put("authorizationGrantTypes", toAuthorizationGrantTypes(authorizationGrantTypes));
-        map.put("scopes", toOidcScopes(scopes) + customScopes);
-
-        if (clientSettings.isEmpty()) {
-            clientSettings = new HashMap<>().toString();
-        }
-        LOG.info("clientSettings: {}", clientSettings);
-        if (!clientSettings.isEmpty()) {
-            String[] clientSettingsArray = clientSettings.split(",");
-            Map<String, String> clientSettingsMap = new HashMap<>();
-
-            for (String cs : clientSettingsArray) {
-                String[] keyValueArray = cs.split("=");
-                clientSettingsMap.put(keyValueArray[0], keyValueArray[1]);
-            }
-            LOG.info("clientSettingsMaps: {}", clientSettingsMap);
-            map.put("clientSettings", clientSettingsMap);
-        }
-        else {
-            LOG.info("clientSettings empty");
-        }
-
-        map.put("tokenSettings", tokenSettings);
-        map.put("mediateToken", mediateToken);
-        return map;
-    }*/
-
-    /**
-     * {
-     * redirectUris=http://127.0.0.1:8080/authorized,http://127.0.0.1:8080/login/oauth2/code/my-client-oidc,
-     * scopes=openid,profile,message.read,message.write,
-     * clientId=4f6c9c8c-2637-4f7c-b90d-f127fb4fc39f,
-     * clientSecret={noop}secret,
-     * clientSettings={"@class":"java.util.Collections$UnmodifiableMap","settings.client.require-proof-key":"false","settings.client.require-authorization-consent":"true"},
-     * clientName=Blog Application,
-     * id=c9e2fdf6-7994-4448-b0d0-1f943395bbe3,
-     * clientAuthenticationMethods=client_secret_jwt,client_secret_basic,
-     * authorizationGrantTypes=refresh_token,client_credentials,authorization_code,
-     * tokenSettings={"@class":"java.util.Collections$UnmodifiableMap","settings.token.reuse-refresh-tokens":true,"settings.token.id-token-signature-algorithm":["org.springframework.security.oauth2.jose.jws.SignatureAlgorithm","RS256"],"settings.token.access-token-time-to-live":["java.time.Duration",300.000000000],"settings.token.access-token-format":{"@class":"org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat","value":"self-contained"},"settings.token.refresh-token-time-to-live":["java.time.Duration",3600.000000000],"settings.token.authorization-code-time-to-live":["java.time.Duration",300.000000000],"settings.token.device-code-time-to-live":["java.time.Duration",300.000000000]}}
-     *
-     * @return
-     */
-    /*public static OauthClient getFromMap(Map<String, Object> map) {
-        OauthClient oauthClient = new OauthClient();
-        oauthClient.setId(map.get("id").toString());
-        oauthClient.setClientId(map.get("clientId").toString());
-        if (map.get("clientName") != null) {
-            oauthClient.setClientName(map.get("clientName").toString());
-        }
-        if (map.get("clientSecret") != null) {
-            oauthClient.setClientSecret(map.get("clientSecret").toString());
-        }
-        if (map.get("clientSecretExpiresAt") != null) {
-            oauthClient.setClientSecretExpiresAt(map.get("clientSecretExpiresAt").toString());
-        }
-        if (map.get("redirectUris") != null) {
-            oauthClient.setRedirectUris(map.get("redirectUris").toString());
-        }
-        if (map.get("postLogoutRedirectUris") != null) {
-            oauthClient.setPostLogoutRedirectUris(map.get("postLogoutRedirectUris").toString());
-        }
-
-        if (map.get("scopes") != null) {
-            List<String> list = Arrays.stream(map.get("scopes").toString().split(",")).toList();
-            oauthClient.setScopes(list);
-        }
-
-        if (map.get("clientAuthenticationMethods") != null) {
-            List<String> list = Arrays.stream(map.get("clientAuthenticationMethods").toString().split(",")).toList();
-            oauthClient.setClientAuthenticationMethods(list);
-        }
-        if (map.get("authorizationGrantTypes") != null) {
-            List<String> list = Arrays.stream(map.get("authorizationGrantTypes").toString().split(",")).toList();
-            oauthClient.setAuthorizationGrantTypes(list);
-        }
-
-        if (map.get("clientSettings") != null) {
-            String clientSettings = map.get("clientSettings").toString();
-            clientSettings = clientSettings.replace("{\"@class\":\"java.util.Collections$UnmodifiableMap\"", "");
-            clientSettings = clientSettings.replace("}", "");
-
-            List<String> list = Arrays.stream(clientSettings.split(",")).toList();
-
-            StringBuilder stringBuilder = getKeyValue(list);
-            oauthClient.setClientSettings(stringBuilder.toString());
-
-        }
-
-        if (map.get("tokenSettings") != null) {
-            String clientSettings = map.get("tokenSettings").toString();
-            clientSettings = clientSettings.replace("{\"@class\":\"java.util.Collections$UnmodifiableMap\"", "");
-            clientSettings = clientSettings.replace("}", "");
-
-            List<String> list = Arrays.stream(clientSettings.split(",")).toList();
-
-            StringBuilder stringBuilder = getKeyValue(list);
-            oauthClient.setTokenSettings(stringBuilder.toString());
-        }
-        return oauthClient;
-    }*/
 
     public static String toCsvString(Set<String> set) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -628,8 +505,6 @@ public class OauthClient {
             LOG.info("oauthClient.clientSecretExpiresAt: {}", oauthClient.getClientSecretExpiresAt());
         }
 
-        oauthClient.setMediateToken(registeredClient.isMediateToken());
-
         oauthClient.setClientName(registeredClient.getClientName());
         oauthClient.setClientSecret(registeredClient.getClientSecret());
 
@@ -663,16 +538,8 @@ public class OauthClient {
         LOG.info("stringBUilder customScope: {}", customScopeStringBuilder.toString());
         oauthClient.setCustomScopes(customScopeStringBuilder.toString());
 
-        //String customScopes = chosen.stream().map(s -> s + ",").collect(Collectors.joining(","));
-        //oauthClient.setCustomScopes(customScopes);
-        //LOG.info("customScope: {}", customScopes);
-
-
         if (!registeredClient.getClientAuthenticationMethods().isEmpty()) {
-            //List<String> clientAuthenticationMethods = registeredClient.getClientAuthenticationMethods().stream().map(ClientAuthenticationMethod::getValue::).toList();
             for(ClientAuthenticationMethod cam: registeredClient.getClientAuthenticationMethods()) {
-                //LOG.info("clientAuthenticationMethods: {}", clientAuthenticationMethods);
-                //oauthClient.setClientAuthenticationMethods(clientAuthenticationMethods);
                 oauthClient.getClientAuthenticationMethods().add(cam.getValue().toUpperCase());
                 LOG.info("cam: {}", oauthClient.getClientAuthenticationMethods());
             }
@@ -724,58 +591,6 @@ public class OauthClient {
         return stringBuilder;
     }
 
-   /* public RegisteredClient getInitialRegisteredClient() {
-        RegisteredClient.Builder registeredClientBuilder = RegisteredClient.withId(id).clientId(clientId)
-                .clientSecret(clientSecret);
-
-        for(String s: clientAuthenticationMethods) {
-            switch (s) {
-                case "CLIENT_SECRET_BASIC" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-                case "CLIENT_SECRET_POST" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-                case "CLIENT_SECRET_JWT" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
-                case "PRIVATE_KEY_JWT" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
-                case "NONE" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.NONE);
-                default -> LOG.error("invalid authenticationMethod: {}", s);
-            }
-        }
-        for(String s: authorizationGrantTypes) {
-            switch (s) {
-                case "AUTHORIZATION_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
-                case "REFRESH_TOKEN" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
-                case "CLIENT_CREDENTIALS" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
-                case "PASSWORD" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.PASSWORD);
-                case "JWT_BEARER" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.JWT_BEARER);
-                case "DEVICE_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.DEVICE_CODE);
-                default -> LOG.error("invalid AuthorizationGrantType {}", s);
-            }
-        }
-        for(String s: scopes) {
-            switch (s) {
-                case "OPENID" -> registeredClientBuilder.scope(OidcScopes.OPENID);
-                case "PROFILE" -> registeredClientBuilder.scope(OidcScopes.PROFILE);
-                case "EMAIL" -> registeredClientBuilder.scope(OidcScopes.EMAIL);
-                case "ADDRESS" -> registeredClientBuilder.scope(OidcScopes.ADDRESS);
-                case "PHONE" -> registeredClientBuilder.scope(OidcScopes.PHONE);
-                default -> LOG.error("invalid scope {}", s);
-            }
-        }
-
-        if (customScopes != null && !customScopes.isEmpty()) {
-            List<String> customScopeList = Arrays.stream(customScopes.split(",")).toList();
-            customScopeList.stream().map(String::trim).filter(s -> !s.isEmpty()).forEach(registeredClientBuilder::scope);
-            LOG.info("added custom scope {}", customScopeList);
-        }
-
-        if (redirectUris != null ) {
-            registeredClientBuilder.redirectUri(redirectUris);
-        }
-        if (postLogoutRedirectUris != null) {
-            registeredClientBuilder.postLogoutRedirectUri(postLogoutRedirectUris);
-        }
-        registeredClientBuilder.mediateToken(true);
-
-        return registeredClientBuilder.build();
-    }*/
    public DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
 
    private Instant getInstant(String dateString) {
@@ -821,20 +636,6 @@ public class OauthClient {
 
         registeredClientBuilder.clientIdIssuedAt(getInstant(clientIdIssuedAt));
         registeredClientBuilder.clientSecretExpiresAt(getInstant(clientSecretExpiresAt));
-
-       /* if (!clientIdIssuedAt.isEmpty()) {
-            try {
-                Date date = formatter.parse(clientIdIssuedAt);
-                LOG.info("date: {}, clientIdIssuedAt: {}", date, clientIdIssuedAt);
-                LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
-
-                registeredClientBuilder.clientIdIssuedAt(localDateTime.toInstant(ZoneOffset.UTC));
-
-                LOG.info("localDateTime.toInstant(ZoneOffset.UTC): {}", localDateTime.toInstant(ZoneOffset.UTC));
-            } catch (ParseException e) {
-                LOG.error("failed to parse clientIdIssuedAt to dateformat", e);
-            }
-        }*/
 
         for(String s: clientAuthenticationMethods) {
             switch (s) {
@@ -882,7 +683,6 @@ public class OauthClient {
             Arrays.stream(postLogoutRedirectUris.split(",")).forEach(registeredClientBuilder::postLogoutRedirectUri);
         }
 
-        registeredClientBuilder.mediateToken(mediateToken);
         me.sonam.authzmanager.oauth2.ClientSettings.Builder clientSettings1Builder =
                 me.sonam.authzmanager.oauth2.ClientSettings.builder();
 

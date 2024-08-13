@@ -2,34 +2,24 @@ package me.sonam.authzmanager.controller.admin.clients;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.tokenfilter.TokenService;
-import me.sonam.authzmanager.webclients.OauthClientWebClient;
-import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
-import me.sonam.authzmanager.webclients.OrganizationWebClient;
-import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
-import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.clients.user.User;
-import me.sonam.authzmanager.webclients.UserWebClient;
+import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.oauth2.OauthClient;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
-import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.user.UserId;
-import org.checkerframework.checker.units.qual.A;
+import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.webclients.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -204,7 +194,6 @@ public class ClientController implements ClientUserPage {
         }
 
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
-        map.put("mediateToken", client.isMediateToken());
 
         DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = defaultOidcUser.getAttribute("userId");
@@ -213,12 +202,11 @@ public class ClientController implements ClientUserPage {
         LOG.info("map is {}", map);
         LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken();
 
         return oauthClientWebClient.updateClient(accessToken, map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
-            LOG.info("updatedRegisteredClient.clientIdIssuedAt: ", updatedRegisteredClient.getClientIdIssuedAt());
+            LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
 
             OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
             LOG.info("oauthClient {}", oauthClient);
@@ -266,7 +254,6 @@ public class ClientController implements ClientUserPage {
             return Mono.just(PATH);
         });
     }
-
     @DeleteMapping("{id}")
     public Mono<String> deleteClientById(@PathVariable("id") UUID id, Model model) {
         LOG.info("delete client by id: {}", id);
