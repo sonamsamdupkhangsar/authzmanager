@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -35,11 +37,23 @@ public class AuthManagerSecurityConfig {
                         authorize.requestMatchers("/actuator/**").permitAll()
                                 .requestMatchers("/api/health/readiness").permitAll()
                                 .requestMatchers("/signup").permitAll()
+                                .requestMatchers("/oauth2-login-error").permitAll()
+                                .requestMatchers("/userlogout").permitAll()
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 )
+                .logout(httpSecurityLogoutConfigurer ->
+                        httpSecurityLogoutConfigurer.logoutSuccessUrl("/userlogout")
+                                .deleteCookies("JSESSIONID").invalidateHttpSession(true)
+                                .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter( ClearSiteDataHeaderWriter.Directive.CACHE,
+                                        ClearSiteDataHeaderWriter.Directive.COOKIES,
+                                        ClearSiteDataHeaderWriter.Directive.STORAGE)))
+
+                )
+
                 .csrf(AbstractHttpConfigurer::disable)
-               .oauth2Login(Customizer.withDefaults());
+               .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()));
 
         return http.cors(Customizer.withDefaults()).build();
     }
@@ -61,4 +75,6 @@ public class AuthManagerSecurityConfig {
         source.registerCorsConfiguration("/**", corsConfig);
         return source;
     }
+
+
 }

@@ -21,8 +21,8 @@ import java.util.UUID;
 public class RoleWebClient {
     private static final Logger LOG = LoggerFactory.getLogger(RoleWebClient.class);
 
-    private WebClient.Builder webClientBuilder;
-    private String roleEndpoint;
+    private final WebClient.Builder webClientBuilder;
+    private final String roleEndpoint;
 
     public RoleWebClient(WebClient.Builder webClientBuilder, String roleEndpoint) {
         this.webClientBuilder = webClientBuilder;

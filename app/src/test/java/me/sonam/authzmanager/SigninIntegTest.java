@@ -86,7 +86,7 @@ public class SigninIntegTest {
         assertThat(true).isTrue();
     }
     public void dontRun() throws Exception {
-        LOG.info("login to login/login.html");
+        LOG.info("login to login/authlogin.html");
         this.webClient.getOptions().setCssEnabled(false);
         this.webClient.getOptions().setJavaScriptEnabled(false);
         // Log in
@@ -105,7 +105,7 @@ public class SigninIntegTest {
                 .setResponseCode(200).setBody("{\"userId\": \"326aed2a-4c14-42d1-aceb-1feb58fd5c9c\", " +
                         "\"message\": \"authentication success\", \"roles\": \"USER ADMIN\"}"));
 
-        Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
+        Page page = signIn(this.webClient.getPage("/login/authlogin.html"), "sonam", "password");
         LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());
 
 

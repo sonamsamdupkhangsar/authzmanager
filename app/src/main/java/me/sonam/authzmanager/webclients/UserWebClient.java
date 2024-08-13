@@ -17,8 +17,9 @@ import java.util.UUID;
 
 public class UserWebClient {
     private static final Logger LOG = LoggerFactory.getLogger(UserWebClient.class);
-    private WebClient.Builder webClientBuilder;
-    private String userRestServiceEndpoint;
+    private final WebClient.Builder webClientBuilder;
+    private final String userRestServiceEndpoint;
+
     public UserWebClient(WebClient.Builder webClientBuilder, String userRestServiceEndpoint) {
         this.webClientBuilder = webClientBuilder;
         this.userRestServiceEndpoint = userRestServiceEndpoint;
@@ -123,4 +124,16 @@ public class UserWebClient {
 
         return responseSpec.bodyToMono(String.class);
     }
+
+
+    public Mono<String> deleteUser(String accessToken) {
+        LOG.info("delete user information {}", userRestServiceEndpoint);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(userRestServiceEndpoint)
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve();
+        return responseSpec.bodyToMono(String.class).thenReturn("User deletion success");
+    }
+
 }

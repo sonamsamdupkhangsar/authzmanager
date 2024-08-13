@@ -18,7 +18,7 @@ import java.util.UUID;
 public class ClientOrganizationWebClient {
     private static final Logger LOG = LoggerFactory.getLogger(ClientOrganizationWebClient.class);
     private final WebClient.Builder webClientBuilder;
-    private String clientOrganizationEndpoint;
+    private final String clientOrganizationEndpoint;
 
     public ClientOrganizationWebClient(WebClient.Builder webclientBuilder, String clientOrganizationEndpoint) {
         this.webClientBuilder = webclientBuilder;

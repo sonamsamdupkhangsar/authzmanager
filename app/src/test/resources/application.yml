@@ -35,10 +35,6 @@ POSTGRES_DBNAME: dbname
 POSTGRES_SERVICE: dservice
 POSTGRES_PASSWORD: dpassword
 
-user-rest-service:
-  root: http://localhost:{port}
-  signup: /signup
-
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
   root: http://localhost:9001
@@ -49,6 +45,10 @@ auth-server:
   oauth2token:
     path: /oauth2/token
     grantType: client_credentials
+
+user-rest-service:
+  root: http://localhost:{port}
+  context: /users
 
 authentication-rest-service:
   root: http://localhost:{port}/authentications
@@ -61,6 +61,11 @@ organization-rest-service:
 role-rest-service:
   root: http://localhost:{port}
   contextPath: /roles
+
+account-rest-service:
+  root: http://localhost:{port}
+  context: /accounts
+  accountDelete: /accounts/delete
 
 endpoint:
   user:
@@ -79,33 +84,14 @@ eureka:
     serviceUrl:
       defaultZone: https://${EUREKA_USER}:${EUREKA_PASSWORD}@discovery-service.sonam.cloud/eureka
 
+BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+REQUEST_SCOPES: bWVzc2FnZS5yZWFkIG1lc3NhZ2Uud3JpdGUK
+
 permitpath:
   - path: /authzmanager/api/health/*
     httpMethods: GET
 
-jwtrequest:
-  - in:  /*
-    out: /authenticate
-    accessToken:
-      option: request
-      scopes: message.read message.write
-      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
-  - in:  /*
-    out: /clients
-    accessToken:
-      option: request
-      scopes: message.read message.write
-      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
-  - in:  /*
-    out: /users,/users/id/(.)*,/users/(.)*,
-        /issuer/clients, /issuer/clients/(.)*,
-        /issuer/clientOrganizations/clients/id/(.)*/organizations/id, /issuer/clientOrganizations,
-        /issuer/clientOrganizations/clientId/(.)*/organizationId/(.)*, /issuer/clientOrganizations/findRow,
-        /issuer/clientOrganizations/id/(.)*/organizationId/(.)*, /organizations, /organizations/(.)*,
-        /organizations/(.)*/users/(.)*, /roles, /roles/organizations/(.)*, /roles/(.)*
-    accessToken:
-      option: request
-      scopes: message.read message.write
-      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
+requestFilters:
+
 
 allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1

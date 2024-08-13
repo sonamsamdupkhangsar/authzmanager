@@ -12,7 +12,7 @@ description = 'authzmanager'
 
 
 java {
-    sourceCompatibility = '17'
+    sourceCompatibility = '21'
 }
 
 repositories {
@@ -38,6 +38,11 @@ dependencies {
     testImplementation ("com.squareup.okhttp3:mockwebserver:4.0.1")
     testImplementation 'net.sourceforge.htmlunit:htmlunit'
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+}
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 tasks.named('test') {

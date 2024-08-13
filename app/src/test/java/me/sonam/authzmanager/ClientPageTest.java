@@ -80,7 +80,7 @@ public class ClientPageTest {
 
     @Test
     public void clientCreate() throws Exception {
-        LOG.info("login to login/login.html");
+        LOG.info("login to login/authlogin.html");
 /*
         // Log in
        // this.webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
@@ -97,7 +97,7 @@ public class ClientPageTest {
                 .setResponseCode(200).setBody("{\"userId\": \"326aed2a-4c14-42d1-aceb-1feb58fd5c9c\", " +
                         "\"message\": \"authentication success\", \"roles\": \"USER ADMIN\"}"));
 
-        Page page = signIn(this.webClient.getPage("/login/login.html"), "sonam", "password");
+        Page page = signIn(this.webClient.getPage("/login/authlogin.html"), "sonam", "password");
         LOG.info("is html page: {}, url: {}, content: {}", page.isHtmlPage(), page.getUrl(), page.getWebResponse().getContentAsString());
 
         LOG.info("take first request");

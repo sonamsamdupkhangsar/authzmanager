@@ -18,6 +18,7 @@ AUTHENTICATION_REST_SERVICE: http://authentication-rest-service
 AUTH_SERVER: http://authorization-server
 ORGANIZATION_REST_SERVICE: http://organization-rest-service
 ROLE_REST_SERVICE: http://role-rest-service
+ACCOUNT_REST_SERVICE: http://account-rest-service
 
 allowedOrigins: https://api-gateway.sonam.cloud
 

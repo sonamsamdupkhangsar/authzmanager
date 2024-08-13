@@ -1,6 +1,8 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
+import jakarta.validation.Path;
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -287,6 +289,19 @@ public class OrganizationController {
             LOG.info("remove user from organization");
             return removeUserFromOrganization(PATH, user, model, pageable);
         }
+    }
+
+    @DeleteMapping("/{id}/users/{userId}/authenticationId/{authenticationId}")
+    public Mono<String> deleteUserFromOrganization(@PathVariable("id") UUID orgId, @PathVariable("userId") UUID userId,
+                                                   @PathVariable("authenticationId") String authenticationId,
+                                                   Model model, Pageable pageable) {
+        LOG.info("delete user-id {} from organization {}", userId, orgId);
+        final String PATH = "admin/organizations/user";
+        User user = new User(userId);
+        user.setAuthenticationId(authenticationId);
+        user.setOrganizationChoice(new OrganizationChoice(orgId));
+
+        return removeUserFromOrganization(PATH, user, model, pageable);
     }
 
     private Mono<String> addUserToOrganization(final String PATH, User user, Model model, Pageable userPageable) {

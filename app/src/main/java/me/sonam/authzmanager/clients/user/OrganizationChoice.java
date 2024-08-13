@@ -27,6 +27,10 @@ class OrganizationChoice {
     public OrganizationChoice() {
     }
 
+    public OrganizationChoice(UUID organizationId) {
+        this.organizationId = organizationId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
