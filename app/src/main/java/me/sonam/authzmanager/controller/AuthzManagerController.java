@@ -29,15 +29,9 @@ public class AuthzManagerController {
         return "index";
     }
 
-    @Autowired
-    private HttpSession session;
     @GetMapping("/userlogout")
     public String getLogout(HttpServletRequest request) {
         LOG.info("return logout");
-
-        //LOG.info("invalidate session");
-        //session.invalidate();
-
 
         return "userlogout";
     }
@@ -47,7 +41,6 @@ public class AuthzManagerController {
     public String loginError() {
         LOG.info("login error occurred");
 
-        session.invalidate();
         return "oauth2-login-error";
     }
 }
