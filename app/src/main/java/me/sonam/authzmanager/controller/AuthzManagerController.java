@@ -35,8 +35,8 @@ public class AuthzManagerController {
     public String getLogout(HttpServletRequest request) {
         LOG.info("return logout");
 
-        LOG.info("invalidate session");
-        session.invalidate();
+        //LOG.info("invalidate session");
+        //session.invalidate();
 
 
         return "userlogout";
