@@ -44,7 +44,7 @@ public class AuthManagerSecurityConfig {
                 )
                 .logout(httpSecurityLogoutConfigurer ->
                         httpSecurityLogoutConfigurer.logoutSuccessUrl("/userlogout")
-                                .deleteCookies("JSESSIONID").invalidateHttpSession(true)
+                               /* .deleteCookies("JSESSIONID").invalidateHttpSession(true)*/
                                 .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.ALL
                                         /*ClearSiteDataHeaderWriter.Directive.CACHE,
                                         ClearSiteDataHeaderWriter.Directive.COOKIES,
