@@ -29,7 +29,7 @@ public class TokenExpiredExceptionHandler extends AbstractHandlerExceptionResolv
             catch (Exception e) {
                 LOG.error("redirect to logout path caused exception", e);
             }
-            return new ModelAndView("/userlogout")
+            return new ModelAndView("/userlogout");
         }
 
         if (ex.getMessage().contains("401 Unauthorized from ")) {
