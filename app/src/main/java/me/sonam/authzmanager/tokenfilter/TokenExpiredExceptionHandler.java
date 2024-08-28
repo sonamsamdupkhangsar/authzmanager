@@ -19,18 +19,17 @@ public class TokenExpiredExceptionHandler extends AbstractHandlerExceptionResolv
         LOG.warn("exception occured", ex);
 
         if (ex instanceof TokenExpiredException) {
-            LOG.info("token has expired, call SecurityContextLogOutHandler logout, logout user");
+            LOG.info("token has expired, logout user");
 
-            new SecurityContextLogoutHandler().logout(request, null, null);
-            return new ModelAndView("/userlogout");
+            return new ModelAndView("/logout");
         }
 
         if (ex.getMessage().contains("401 Unauthorized from ")) {
-            LOG.info("logging user out programmatically when it is a http 401 exception. call SecurityContextLogOutHandler logout,");
+            LOG.info("logging user out programmatically when it is a http 401 exception.");
             LOG.info("this can happen if the token has expired");
 
             new SecurityContextLogoutHandler().logout(request, null, null);
-            return new ModelAndView("/userlogout");
+            return new ModelAndView("/logout");
         }
 
         return null;
