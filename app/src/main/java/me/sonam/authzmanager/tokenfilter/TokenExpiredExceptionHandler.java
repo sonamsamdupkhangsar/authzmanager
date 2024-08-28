@@ -21,7 +21,15 @@ public class TokenExpiredExceptionHandler extends AbstractHandlerExceptionResolv
         if (ex instanceof TokenExpiredException) {
             LOG.info("token has expired, logout user");
 
-            return new ModelAndView("/logout");
+            //return new ModelAndView("/logout");
+            try {
+                LOG.info("use response object to redirect to /logout");
+                response.sendRedirect("/logout");
+            }
+            catch (Exception e) {
+                LOG.error("redirect to logout path caused exception", e);
+            }
+            return new ModelAndView("/userlogout")
         }
 
         if (ex.getMessage().contains("401 Unauthorized from ")) {
