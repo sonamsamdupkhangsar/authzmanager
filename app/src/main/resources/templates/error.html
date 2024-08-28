@@ -1,15 +1,42 @@
-<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+<!doctype html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Spring Authorization sign in</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
-    <link href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet" crossorigin="anonymous"/>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Oauth Clients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
 <body>
 <div class="container">
-   Error occured
+    <!-- Content here -->
+    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
+        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
+    </div>
+    <div class="row p-3">
+        <div class="col-2">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
+            </ul>
+        </div>
+        <div class="col-sm">
+            <div class="m-4">
+                <span class="h3">Error occurred</span>
+                <p class="mt-4">Looks like an error occurred which brought you to this page. If you were logged-in try
+                    hitting the back button on the browser for now. Otherwise you can try the `Home` link to go dashboard.
+                </p>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="p-4 m-4 bg-secondary-subtle rounded-2">
+        <div class="col-4">Authorization manager web application 2024</div>
+        <div class="col-4"></div>
+    </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 </body>
 </html>
