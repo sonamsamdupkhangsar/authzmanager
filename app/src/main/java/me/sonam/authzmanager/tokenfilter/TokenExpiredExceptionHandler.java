@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver;
@@ -18,14 +19,17 @@ public class TokenExpiredExceptionHandler extends AbstractHandlerExceptionResolv
         LOG.warn("exception occured", ex);
 
         if (ex instanceof TokenExpiredException) {
-            LOG.info("token has expired, logout user");
+            LOG.info("token has expired, call SecurityContextLogOutHandler logout, logout user");
+
+            new SecurityContextLogoutHandler().logout(request, null, null);
             return new ModelAndView("/userlogout");
         }
 
         if (ex.getMessage().contains("401 Unauthorized from ")) {
-            LOG.info("logging user out programmatically when it is a http 401 exception. ");
+            LOG.info("logging user out programmatically when it is a http 401 exception. call SecurityContextLogOutHandler logout,");
             LOG.info("this can happen if the token has expired");
 
+            new SecurityContextLogoutHandler().logout(request, null, null);
             return new ModelAndView("/userlogout");
         }
 
