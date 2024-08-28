@@ -113,10 +113,17 @@ public class ClientController implements ClientUserPage {
     }
 
     @GetMapping("/hello")
-    public Mono<Rendering> hello() {
-        final String PATH = "yoman";
+    public Mono<String> hello() {
+        //final String PATH = "yoman";
+        final String PATH = "admin/clients/form";
         LOG.info("returning yo man");
-        return Mono.just(Rendering.view("yoman.html").modelAttribute("client", "I am a client").build());
+
+        if (true) {
+            LOG.info("throwing exception from hello");
+            throw new RuntimeException("hello, testing excepiton");
+        }
+        return Mono.just(PATH);
+        //return Mono.just(Rendering.view("yoman.html").modelAttribute("client", "I am a client").build());
     }
 
     /**
