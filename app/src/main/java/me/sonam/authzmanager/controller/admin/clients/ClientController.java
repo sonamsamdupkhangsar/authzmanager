@@ -347,7 +347,6 @@ public class ClientController implements ClientUserPage {
      */
     @GetMapping("{id}/users")
     public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken();
 
         return setUsersAndsersInClientOrganizationUserRole(accessToken, id, model, userPageable);
