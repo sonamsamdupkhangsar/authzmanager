@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.tokenfilter;
 
 import com.netflix.discovery.converters.Auto;
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.webclients.TokenWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,7 @@ public class TokenService {
                 if (accessToken.getExpiresAt().isBefore(Instant.now())) {
                     LOG.info("access token has expired, get a new refresh token");
 
+                    throw new TokenExpiredException("token has expired");
                 }
                 return accessToken;
             }

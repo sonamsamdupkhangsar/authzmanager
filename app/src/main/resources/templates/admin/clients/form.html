@@ -69,10 +69,10 @@
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="#">Client Details</a>
                 </li>
-                <li class="nav-item" th:if="${client.id != null}">
+                <li class="nav-item" th:if="${client.id != null && not #strings.isEmpty(client.id)}">
                     <a class="nav-link" th:href="@{/admin/clients/{id}/organizations(id=${client.id})}">Add to Organization</a>
                 </li>
-                <li class="nav-item" th:if="${client.id != null}">
+                <li class="nav-item" th:if="${client.id != null && not #strings.isEmpty(client.id)}">
                     <a class="nav-link" th:href="@{/admin/clients/{id}/users(id=${client.id})}">Set User Role</a>
                 </li>
             </ul>
@@ -134,7 +134,7 @@
                     <label for="clientSecret" class="col-sm-4 col-form-label">Client secret <span th:if="*{not #strings.isEmpty(id)}">(encrypted)</span></label>
                     <div class="col-sm-4">
                         <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
-                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"  onchange="enableTokenMediateCheckbox('clientSecret', 'mediateToken')"/>
+                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"/>
                     </div>
                 </div>
 
@@ -142,7 +142,7 @@
                     <label for="newClientSecret" class="col-sm-4 col-form-label">Enter New Client secret</label>
                     <div class="col-sm-3">
                         <p th:if="${#fields.hasErrors('newClientSecret')}" class="text-danger">Please enter new client secret</p>
-                        <input type="text" class="form-control" id="newClientSecret" th:field="*{newClientSecret}" onchange="enableTokenMediateCheckbox('newClientSecret', 'mediateToken')"/>
+                        <input type="password" class="form-control" id="newClientSecret" th:field="*{newClientSecret}"/>
                     </div>
                     <p class="text-danger">(Warning: this will overwrite your existing secret)</p>
                 </div>
@@ -352,17 +352,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Token Mediation</label>
-                    <div class="col-sm-5">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="mediateToken" th:field="*{mediateToken}" disabled  />
-                            <label class="form-label">only available at secret setting</label>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="mb-3 row" th:if="*{id == null}">
                     <span>(Once you create your OAuth2 client, client settings and token settings config will show.)</span>
                 </div>
