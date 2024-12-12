@@ -16,6 +16,14 @@ repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
     mavenLocal()
+
+    maven {
+        url = uri("https://maven.pkg.github.com/sonamsamdupkhangsar/digitalocean-s3-lib")
+        credentials {
+            username = System.getenv("USERNAME")
+            password = System.getenv("PERSONAL_ACCESS_TOKEN")
+        }
+    }
 }
 
 dependencies {
