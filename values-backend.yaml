@@ -114,7 +114,7 @@ secretFiles:
         name: REQUEST_SCOPES
       - key: authzmanagerInitialSecret
         name: AUTHZMANAGER_INITIAL_SECRET
-  - file: do-s3-secret
+  - file: do-s3
     keys:
       - key: accessKeyId
         name: ACCESS_KEY_ID

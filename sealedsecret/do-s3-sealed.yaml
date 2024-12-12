@@ -2,7 +2,7 @@ apiVersion: bitnami.com/v1alpha1
 kind: SealedSecret
 metadata:
   creationTimestamp: null
-  name: do-s3-secret
+  name: do-s3
   namespace: backend
 spec:
   encryptedData:
@@ -15,6 +15,6 @@ spec:
     data: null
     metadata:
       creationTimestamp: null
-      name: do-s3-secret
+      name: do-s3
       namespace: backend
 
