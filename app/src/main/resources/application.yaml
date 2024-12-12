@@ -93,7 +93,7 @@ issuerUri: ${ISSUER_URI}
 aws:
   s3:
     region: ${REGION}
-    accessKeyId: ${SECRET_ACCESS_KEY_ID}
+    accessKeyId: ${ACCESS_KEY_ID}
     secretAccessKey: ${SECRET_ACCESS_KEY}
     bucket: authzmanager
     endpoint: ${ENDPOINT}
