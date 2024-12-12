@@ -18,6 +18,7 @@ public class User {
     private Boolean userAuthAccountCreated;
     private OrganizationChoice organizationChoice = new OrganizationChoice();
     private Boolean searchable;
+    private String profilePhoto;
 
     public Boolean getSearchable() {
         return searchable;
@@ -51,6 +52,19 @@ public class User {
     }
 
     public User() {
+    }
+
+    public User(UUID id, String firstName, String lastName, String email, String authenticationId, Boolean active, Boolean userAuthAccountCreated, OrganizationChoice organizationChoice, Boolean searchable, String profilePhoto) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.authenticationId = authenticationId;
+        this.active = active;
+        this.userAuthAccountCreated = userAuthAccountCreated;
+        this.organizationChoice = organizationChoice;
+        this.searchable = searchable;
+        this.profilePhoto = profilePhoto;
     }
 
     public UUID getId() {
@@ -117,6 +131,14 @@ public class User {
         this.organizationChoice = organizationChoice;
     }
 
+    public String getProfilePhoto() {
+        return profilePhoto;
+    }
+
+    public void setProfilePhoto(String profilePhoto) {
+        this.profilePhoto = profilePhoto;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -129,6 +151,7 @@ public class User {
                 ", userAuthAccountCreated=" + userAuthAccountCreated +
                 ", organizationChoice=" + organizationChoice +
                 ", searchable=" + searchable +
+                ", profilePhoto='" + profilePhoto + '\'' +
                 '}';
     }
 }

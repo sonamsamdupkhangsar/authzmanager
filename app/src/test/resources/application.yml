@@ -49,6 +49,7 @@ auth-server:
 user-rest-service:
   root: http://localhost:{port}
   context: /users
+  photo: /photo
 
 authentication-rest-service:
   root: http://localhost:{port}/authentications

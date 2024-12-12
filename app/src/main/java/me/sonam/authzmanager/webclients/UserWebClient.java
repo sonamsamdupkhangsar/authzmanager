@@ -19,10 +19,12 @@ public class UserWebClient {
     private static final Logger LOG = LoggerFactory.getLogger(UserWebClient.class);
     private final WebClient.Builder webClientBuilder;
     private final String userRestServiceEndpoint;
+    private final String profilePhotoEndpoint;
 
-    public UserWebClient(WebClient.Builder webClientBuilder, String userRestServiceEndpoint) {
+    public UserWebClient(WebClient.Builder webClientBuilder, String userRestServiceEndpoint, String profilePhotoEndpoint) {
         this.webClientBuilder = webClientBuilder;
         this.userRestServiceEndpoint = userRestServiceEndpoint;
+        this.profilePhotoEndpoint = profilePhotoEndpoint;
     }
 
     public Mono<String> signupUser(UserSignup userSignup) {
@@ -115,6 +117,20 @@ public class UserWebClient {
         LOG.info("update user profile using accessToken: {}", accessToken);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
+
+        LOG.info("endpoint: {}", stringBuilder);
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .bodyValue(user).accept(MediaType.APPLICATION_JSON)
+                .retrieve();
+
+        return responseSpec.bodyToMono(String.class);
+    }
+
+    public Mono<String> updateProfilePhoto(String accessToken, User user) {
+        LOG.info("update user profile photo using accessToken: {}", accessToken);
+
+        StringBuilder stringBuilder = new StringBuilder(profilePhotoEndpoint);
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())

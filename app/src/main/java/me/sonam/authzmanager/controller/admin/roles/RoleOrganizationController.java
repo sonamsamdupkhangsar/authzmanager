@@ -1,14 +1,10 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
-import me.sonam.authzmanager.clients.user.ClientOrganization;
-import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.tokenfilter.TokenService;
-import me.sonam.authzmanager.user.UserId;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Controller

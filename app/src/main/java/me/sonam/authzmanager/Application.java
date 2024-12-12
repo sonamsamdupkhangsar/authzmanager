@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@SpringBootApplication(scanBasePackages = {"me.sonam.security", "me.sonam.authzmanager"})
+@SpringBootApplication(scanBasePackages = {"me.sonam.security", "me.sonam.authzmanager", "cloud.sonam"})
 public class Application {
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     public static void main(String[] args) {

@@ -42,6 +42,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation:3.2.5")
     implementation("org.springframework.data:spring-data-commons:3.1.2")
     implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+
     //implementation ("org.springframework.cloud:spring-cloud-starter-kubernetes-client-all:3.1.2")
 
 }
@@ -49,7 +50,7 @@ dependencies {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
