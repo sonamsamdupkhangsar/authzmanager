@@ -59,6 +59,8 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
@@ -268,6 +270,16 @@ public class ProfileControllerIntegTest {
         body.add("authenticationId", "sonam");
         body.add("searchable", false);
 */
+
+
+        ListObjectsResponse listObjectsResponse = Mockito.mock(ListObjectsResponse.class);
+         sdkHttpResponse = Mockito.mock(SdkHttpResponse.class);
+        when(listObjectsResponse.sdkHttpResponse()).thenReturn(sdkHttpResponse);
+
+        when(sdkHttpResponse.isSuccessful()).thenReturn(true);
+
+        Mockito.when(s3Client.listObjects(Mockito.any(ListObjectsRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(listObjectsResponse));
 
         webTestClient.post().uri("/admin/users/photo")
                 .header("acl", "private")
