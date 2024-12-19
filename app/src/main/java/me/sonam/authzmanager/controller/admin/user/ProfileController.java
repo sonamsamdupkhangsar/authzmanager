@@ -135,7 +135,8 @@ public class ProfileController {
         // javascript call where the logged-in user context gets lost in a separate thread.
         UUID userId = getUserId();
 
-        return handleFileUpload(multipartFile)
+
+        return deleteUserProfilePhotos(userId).flatMap(s -> handleFileUpload(multipartFile, userId))
                 .switchIfEmpty(Mono.error(new AuthzManagerException("Failed to upload file")))
                 .flatMap(jsonObject -> {
                     return userWebClient.getUserById(accessToken, userId)
@@ -159,6 +160,16 @@ public class ProfileController {
                             }
                             model.addAttribute("user", user);
                 }).thenReturn(PATH);
+    }
+
+    private Mono<String> deleteUserProfilePhotos(UUID userId) {
+        final String prefix = s3ClientConfigurationProperties.getRootPath()  +
+                s3ClientConfigurationProperties.getPhotoPath() + profilePhotoFolder
+                + userId.toString();
+
+        LOG.info("delete the profile photo folder by userid prefix: {}", prefix);
+        return s3Service.deleteFolder(prefix).doOnNext(s -> LOG.info("response from delete: {}", s))
+                .thenReturn("deleted profile photo folder");
     }
 
     /**
@@ -216,7 +227,7 @@ public class ProfileController {
      * @param file
      * @return JsonObject
      */
-    public Mono<JsonObject> handleFileUpload(MultipartFile file) {
+    public Mono<JsonObject> handleFileUpload(MultipartFile file, UUID userId) {
         LOG.info("handle file upload");
 
         if (file.isEmpty()) {
@@ -240,7 +251,9 @@ public class ProfileController {
 
             LocalDateTime localDateTime = LocalDateTime.now();
 
-            final String prefixPath = s3ClientConfigurationProperties.getPhotoPath() + profilePhotoFolder;
+            final String prefixPath = s3ClientConfigurationProperties.getRootPath() +
+                    s3ClientConfigurationProperties.getPhotoPath() + profilePhotoFolder
+                    + userId.toString()+"/";
 
             Dimension thumbnailDimension = new Dimension(s3ClientConfigurationProperties.getThumbnailSize().getWidth(),
                     s3ClientConfigurationProperties.getThumbnailSize().getHeight());
@@ -251,7 +264,7 @@ public class ProfileController {
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("profilePhotoKey", fileKey);
                         jsonObject.addProperty("profilePhotoUrl",
-                                s3ClientConfigurationProperties.getSubdomain()+s3ClientConfigurationProperties.getBucket()+fileKey);
+                                s3ClientConfigurationProperties.getSubdomain() + "/" +fileKey);
                         jsonObject.addProperty("profilePhotoAcl", ObjectCannedACL.PRIVATE.toString());
                         return Mono.just(jsonObject);
                     })
@@ -267,8 +280,8 @@ public class ProfileController {
                     .flatMap(objects -> {
                         JsonObject jsonObject1 = objects.getT2();
                         jsonObject1.addProperty("thumbnailUrl", s3ClientConfigurationProperties.getSubdomain()
-                                + "/" + s3ClientConfigurationProperties.getBucket() + "/" + objects.getT1());
-                        jsonObject1.addProperty("fileKey", objects.getT1());
+                                + "/" + objects.getT1());
+                        jsonObject1.addProperty("thumbnailKey", objects.getT1());
                         jsonObject1.addProperty("thumbnailAcl", ObjectCannedACL.PUBLIC_READ.toString());
                         return Mono.just(jsonObject1);
                     });
@@ -289,5 +302,10 @@ public class ProfileController {
         String userIdString = defaultOidcUser.getAttribute("userId");
         UUID userId = UUID.fromString(userIdString);
         return userId;
+    }
+
+    private Mono<String> deleteByKey(String key) {
+        LOG.info("deleting by key: {}", key);
+       return s3Service.deleteObject(key).thenReturn("deleted key "+key);
     }
 }

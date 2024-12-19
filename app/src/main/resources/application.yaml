@@ -95,9 +95,10 @@ aws:
     region: ${REGION}
     accessKeyId: ${ACCESS_KEY_ID}
     secretAccessKey: ${SECRET_ACCESS_KEY}
-    bucket: authzmanager
+    bucket: sonam
     endpoint: ${ENDPOINT}
     subdomain: ${SUBDOMAIN}
+    rootPath: authzmanager/
     videoPath: videos/
     photoPath: photos/
     filePath: files/

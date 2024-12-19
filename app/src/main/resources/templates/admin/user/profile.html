@@ -74,7 +74,19 @@
                                     <li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
                                 </ul>
                             </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-4 col-form-label">profile picture</label>
+                                <div class="col-sm-7">
+                                    <img th:if="*{profilePhoto}" th:src="@{*{profilePhoto}}" id="profilePhoto"  height="200px" width="200px" alt="your photo"/>
+                                    <img th:if="*{profilePhoto == null}" th:src="@{/images/langur.png}" id="noProfilePhoto" class="rounded mb-1" height="200px" width="200px" alt="load your photo"/>
 
+                                    <div class="col-sm-6">
+                                        <input class="form-control" name="file" type="file" id="file">
+
+                                    </div>
+
+                                </div>
+                            </div>
                             <div class="mb-3 row">
                                 <label for="firstName" class="col-sm-4 col-form-label">first name</label>
                                 <div class="col-sm-5">
