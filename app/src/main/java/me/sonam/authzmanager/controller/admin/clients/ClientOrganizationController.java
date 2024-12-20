@@ -9,7 +9,6 @@ import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.oauth2.OauthClient;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;

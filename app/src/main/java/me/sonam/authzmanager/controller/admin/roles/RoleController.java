@@ -1,12 +1,9 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.oauth2.ConfigurationSettingNames;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.user.UserId;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;

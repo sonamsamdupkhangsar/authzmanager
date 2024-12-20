@@ -1,6 +1,5 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
-import jakarta.validation.Path;
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.tokenfilter.TokenService;
@@ -9,10 +8,8 @@ import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
 import me.sonam.authzmanager.webclients.UserWebClient;
-import me.sonam.authzmanager.user.UserId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

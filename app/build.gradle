@@ -18,6 +18,14 @@ java {
 repositories {
     mavenCentral()
     mavenLocal()
+
+    maven {
+        url = uri("https://maven.pkg.github.com/sonamsamdupkhangsar/digitalocean-s3-lib")
+        credentials {
+            username = System.getenv("USERNAME")
+            password = System.getenv("PERSONAL_ACCESS_TOKEN")
+        }
+    }
 }
 
 dependencies {
@@ -38,6 +46,7 @@ dependencies {
     testImplementation ("com.squareup.okhttp3:mockwebserver:4.0.1")
     testImplementation 'net.sourceforge.htmlunit:htmlunit'
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation ("cloud.sonam:digitalocean-s3-lib:1.0.0-SNAPSHOT")
 }
 java {
     toolchain {

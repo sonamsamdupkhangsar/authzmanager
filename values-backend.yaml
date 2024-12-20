@@ -114,3 +114,15 @@ secretFiles:
         name: REQUEST_SCOPES
       - key: authzmanagerInitialSecret
         name: AUTHZMANAGER_INITIAL_SECRET
+  - file: do-s3
+    keys:
+      - key: accessKeyId
+        name: ACCESS_KEY_ID
+      - key: endpoint
+        name: ENDPOINT
+      - key: region
+        name: REGION
+      - key: secretAccessKey
+        name: SECRET_ACCESS_KEY
+      - key: subdomain
+        name: SUBDOMAIN

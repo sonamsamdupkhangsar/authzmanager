@@ -49,6 +49,7 @@ auth-server:
 user-rest-service:
   root: http://localhost:{port}
   context: /users
+  photo: /photo
 
 authentication-rest-service:
   root: http://localhost:{port}/authentications
@@ -95,3 +96,21 @@ requestFilters:
 
 
 allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1
+
+aws:
+  s3:
+    region: nycregion
+    accessKeyId: my_key
+    secretAccessKey: my_secretkey
+    bucket: mybucket
+    endpoint: https://sonam.cloud/endpoint
+    subdomain: https://www.sonam.cloud
+    videoPath: videos/
+    photoPath: photos/
+    filePath: files/
+    imageAclHeader: x-amz-acl
+    imageAclValue: public-read
+    presignDurationInMinutes: 60
+    thumbnailSize:
+      width: 100
+      height: 100

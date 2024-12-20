@@ -65,6 +65,7 @@ auth-server:
 user-rest-service:
   root: ${USER_REST_SERVICE}
   context: /users
+  photo: /photo
 
 authentication-rest-service:
   root: ${AUTHENTICATION_REST_SERVICE}/authentications
@@ -88,3 +89,24 @@ allowedOrigins: ${allowedOrigins}
 oauthClientId: authzmanager-client
 
 issuerUri: ${ISSUER_URI}
+
+aws:
+  s3:
+    region: ${REGION}
+    accessKeyId: ${ACCESS_KEY_ID}
+    secretAccessKey: ${SECRET_ACCESS_KEY}
+    bucket: sonam
+    endpoint: ${ENDPOINT}
+    subdomain: ${SUBDOMAIN}
+    rootPath: authzmanager/
+    videoPath: videos/
+    photoPath: photos/
+    filePath: files/
+    imageAclHeader: x-amz-acl
+    imageAclValue: public-read
+    presignDurationInMinutes: 60
+    thumbnailSize:
+      width: 200
+      height: 200
+
+profilePhotoFolder: profile/
