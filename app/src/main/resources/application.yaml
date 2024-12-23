@@ -8,6 +8,10 @@ logging:
     me.sonam.authzmanager.tokenfilter: debug
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   main:
     allow-bean-definition-overriding: true
   application:
