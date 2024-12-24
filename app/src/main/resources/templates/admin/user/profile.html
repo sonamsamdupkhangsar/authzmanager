@@ -66,7 +66,6 @@
                     <div class="col mt-2">
                         <form action="#" th:action="@{/admin/users}" th:object="${user}"  enctype="multipart/form-data" method="post">
                             <input type="hidden" th:field="*{id}"/>
-                            <input type="hidden" th:field="*{authenticationId}"/>
                             <div class="mb-3 error text-danger" th:if="${#fields.hasErrors}">
                             <span>Failed to update profile.
                                 Please check the data validation errors.</span>

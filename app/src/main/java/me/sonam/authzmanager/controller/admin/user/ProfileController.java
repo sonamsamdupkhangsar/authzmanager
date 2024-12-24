@@ -185,7 +185,12 @@ public class ProfileController {
         LOG.info("update profile for the logged in user: {}", user);
 
         final String accessToken = tokenService.getAccessToken();
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        LOG.debug("override authentication name with the logged-in user.");
+        user.setAuthenticationId(authentication.getName());
+
+        LOG.info("authentication {},\n authentication.principal {}", authentication,authentication.getName());
 
         return userWebClient.updateProfile(accessToken, user)
                 .switchIfEmpty(Mono.just("is empty"))

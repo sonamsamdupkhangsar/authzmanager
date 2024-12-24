@@ -38,7 +38,7 @@ public class User {
     }
     @Override
     public boolean equals(Object o) {
-        LOG.info("equlas called");
+        LOG.info("equals called");
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
