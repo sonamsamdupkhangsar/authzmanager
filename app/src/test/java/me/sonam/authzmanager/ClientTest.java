@@ -147,11 +147,11 @@ public class ClientTest {
         Set<AuthorizationGrantType> authorizationGrantTypeSet = new HashSet<>();
 
         authorizationGrantTypeSet.add(AuthorizationGrantType.AUTHORIZATION_CODE);
-        authorizationGrantTypeSet.add(AuthorizationGrantType.REFRESH_TOKEN);
         authorizationGrantTypeSet.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
-        authorizationGrantTypeSet.add(AuthorizationGrantType.PASSWORD);
-        authorizationGrantTypeSet.add(AuthorizationGrantType.JWT_BEARER);
+        authorizationGrantTypeSet.add(AuthorizationGrantType.REFRESH_TOKEN);
         authorizationGrantTypeSet.add(AuthorizationGrantType.DEVICE_CODE);
+        authorizationGrantTypeSet.add(AuthorizationGrantType.TOKEN_EXCHANGE);
+        authorizationGrantTypeSet.add(AuthorizationGrantType.JWT_BEARER);
 
         for(AuthorizationGrantType authorizationGrantType: authorizationGrantTypeSet) {
             registeredClientBuilder.authorizationGrantType(authorizationGrantType);

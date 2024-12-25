@@ -190,15 +190,17 @@ public class OauthClient {
         this.authenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue());
         this.authenticationMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_JWT.getValue());
         this.authenticationMethods.add(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue());
+        this.authenticationMethods.add(ClientAuthenticationMethod.TLS_CLIENT_AUTH.getValue());
+        this.authenticationMethods.add(ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH.getValue());
         this.authenticationMethods.add(ClientAuthenticationMethod.NONE.getValue());
 
 
         this.grantTypes.add(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
-        this.grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN.getValue());
         this.grantTypes.add(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue());
-        this.grantTypes.add(AuthorizationGrantType.PASSWORD.getValue());
+        this.grantTypes.add(AuthorizationGrantType.REFRESH_TOKEN.getValue());
         this.grantTypes.add(AuthorizationGrantType.JWT_BEARER.getValue());
         this.grantTypes.add(AuthorizationGrantType.DEVICE_CODE.getValue());
+        this.grantTypes.add(AuthorizationGrantType.TOKEN_EXCHANGE.getValue());
 
         this.availableScopes.add(OidcScopes.OPENID);
         this.availableScopes.add(OidcScopes.PROFILE);
@@ -321,7 +323,7 @@ public class OauthClient {
         }
     }
 
-    private String toClientAuthenticationMethods(List<String> list) {
+   /* private String toClientAuthenticationMethods(List<String> list) {
         StringBuilder stringBuilder = new StringBuilder();
         //list.remove("");
 
@@ -340,7 +342,7 @@ public class OauthClient {
             }
         }
         return stringBuilder.toString();
-    }
+    }*/
 
     public UUID getClientIdUuid() {
         return clientIdUuid;
@@ -352,7 +354,7 @@ public class OauthClient {
         this.clientIdUuid = clientIdUuid;
     }
 
-    private String toAuthorizationGrantTypes(List<String> list) {
+ /*   private String toAuthorizationGrantTypes(List<String> list) {
         StringBuilder stringBuilder = new StringBuilder();
         LOG.info("list {}", list);
         list.remove(""); //remove empty space items from list
@@ -365,14 +367,13 @@ public class OauthClient {
                 case "AUTHORIZATION_CODE" -> stringBuilder.append(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
                 case "REFRESH_TOKEN" -> stringBuilder.append(AuthorizationGrantType.REFRESH_TOKEN.getValue());
                 case "CLIENT_CREDENTIALS" -> stringBuilder.append(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue());
-                case "PASSWORD" -> stringBuilder.append(AuthorizationGrantType.PASSWORD.getValue());
                 case "JWT_BEARER" -> stringBuilder.append(AuthorizationGrantType.JWT_BEARER.getValue());
                 case "DEVICE_CODE" -> stringBuilder.append(AuthorizationGrantType.DEVICE_CODE.getValue());
                 default -> LOG.error("invalid AuthorizationGrantType {}", s);
             }
         }
         return stringBuilder.toString();
-    }
+    }*/
     private String toOidcScopes(List<String> list) {
         StringBuilder stringBuilder = new StringBuilder();
         list.remove("");
@@ -643,6 +644,8 @@ public class OauthClient {
                 case "CLIENT_SECRET_POST" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
                 case "CLIENT_SECRET_JWT" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
                 case "PRIVATE_KEY_JWT" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
+                case "TLS_CLIENT_AUTH" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.TLS_CLIENT_AUTH);
+                case "SELF_SIGNED_TLS_CLIENT_AUTH" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH);
                 case "NONE" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.NONE);
                 default -> LOG.error("invalid authenticationMethod: {}", s);
             }
@@ -651,11 +654,11 @@ public class OauthClient {
         for(String s: authorizationGrantTypes) {
             switch (s) {
                 case "AUTHORIZATION_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
-                case "REFRESH_TOKEN" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
                 case "CLIENT_CREDENTIALS" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
-                case "PASSWORD" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.PASSWORD);
-                case "JWT_BEARER" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.JWT_BEARER);
+                case "REFRESH_TOKEN" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
                 case "DEVICE_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.DEVICE_CODE);
+                case "JWT-BEARER" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.JWT_BEARER);//consistent with value jwt-bearer
+                case "TOKEN-EXCHANGE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.TOKEN_EXCHANGE);//consistent with value token-exchange
                 default -> LOG.error("invalid AuthorizationGrantType {}", s);
             }
         }

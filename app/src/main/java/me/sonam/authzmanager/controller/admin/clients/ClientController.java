@@ -95,7 +95,7 @@ public class ClientController implements ClientUserPage {
             LOG.info("got client {}", registeredClient);
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
-                LOG.info("oauthClient {}", oauthClient.getClientAuthenticationMethods());
+                LOG.info("grantTypes {}", oauthClient.getAuthorizationGrantTypes());
                 model.addAttribute("client", oauthClient);
 
             } catch (Exception e) {
