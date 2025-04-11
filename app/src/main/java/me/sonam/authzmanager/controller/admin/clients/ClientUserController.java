@@ -21,14 +21,12 @@ import java.util.UUID;
 @RequestMapping("/admin/clients/{id}/users")
 public class ClientUserController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientUserController.class);
-    private RoleWebClient roleWebClient;
-    private ClientUserPage clientUserPage;
-    private TokenService tokenService;
+    private final RoleWebClient roleWebClient;
+    private final ClientUserPage clientUserPage;
 
-    public ClientUserController(RoleWebClient roleWebClient, ClientUserPage clientUserPage, TokenService tokenService) {
+    public ClientUserController(RoleWebClient roleWebClient, ClientUserPage clientUserPage) {
         this.roleWebClient = roleWebClient;
         this.clientUserPage = clientUserPage;
-        this.tokenService = tokenService;
     }
 
     @PostMapping("/role")
@@ -38,13 +36,10 @@ public class ClientUserController {
         LOG.info("add organization to clientId: {}", clientOrganizationUserWithRole);
         final String PATH = "/admin/clients/users";
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
-
-        return roleWebClient.addClientOrganizationUserRole(accessToken, clientOrganizationUserWithRole)
+        return roleWebClient.addClientOrganizationUserRole(clientOrganizationUserWithRole)
                 .doOnNext(clientOrganizationUserRole -> LOG.info("saved client organization role"))
                 .flatMap(clientOrganizationUserRole ->
-                        clientUserPage.setUsersAndsersInClientOrganizationUserRole(accessToken,
+                        clientUserPage.setUsersAndsersInClientOrganizationUserRole(
                                 clientOrganizationUserRole.getClientId(), model, userPageable))
                 .thenReturn(PATH);
     }
@@ -54,13 +49,10 @@ public class ClientUserController {
         LOG.info("delete client organization user role by id: {} in client.id: {}", roleId, clientsId);
         final String PATH = "/admin/clients/users";
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
-
-        return roleWebClient.deleteClientOrganizationUserRole(accessToken, roleId)
+        return roleWebClient.deleteClientOrganizationUserRole(roleId)
                         .flatMap(s -> {
                             LOG.info("response: {}", s);
-                           return clientUserPage.setUsersAndsersInClientOrganizationUserRole(accessToken, clientsId, model, userPageable);
+                           return clientUserPage.setUsersAndsersInClientOrganizationUserRole(clientsId, model, userPageable);
                         }).thenReturn(PATH);
     }
 }

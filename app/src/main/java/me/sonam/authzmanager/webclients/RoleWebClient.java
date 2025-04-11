@@ -35,7 +35,7 @@ public class RoleWebClient {
      * @param pageable
      * @return
      */
-    public Mono<RestPage<Role>> getRolesByUserId(String accessToken, UUID userId, Pageable pageable) {
+    public Mono<RestPage<Role>> getRolesByUserId(UUID userId, Pageable pageable) {
         LOG.info("get roles for this ownerId: {}", userId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -47,7 +47,7 @@ public class RoleWebClient {
         LOG.info("get roles by owner using userId at endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
     }
 
@@ -57,7 +57,7 @@ public class RoleWebClient {
      * @param pageable
      * @return
      */
-    public Mono<RestPage<Role>> getRolesByOrganizationId(String accessToken, UUID organizationId, Pageable pageable) {
+    public Mono<RestPage<Role>> getRolesByOrganizationId(UUID organizationId, Pageable pageable) {
         LOG.info("get roles for this organizationId: {}", organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -68,16 +68,15 @@ public class RoleWebClient {
         LOG.info("get roles for organization at endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
     }
 
     // use httpMethod for update or post
-    public Mono<Role> updateRole(String accessToken, Role role, HttpMethod httpMethod) {
+    public Mono<Role> updateRole(Role role, HttpMethod httpMethod) {
         LOG.info("update role: {}", role);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(roleEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(role)
                 .retrieve();
         return responseSpec.bodyToMono(Role.class).flatMap(role1-> {
@@ -86,14 +85,14 @@ public class RoleWebClient {
         });
     }
 
-    public Mono<String> deleteRole(String accessToken, UUID id) {
+    public Mono<String> deleteRole(UUID id) {
         LOG.info("delete role by id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/").append(id);
         LOG.info("delete role endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
 
         return responseSpec.bodyToMono(String.class).flatMap(string -> {
             LOG.info("role deleted");
@@ -101,14 +100,14 @@ public class RoleWebClient {
         });
     }
 
-    public Mono<Role> getRoleById(String accessToken, UUID id) {
+    public Mono<Role> getRoleById(UUID id) {
         LOG.info("get role by id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/").append(id);
         LOG.info("get role by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
 
         return responseSpec.bodyToMono(Role.class);
     }
@@ -125,7 +124,7 @@ public class RoleWebClient {
      * @param userIds
      * @return
      */
-    public Mono<List<ClientOrganizationUserWithRole>> getClientOrganizationUserWithRoles(String accessToken, UUID clientId, UUID organizationId, List<UUID> userIds) {
+    public Mono<List<ClientOrganizationUserWithRole>> getClientOrganizationUserWithRoles(UUID clientId, UUID organizationId, List<UUID> userIds) {
         LOG.info("get an object that has the clientId, organizationId, a list of UserIds with their roles (id, name)");
 
         String endpoint = (roleEndpoint + "/client-organization-users/client-id/{clientId}/organization-id/{organizationId}/user-ids/{userIds}")
@@ -145,12 +144,12 @@ public class RoleWebClient {
 
         LOG.info("get clientOrganizationUserWithRoles with endpoint: {}", endpoint);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(endpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<List<ClientOrganizationUserWithRole>>() {});
     }
 
-    public Mono<ClientOrganizationUserRole> addClientOrganizationUserRole(String accessToken, ClientOrganizationUserWithRole clientOrganizationUserWithRole) {
+    public Mono<ClientOrganizationUserRole> addClientOrganizationUserRole(ClientOrganizationUserWithRole clientOrganizationUserWithRole) {
         LOG.info("add client organization user role: {}", clientOrganizationUserWithRole);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -159,8 +158,7 @@ public class RoleWebClient {
         LOG.info("add client-organization-user-roles endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
-                .bodyValue(clientOrganizationUserWithRole).retrieve();
+                  .bodyValue(clientOrganizationUserWithRole).retrieve();
         return responseSpec.bodyToMono(ClientOrganizationUserRole.class);
     }
 
@@ -169,7 +167,7 @@ public class RoleWebClient {
      * @param id
      * @return
      */
-    public Mono<String> deleteClientOrganizationUserRole(String accessToken, UUID id) {
+    public Mono<String> deleteClientOrganizationUserRole(UUID id) {
         LOG.info("delete client organization user role by its id: {}", id);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -179,11 +177,11 @@ public class RoleWebClient {
         LOG.info("delete client-organization-user-roles endpoint: {}", endpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(endpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
         return responseSpec.bodyToMono(String.class);
     }
 
-    public Mono<RoleOrganization> addRoleToOrganization(String accessToken, RoleOrganization roleOrganization) {
+    public Mono<RoleOrganization> addRoleToOrganization(RoleOrganization roleOrganization) {
         LOG.info("add role to organization");
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
@@ -193,12 +191,11 @@ public class RoleWebClient {
         LOG.info("add role to organization endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(roleOrganization).retrieve();
         return responseSpec.bodyToMono(RoleOrganization.class);
     }
 
-    public Mono<String> deleteRoleOrganization(String accessToken, UUID roleId, UUID organizationId) {
+    public Mono<String> deleteRoleOrganization(UUID roleId, UUID organizationId) {
         LOG.info("delete roleOrganization by id");
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint).append("/").append(roleId);
@@ -207,7 +204,7 @@ public class RoleWebClient {
         LOG.info("delete roleOrganization ndpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
         return responseSpec.bodyToMono(String.class);
     }
 }

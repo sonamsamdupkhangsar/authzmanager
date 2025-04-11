@@ -28,19 +28,16 @@ import java.util.UUID;
 @RequestMapping("/admin/clients/organizations")
 public class ClientOrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientOrganizationController.class);
-    private ClientOrganizationWebClient clientOrganizationWebClient;
-    private OrganizationWebClient organizationWebClient;
-    private OauthClientWebClient oauthClientWebClient;
-    private TokenService tokenService;
+    private final ClientOrganizationWebClient clientOrganizationWebClient;
+    private final OrganizationWebClient organizationWebClient;
+    private final OauthClientWebClient oauthClientWebClient;
 
     public ClientOrganizationController(ClientOrganizationWebClient clientOrganizationWebClient,
                                         OrganizationWebClient organizationWebClient,
-                                        OauthClientWebClient oauthClientWebClient,
-                                        TokenService tokenService) {
+                                        OauthClientWebClient oauthClientWebClient) {
         this.clientOrganizationWebClient = clientOrganizationWebClient;
         this.organizationWebClient = organizationWebClient;
         this.oauthClientWebClient = oauthClientWebClient;
-        this.tokenService = tokenService;
     }
 
     
@@ -66,14 +63,11 @@ public class ClientOrganizationController {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
-
-        return clientOrganizationWebClient.addClientToOrganization(accessToken, clientOrganization.getClientId(),
+        return clientOrganizationWebClient.addClientToOrganization( clientOrganization.getClientId(),
                         clientOrganization.getOrganizationId())
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully added to organization"))
-                .flatMap(organizationRestPage -> setClientInModel(accessToken, id, model, PATH))
-                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
+                .flatMap(organizationRestPage -> setClientInModel( id, model, PATH))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner( userId, pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -81,7 +75,7 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch( organizationRestPage.getContent(), id)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
                                 for (Organization organization : organizationRestPage.getContent()) {
@@ -114,14 +108,10 @@ public class ClientOrganizationController {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
-
-
-        return clientOrganizationWebClient.deleteClientOrganizationAssociation(accessToken, clientsId, organizationId)
+        return clientOrganizationWebClient.deleteClientOrganizationAssociation( clientsId, organizationId)
                 .doOnNext(s -> model.addAttribute("message", "client has been successfully removed from organization"))
-                .flatMap(organizationRestPage -> setClientInModel(accessToken, clientsId, model, PATH))
-                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
+                .flatMap(organizationRestPage -> setClientInModel( clientsId, model, PATH))
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner( userId, pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     model.addAttribute("page", restPage);
@@ -129,7 +119,7 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), clientsId)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch( organizationRestPage.getContent(), clientsId)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
                                 for (Organization organization : organizationRestPage.getContent()) {
@@ -152,8 +142,8 @@ public class ClientOrganizationController {
     }
 
 
-    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
-        return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
+    private Mono<String> setClientInModel(UUID id, Model model, final String PATH) {
+        return oauthClientWebClient.getOauthClientById(id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient);
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);

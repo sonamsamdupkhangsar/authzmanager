@@ -28,7 +28,7 @@ public class OrganizationWebClient {
         this.organizationEndpoint = organizationEndpoint;
     }
 
-    public Mono<RestPage<Organization>> getOrganizationPageByOwner(String accessToken, UUID userId, Pageable pageable) {
+    public Mono<RestPage<Organization>> getOrganizationPageByOwner(UUID userId, Pageable pageable) {
         LOG.info("get organizations created/owned by this user");
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -45,18 +45,16 @@ public class OrganizationWebClient {
                 .append("&sortBy=name");
         LOG.info("get organizations for user at endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {});
     }
 
     // use httpMethod for update or post
 
-    public Mono<Organization> updateOrganization(String accessToken, Organization organization, HttpMethod httpMethod) {
+    public Mono<Organization> updateOrganization(Organization organization, HttpMethod httpMethod) {
         LOG.info("create organization: {} with endpoint: {}", organization, organizationEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(organizationEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(organization)
                 .retrieve();
         return responseSpec.bodyToMono(Organization.class).flatMap(organization1-> {
@@ -65,14 +63,13 @@ public class OrganizationWebClient {
         });
     }
 
-    public Mono<String> deleteOrganization(String accessToken, UUID organizationId) {
+    public Mono<String> deleteOrganization(UUID organizationId) {
         LOG.info("delete organization by id: {}", organizationId);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(organizationId);
         LOG.info("delete organization endpoint: {}", stringBuilder.toString());
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
         return responseSpec.bodyToMono(String.class).flatMap(string -> {
@@ -81,14 +78,13 @@ public class OrganizationWebClient {
         });
     }
 
-    public Mono<Organization> getOrganizationById(String accessToken, UUID id) {
+    public Mono<Organization> getOrganizationById(UUID id) {
         LOG.info("get organization by id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(id);
         LOG.info("get organization by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
         return responseSpec.bodyToMono(Organization.class).onErrorResume(throwable -> {
@@ -97,7 +93,7 @@ public class OrganizationWebClient {
         });
     }
 
-    public Mono<RestPage<UUID>> getUsersInOrganizationId(String accessToken, UUID id, Pageable pageable) {
+    public Mono<RestPage<UUID>> getUsersInOrganizationId(UUID id, Pageable pageable) {
         LOG.info("get users by organization id: {}", id);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(id).append("/users")
@@ -107,7 +103,7 @@ public class OrganizationWebClient {
         LOG.info("get users in organization by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<UUID>>() {})
                 .onErrorResume(throwable -> {
@@ -116,7 +112,7 @@ public class OrganizationWebClient {
                 });
     }
 
-    public Mono<Boolean> userExistsInOrganization(String accessToken, UUID userId, UUID organizationId) {
+    public Mono<Boolean> userExistsInOrganization(UUID userId, UUID organizationId) {
         LOG.info("check if user {} exists in organization {}", userId, organizationId);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(organizationId).append("/users/").append(userId);
@@ -124,7 +120,7 @@ public class OrganizationWebClient {
         LOG.info("checking user exists in organization by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+             .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .map(map -> Boolean.parseBoolean(map.get("message").toString()))
@@ -134,7 +130,7 @@ public class OrganizationWebClient {
                 });
     }
 
-    public Mono<Map<String, String>> addUserToOrganization(String accessToken, UUID userId, UUID organizationId) {
+    public Mono<Map<String, String>> addUserToOrganization(UUID userId, UUID organizationId) {
         LOG.info("add user {} to organization {}", userId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
@@ -143,13 +139,12 @@ public class OrganizationWebClient {
         LOG.info("add user to organization endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(Map.of("userId", userId, "organizationId", organizationId)).retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
     }
 
-    public Mono<Map<String, String>> removeUserFromOrganization(String accessToken, UUID userId, UUID organizationId) {
+    public Mono<Map<String, String>> removeUserFromOrganization(UUID userId, UUID organizationId) {
         LOG.info("remove user {} from organization {}", userId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
@@ -158,7 +153,7 @@ public class OrganizationWebClient {
         LOG.info("remove user from organization endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+                .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
     }

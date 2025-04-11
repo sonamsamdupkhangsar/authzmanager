@@ -3,6 +3,7 @@ package me.sonam.authzmanager.tokenfilter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,12 +24,10 @@ public class TokenRequestFilter {
     }
 
     public static class RequestFilter {
-        private String in;
         private String out;
-        private String inHttpMethods;
-        private Set<String> inHttpMethodSet = new HashSet<>();
-        private Set<String> inSet = new HashSet<>();
         private Set<String> outSet = new HashSet<>();
+        private String outHttpMethods;
+        private Set<String> outHttpMethodSet = new HashSet<>();
         private AccessToken accessToken;
 
         public RequestFilter() {
@@ -37,35 +36,17 @@ public class TokenRequestFilter {
         public String getOut() {
             return out;
         }
-        public String getIn() {
-            return in;
-        }
 
-        public void setIn(String in) {
-            this.in = in;
-            String[] inArray = in.split(",");
-            inSet = Arrays.stream(inArray).map(String::trim).collect(Collectors.toSet());
-        }
-        public Set<String> getInSet() {
-            return this.inSet;
-        }
         public void setOut(String out) {
             this.out = out;
             String[] outArray = out.split(",");
             outSet = Arrays.stream(outArray).map(String::trim).collect(Collectors.toSet());
         }
+
         public Set<String> getOutSet() {
             return this.outSet;
         }
-        public Set<String> getInHttpMethodSet() {
-            return this.inHttpMethodSet;
-        }
 
-        public void setInHttpMethods(String inHttpMethods) {
-            this.inHttpMethods = inHttpMethods;
-            String[] httpMethodArray = inHttpMethods.split(",");
-            inHttpMethodSet = Arrays.stream(httpMethodArray).map(String::trim).map(String::toLowerCase).collect(Collectors.toSet());
-        }
         public AccessToken getAccessToken() {
             return accessToken;
         }
@@ -73,16 +54,26 @@ public class TokenRequestFilter {
         public void setAccessToken(AccessToken accessToken) {
             this.accessToken = accessToken;
         }
+        public Set<String> getOutHttpMethodSet() {
+            return this.outHttpMethodSet;
+        }
 
+        public String getOutHttpMethods() {
+            return this.outHttpMethods;
+        }
+
+        public void setOutHttpMethods(String outHttpMethods) {
+            this.outHttpMethods = outHttpMethods;
+            String[] httpMethodArray = outHttpMethods.split(",");
+            outHttpMethodSet = Arrays.stream(httpMethodArray).map(String::trim).map(String::toLowerCase).collect(Collectors.toSet());
+        }
         @Override
         public String toString() {
             return "RequestFilter{" +
-                    "in='" + in + '\'' +
-                    ", inSet='" + inSet + '\'' +
-                    ", out='" + out + '\'' +
+                    "out='" + out + '\'' +
                     ", outSet='" + outSet +'\'' +
-                    ", inHttpMethods='" + inHttpMethods + '\'' +
-                    ", inHttpMethodSet='" + inHttpMethodSet + '\'' +
+                    ", outHttpMethods='" + outHttpMethods + '\'' +
+                    ", outHttpMethodSet='" + outHttpMethodSet + '\'' +
                     ", accessToken='" + accessToken + '\'' +
                     '}';
         }
@@ -92,9 +83,11 @@ public class TokenRequestFilter {
                 forward, request, doNothing
             }
 
-            private JwtOption option;
-            private String scopes;
-            private String base64EncodedClientIdSecret;
+            private final JwtOption option;
+            private final String scopes;
+            private final String base64EncodedClientIdSecret;
+            private String accessToken;
+            private LocalDateTime accessTokenCreationTime;
 
             public AccessToken(String option, String scopes, String base64EncodedClientIdSecret) {
                 this.option = JwtOption.valueOf(option);
@@ -111,6 +104,18 @@ public class TokenRequestFilter {
             public String getBase64EncodedClientIdSecret() {
                 return base64EncodedClientIdSecret;
             }
+            public String getAccessToken() {
+                return this.accessToken;
+            }
+
+            public void setAccessToken(String accessToken) {
+                this.accessToken = accessToken;
+                accessTokenCreationTime = LocalDateTime.now();
+            }
+
+            public LocalDateTime getAccessTokenCreationTime() {
+                return this.accessTokenCreationTime;
+            }
 
             @Override
             public String toString() {
@@ -119,6 +124,18 @@ public class TokenRequestFilter {
                         ", scopes='" + scopes + '\'' +
                         ", base64EncodedClientIdSecret='" + base64EncodedClientIdSecret + '\'' +
                         '}';
+            }
+            @Override
+            public boolean equals(Object object) {
+                if (this == object) return true;
+                if (object == null || getClass() != object.getClass()) return false;
+                AccessToken that = (AccessToken) object;
+                return option == that.option && Objects.equals(scopes, that.scopes) && Objects.equals(base64EncodedClientIdSecret, that.base64EncodedClientIdSecret);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(option, scopes, base64EncodedClientIdSecret);
             }
         }
     }

@@ -1,6 +1,5 @@
 package me.sonam.authzmanager.webclients;
 
-import me.sonam.authzmanager.controller.signup.UserSignup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;

@@ -28,17 +28,17 @@ public class UserWebClient {
     }
 
     public Mono<String> signupUser(UserSignup userSignup) {
-        LOG.info("calling user-rest-service endpoint: {}", userRestServiceEndpoint);
+        LOG.info("create user with endpoint: {}", userRestServiceEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(userRestServiceEndpoint)
                 .bodyValue(userSignup)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
-        return responseSpec.bodyToMono(String.class).thenReturn("User signup success");
+        return responseSpec.bodyToMono(String.class);
 
     }
 
-    public Mono<List<User>> getUserByBatchOfIds(String accessToken, List<UUID> ids) {
+    public Mono<List<User>> getUserByBatchOfIds(List<UUID> ids) {
         LOG.info("calling user-rest-service to get batch of users by ids: {}", ids);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/ids/");
@@ -53,7 +53,6 @@ public class UserWebClient {
         LOG.info("user endpoint: {}", batchIdEnpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(batchIdEnpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<List<User>>() {})
@@ -64,7 +63,7 @@ public class UserWebClient {
 
     }
 
-    public Mono<User> getUserById(String accessToken, UUID id) {
+    public Mono<User> getUserById(UUID id) {
         LOG.info("calling user-rest-service to get user by id: {}", id);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/").append(id);
@@ -72,14 +71,13 @@ public class UserWebClient {
         LOG.info("user endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
         return responseSpec.bodyToMono(User.class);
     }
 
 
-    public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
+    public Mono<User> findByAuthenticationProfileSearch(String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
@@ -87,7 +85,6 @@ public class UserWebClient {
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
@@ -113,28 +110,26 @@ public class UserWebClient {
         });
     }
 
-    public Mono<String> updateProfile(String accessToken, User user) {
-        LOG.info("update user profile using accessToken: {}", accessToken);
+    public Mono<String> updateProfile(User user) {
+        LOG.info("update user profile");
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(user).accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
         return responseSpec.bodyToMono(String.class);
     }
 
-    public Mono<String> updateProfilePhoto(String accessToken, User user) {
-        LOG.info("update user profile photo using accessToken: {}", accessToken);
+    public Mono<String> updateProfilePhoto(User user) {
+        LOG.info("update user profile photo");
 
         StringBuilder stringBuilder = new StringBuilder(profilePhotoEndpoint);
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(user).accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
@@ -142,11 +137,10 @@ public class UserWebClient {
     }
 
 
-    public Mono<String> deleteUser(String accessToken) {
+    public Mono<String> deleteUser() {
         LOG.info("delete user information {}", userRestServiceEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(userRestServiceEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
         return responseSpec.bodyToMono(String.class).thenReturn("User deletion success");

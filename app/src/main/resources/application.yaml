@@ -114,3 +114,4 @@ aws:
       height: 200
 
 profilePhotoFolder: profile/
+tokenExpireSeconds: 180

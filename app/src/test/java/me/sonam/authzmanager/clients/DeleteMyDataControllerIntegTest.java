@@ -7,12 +7,14 @@ import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.util.JwtUtil;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -37,6 +40,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @AutoConfigureMockMvc
@@ -61,6 +66,15 @@ public class DeleteMyDataControllerIntegTest {
     private static MockWebServer mockWebServer;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
+
+    @BeforeEach
+    public void setTokenServiceMockBehavior() {
+        OAuth2AccessToken oAuth2AccessToken = mock(OAuth2AccessToken.class);
+
+        when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
+        when( oAuth2AccessToken.getTokenValue()).thenReturn("sonamstoken");
+    }
+
     @BeforeAll
     static void setupMockWebServer() throws IOException {
         mockWebServer = new MockWebServer();
@@ -104,7 +118,7 @@ public class DeleteMyDataControllerIntegTest {
         when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.delete()
-                .uri("/admin/users/delete")
+                .uri("/admin/users/delete").headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
 

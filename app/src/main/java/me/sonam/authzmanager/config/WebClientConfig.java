@@ -30,6 +30,10 @@ public class WebClientConfig {
     @Autowired
     private TokenService tokenService;
 
+    @Value("${tokenExpireSeconds}")
+    private int tokenExpireSeconds;
+
+
     @LoadBalanced
     @Bean("regular")
     public WebClient.Builder webClientBuilder() {
@@ -48,7 +52,8 @@ public class WebClientConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), tokenRequestFilter, oauth2TokenEndpoint, grantType, accessTokenPath);
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), tokenRequestFilter,
+                oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
         WebClient.Builder webClientBuilder = WebClient.builder();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 

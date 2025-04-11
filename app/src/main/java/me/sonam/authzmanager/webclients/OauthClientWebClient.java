@@ -28,13 +28,12 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         this.clientsEndpoint = clientsEndpoint;
     }
 
-    public Mono<RegisteredClient> createClient(String accessToken, Map<String, Object> map) {
+    public Mono<RegisteredClient> createClient(Map<String, Object> map) {
         LOG.info("calling auth-server create client endpoint {}", clientsEndpoint);
 
         LOG.info("payload: {}", map);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientsEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server create client call: {}", responseMap);
@@ -56,11 +55,10 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
     }
 
 
-    public Mono<RegisteredClient> updateClient(String accessToken, Map<String, Object> map, HttpMethod httpMethod) {
+    public Mono<RegisteredClient> updateClient(Map<String, Object> map, HttpMethod httpMethod) {
         LOG.info("update client with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(clientsEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server update client call: {}", responseMap);
@@ -76,7 +74,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
     }
 
 
-    public Mono<Void> deleteClient(String accessToken, UUID id, UUID userId) {
+    public Mono<Void> deleteClient(UUID id, UUID userId) {
         LOG.info("delete client by id: {} and ownerId: {}", id, userId);
 
         StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint).append("/")
@@ -84,7 +82,6 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         LOG.info("calling auth-server delete client endpoint {}", deleteEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(deleteEndpoint.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
         return responseSpec.bodyToMono(String.class).then();
@@ -98,7 +95,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
      * @return return a list of clientId strings
      */
 
-    public Mono<RestPage<MyPair<String, String>>> getUserClientIds(String accessToken, UUID userId, Pageable pageable) {
+    public Mono<RestPage<MyPair<String, String>>> getUserClientIds(UUID userId, Pageable pageable) {
         LOG.info("get user '{}' clients", userId);
 
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/users/")
@@ -107,9 +104,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .append("&sortBy=clientName");
         LOG.info("calling auth-server get clientIds for userId endpoint {}", clientsEndpoint);
 
-        LOG.info("add accessToken to the header webClient {}", accessToken);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<MyPair<String, String>>>() {}).map(list-> {
@@ -143,12 +138,11 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
     }
 
 
-    public Mono<RegisteredClient> getOauthClientById(String accessToken, UUID id) {
+    public Mono<RegisteredClient> getOauthClientById(UUID id) {
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/").append(id);
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).map(map-> {
             LOG.info("got back response from auth-server get clientId by clientId  call: {}", map);
@@ -163,12 +157,11 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         });
     }
 
-    public Mono<String> deleteClient(String accessToken) {
+    public Mono<String> deleteClient() {
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint);
         LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(clientsEndpoint.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(String.class).map(string-> {
             LOG.info("deleted user client information, response from authorization server: {}", string);
