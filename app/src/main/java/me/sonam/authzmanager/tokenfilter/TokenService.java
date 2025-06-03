@@ -94,6 +94,7 @@ public class TokenService {
         }
         else {
             LOG.error("authorizedClient is null, authentication: {}", authentication);
+            throw new TokenExpiredException("Token is expired");
         }
         return null;
     }

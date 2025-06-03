@@ -12,6 +12,8 @@ public class Organization {
     @NotEmpty(message = "name cannot be empty")
     private String name;
     private UUID creatorUserId;
+    private boolean defaultOrganization;
+    private boolean previousDefaultOrganization;//this is used to check if it was previously a default org
 
     public Organization() {
 
@@ -35,12 +37,26 @@ public class Organization {
         return creatorUserId;
     }
 
+    public boolean isDefaultOrganization() {
+        return this.defaultOrganization;
+    }
+    public void setDefaultOrganization(boolean value) {
+        this.defaultOrganization = value;
+    }
+    public boolean isPreviousDefaultOrganization() {
+        return this.previousDefaultOrganization;
+    }
+    public void setPreviousDefaultOrganization(boolean value) {
+        this.previousDefaultOrganization = value;
+    }
+
     @Override
     public String toString() {
         return "Organization{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", creatorUserId=" + creatorUserId +
+                ", defaultOrganization="+defaultOrganization+
                 '}';
     }
 

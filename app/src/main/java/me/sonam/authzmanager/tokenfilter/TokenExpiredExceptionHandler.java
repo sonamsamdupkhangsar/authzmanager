@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver;
 
-@Component
+//doesn't work
+//@Component
 public class TokenExpiredExceptionHandler extends AbstractHandlerExceptionResolver {
     private static final Logger LOG = LoggerFactory.getLogger(TokenExpiredExceptionHandler.class);
 

@@ -25,12 +25,14 @@ import java.util.UUID;
 public class RoleController {
     private static final Logger LOG = LoggerFactory.getLogger(RoleController.class);
 
-    private final RoleWebClient roleWebClient;
-    private final OrganizationWebClient organizationWebClient;
+    private RoleWebClient roleWebClient;
+    private OrganizationWebClient organizationWebClient;
+    private TokenService tokenService;
 
-    public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient) {
+    public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient, TokenService tokenService) {
         this.roleWebClient = roleWebClient;
         this.organizationWebClient = organizationWebClient;
+        this.tokenService = tokenService;
     }
 
     @GetMapping
@@ -52,7 +54,9 @@ public class RoleController {
         LOG.info("oidc.userId: {}", userIdAttribute);
         UUID userId = UUID.fromString(userIdAttribute);
 
-        return roleWebClient.getRolesByUserId(userId, pageable).doOnNext(restPage -> {
+        final String accessToken = tokenService.getAccessToken();
+
+        return roleWebClient.getRolesByUserId(accessToken, userId, pageable).doOnNext(restPage -> {
             LOG.info("roleList: {}", restPage.getSize());
             model.addAttribute("page", restPage);
         }).then(Mono.just(PATH));
@@ -102,12 +106,14 @@ public class RoleController {
 
         LOG.info("role : {}", role);
 
-       return roleWebClient.updateRole(role2, httpMethod).doOnNext(updateRole -> {
+        final String accessToken = tokenService.getAccessToken();
+
+       return roleWebClient.updateRole(accessToken, role2, httpMethod).doOnNext(updateRole -> {
                     LOG.info("got back response: {}", updateRole);
                     model.addAttribute("role", updateRole);
                     model.addAttribute("message", "role updated");
         })
-               .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(userId, pageable))
+               .flatMap(role1 ->  organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
                .flatMap(organizationRestPage -> {
             LOG.info("organizationList: {}", organizationRestPage);
             //model.addAttribute("organizationPage", organizationRestPage);
@@ -136,12 +142,14 @@ public class RoleController {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        return roleWebClient.getRoleById(id)
+        final String accessToken = tokenService.getAccessToken();
+
+        return roleWebClient.getRoleById(accessToken, id)
                 .doOnNext(role -> {
                     model.addAttribute("role", role);
                     LOG.info("role: {}", role);
                 })
-                .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(userId, pageable).doOnNext(restPage -> {
+                .flatMap(roles -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
 
                   //  model.addAttribute("organizationPage", restPage);
@@ -160,8 +168,9 @@ public class RoleController {
     public Mono<String> delete(@PathVariable("id") UUID roleId, Model model) {
         final String PATH = "admin/dashboard";//display dashboard template as it doesn't require any data in the model
         LOG.info("delete role by id {}", roleId);
+        final String accessToken = tokenService.getAccessToken();
 
-        return roleWebClient.deleteRole(roleId).doOnNext(s -> {
+        return roleWebClient.deleteRole(accessToken, roleId).doOnNext(s -> {
                     model.addAttribute("message", "deleted role");
                 })
                 .then(Mono.just(PATH))

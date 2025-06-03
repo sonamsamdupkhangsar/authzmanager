@@ -11,6 +11,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.User;
+import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public class ProfileController {
 
     private UserWebClient userWebClient;
     private static final String PATH = "/admin/user/profile";
+    private TokenService tokenService;
 
     @Value("${profilePhotoFolder}")
     private String profilePhotoFolder;
@@ -50,15 +52,18 @@ public class ProfileController {
     @Autowired
     private S3ClientConfigurationProperties s3ClientConfigurationProperties;
 
-    public ProfileController(UserWebClient userWebClient) {
+    public ProfileController(UserWebClient userWebClient, TokenService tokenService) {
         this.userWebClient = userWebClient;
+        this.tokenService = tokenService;
     }
 
     @GetMapping
     public Mono<String> getProfile(Model model) {
         LOG.info("get profile for the logged in user");
 
-        return userWebClient.getUserById(getUserId())
+        final String accessToken = tokenService.getAccessToken();
+
+        return userWebClient.getUserById(accessToken, getUserId())
                 .doOnNext(user -> {
                     LOG.info("got user: {}", user);
                     String profilePhotoJson = user.getProfilePhoto();
@@ -122,6 +127,7 @@ public class ProfileController {
     public Mono<String> updateProfilePhoto(@RequestPart("file") MultipartFile multipartFile, Model model) {
         LOG.info("update profile photo");
 
+        final String accessToken = tokenService.getAccessToken();
         // get the userid before processing because the subsequent calls in the webflux will
         // start in a new thread and will lose user/token context because this api will be called by
         // javascript call where the logged-in user context gets lost in a separate thread.
@@ -131,7 +137,7 @@ public class ProfileController {
         return deleteUserProfilePhotos(userId).flatMap(s -> handleFileUpload(multipartFile, userId))
                 .switchIfEmpty(Mono.error(new AuthzManagerException("Failed to upload file")))
                 .flatMap(jsonObject -> {
-                    return userWebClient.getUserById(userId)
+                    return userWebClient.getUserById(accessToken, userId)
                                     .flatMap(user -> {
 
                                         LOG.info("jsonObject: {}", jsonObject.toString());
@@ -139,9 +145,9 @@ public class ProfileController {
                                         return Mono.just(user);
                                     });
                 })
-                .flatMap(user -> userWebClient.updateProfilePhoto(user).zipWith(Mono.just(user)))
+                .flatMap(user -> userWebClient.updateProfilePhoto(accessToken, user).zipWith(Mono.just(user)))
                 .doOnNext(objects -> LOG.info("updated profilePhoto, server response: {}", objects.getT1()))
-                .flatMap(objects -> userWebClient.getUserById(objects.getT2().getId()))
+                .flatMap(objects -> userWebClient.getUserById(accessToken, objects.getT2().getId()))
                 .doOnNext(user -> {
                             LOG.info("got user: {}", user);
                             String profilePhotoJson = user.getProfilePhoto();
@@ -176,6 +182,7 @@ public class ProfileController {
 
         LOG.info("update profile for the logged in user: {}", user);
 
+        final String accessToken = tokenService.getAccessToken();
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         LOG.debug("override authentication name with the logged-in user.");
@@ -183,10 +190,10 @@ public class ProfileController {
 
         LOG.info("authentication {},\n authentication.principal {}", authentication,authentication.getName());
 
-        return userWebClient.updateProfile(user)
+        return userWebClient.updateProfile(accessToken, user)
                 .switchIfEmpty(Mono.just("is empty"))
                 .doOnNext(s -> LOG.info("updated profile, server response: {}", s))
-                .flatMap(s -> userWebClient.getUserById(user.getId()))
+                .flatMap(s -> userWebClient.getUserById(accessToken, user.getId()))
                 .flatMap(user1 -> {
                     LOG.info("got user: {}", user1);
                     String profilePhotoJson = user1.getProfilePhoto();

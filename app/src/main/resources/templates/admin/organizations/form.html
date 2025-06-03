@@ -66,6 +66,14 @@
                     <label for="name" class="form-label">Organization name</label>
                     <p th:if="${#fields.hasErrors('name')}" class="text-danger">Please enter organization name</p>
                     <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="organization name" />
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" th:field="*{defaultOrganization}">
+                        <input type="hidden" th:field="*{previousDefaultOrganization}"/>
+                        <label class="form-check-label" for="flexCheckDefault">
+                           Make this your default organization (will replace any existing default preference)
+                        </label>
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -74,6 +82,7 @@
                 </div>
             </form>
         </div>
+
     </div>
    <div class="p-4 m-4 bg-secondary-subtle rounded-2">
         <div class="col-4">Authorization manager web application 2024</div>

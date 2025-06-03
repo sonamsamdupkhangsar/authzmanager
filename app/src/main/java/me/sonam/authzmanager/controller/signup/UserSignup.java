@@ -3,6 +3,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 public class UserSignup {
     @NotEmpty(message="firstName cannot be empty")
@@ -16,6 +17,8 @@ public class UserSignup {
     @NotEmpty(message="Username cannot be empty")
     @Size(min = 3, max = 50)
     private String authenticationId;
+
+    private UUID organizationId;
 
     private char[] password;
 
@@ -79,6 +82,14 @@ public class UserSignup {
     }
     public boolean isActive() {
         return this.active;
+    }
+
+    public void setOrganizationId(UUID organizationId) {
+        this.organizationId = organizationId;
+    }
+
+    public UUID getOrganizationId() {
+        return this.organizationId;
     }
     @Override
     public String toString() {

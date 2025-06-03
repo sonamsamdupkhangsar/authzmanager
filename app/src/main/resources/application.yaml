@@ -54,6 +54,12 @@ permitpath:
   - path: /authzmanager/api/health/*
 
 requestFilters:
+  - out:
+    outHttpMethods:
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
 
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
@@ -87,6 +93,12 @@ account-rest-service:
   root: ${ACCOUNT_REST_SERVICE}
   context: ${account-rest-service.root}/accounts
   accountDelete: ${account-rest-service.context}/delete
+
+setting-rest-service:
+  root: ${SETTING_REST_SERVICE}
+  context: ${setting-rest-service}/settings
+  users: ${setting-rest-service.context}/users
+  defaultOrganization: ${setting-rest-service.users}/{userId}
 
 allowedOrigins: ${allowedOrigins}
 

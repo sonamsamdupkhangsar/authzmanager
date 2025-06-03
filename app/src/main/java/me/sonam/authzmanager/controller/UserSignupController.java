@@ -2,6 +2,9 @@ package me.sonam.authzmanager.controller;
 
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.controller.signup.UserSignup;
+import me.sonam.authzmanager.controller.util.Util;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
+import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This controller is for signing up user using the user-rest-service and other microservices
@@ -28,6 +32,12 @@ public class UserSignupController {
     private static final Logger LOG = LoggerFactory.getLogger(UserSignupController.class);
     @Autowired
     private final UserWebClient userWebClient;
+
+    @Autowired
+    private OrganizationWebClient organizationWebClient;
+
+    @Autowired
+    private SettingWebClient settingWebClient;
 
     public UserSignupController(UserWebClient userWebClient) {
         this.userWebClient = userWebClient;
@@ -52,7 +62,7 @@ public class UserSignupController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        return  userWebClient.signupUser(userSignup)
+        return  userWebClient.signupUser(null, userSignup)
                 .flatMap(s -> {
                     LOG.info("user signup successful with message: {}",s);
                     StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
@@ -71,7 +81,7 @@ public class UserSignupController {
 
     }
 
-    public Mono<String> userSignupByAdmin(UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {
+    public Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {
         LOG.info("User signup initiated by admin for user: {}", userSignup);
 
         if (bindingResult.hasErrors()) {
@@ -79,7 +89,7 @@ public class UserSignupController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        return userWebClient.signupUser(userSignup)
+        return userWebClient.signupUser(accessToken, userSignup)
                 .flatMap(s -> {
                     LOG.info("user has been added successfully with message: {}", s);
                     StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
@@ -97,6 +107,9 @@ public class UserSignupController {
                     model.addAttribute("message", stringBuilder.toString());
                     return Mono.just(PATH);
                 })
+                .flatMap(s -> userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId()))
+                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()))
+                .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     setErrorInModel(throwable, model, "failed to add user by admin");
                     model.addAttribute("userSignup", userSignup);

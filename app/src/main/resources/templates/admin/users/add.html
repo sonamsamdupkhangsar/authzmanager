@@ -93,8 +93,18 @@
             </div>
 
             <div class="col m-2">
+                <div class="mb-3 mt-3" th:if="${organization.id}">
+                        Organization: <a th:href="@{/admin/organizations/{id}(id=${organization.id})}" class="badge rounded-pill bg-primary" th:text="${organization.name}"></a> (user will be associated to this default org)
+                </div>
+            </div>
+            <div class="col m-2" th:if="${organization.id == null}">
+                You need to set a default organization to add user.
+            </div>
+            <div class="col m-2" th:if="${organization.id}">
                 <form action="#" th:action="@{/admin/users}" th:object="${signupUser}" enctype="multipart/form-data"
                       method="post" class="needs-validation">
+
+                    <input type="hidden"  id="organizationId" name="organizationId" th:value="${organization.id}" />
 
                     <div class="mb-3 error text-danger" th:if="${#fields.hasErrors}">
                             <span>Failed to add user.

@@ -37,7 +37,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -49,17 +55,17 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.ui.Model;
 import org.springframework.validation.support.BindingAwareModelMap;
 import org.springframework.web.reactive.function.BodyInserters;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
@@ -132,6 +138,8 @@ public class ClientControllerIntegTest {
     public void createClient() throws Exception {
         final String clientId = saveOauthClient();
     }
+    @MockBean
+    ReactiveJwtDecoder jwtDecoder;
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
@@ -150,10 +158,15 @@ public class ClientControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(json));
 
-        when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
+        //when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
+        String authenticationId = "dave";
+        Jwt jwt = JwtUtil.jwt(authenticationId);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+        Authentication authentication = new UsernamePasswordAuthenticationToken("user", "password", Collections.singleton(new SimpleGrantedAuthority("USER")));
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.get()
-                .uri("/admin/clients/"+oauthClient.getId()).headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .uri("/admin/clients/"+oauthClient.getId())//.headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
 

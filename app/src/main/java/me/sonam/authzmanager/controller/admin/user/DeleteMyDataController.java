@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.user;
 
 import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.webclients.AccountWebClient;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/admin/users/delete")
@@ -44,9 +47,11 @@ public class DeleteMyDataController {
         String userIdString = defaultOidcUser.getAttribute("userId");
 
         LOG.info("delete user data for userId: {}", userIdString);
+        String accessToken = tokenService.getAccessToken();
+        LOG.info("accessToken {}", accessToken);
 
-        return oauthClientWebClient.deleteClient().then(
-                userWebClient.deleteUser()).thenReturn(PATH);
+        return oauthClientWebClient.deleteClient(accessToken).then(
+                userWebClient.deleteUser(accessToken)).thenReturn(PATH);
     }
 
 }

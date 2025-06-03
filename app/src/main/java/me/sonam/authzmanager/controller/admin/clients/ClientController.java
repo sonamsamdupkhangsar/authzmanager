@@ -25,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.result.view.Rendering;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -34,13 +35,13 @@ import java.util.*;
 public class ClientController implements ClientUserPage {
     private static final Logger LOG = LoggerFactory.getLogger(ClientController.class);
 
-    private final OrganizationWebClient organizationWebClient;
-    private final OauthClientWebClient oauthClientWebClient;
-    private final ClientOrganizationWebClient clientOrganizationWebClient;
-    private final UserWebClient userWebClient;
-    private final RoleWebClient roleWebClient;
+    private OrganizationWebClient organizationWebClient;
+    private OauthClientWebClient oauthClientWebClient;
+    private ClientOrganizationWebClient clientOrganizationWebClient;
+    private UserWebClient userWebClient;
+    private RoleWebClient roleWebClient;
 
-    private final RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
+    private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
     private TokenService tokenService;
 
@@ -82,13 +83,15 @@ public class ClientController implements ClientUserPage {
         String userIdString = defaultOidcUser.getAttribute("userId");
 
         LOG.info("userId: {}", userIdString);*/
-        return setClientInModel(id, model, PATH).thenReturn(PATH);
+        String accessToken = tokenService.getAccessToken();
+
+        return setClientInModel(accessToken, id, model, PATH).thenReturn(PATH);
     }
 
-    private Mono<String> setClientInModel(UUID id, Model model, final String PATH) {
-        LOG.info("set client in model");
+    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
+        LOG.info("set client in model with accesssToken: {}", accessToken);
 
-        return oauthClientWebClient.getOauthClientById(id).map(registeredClient -> {
+        return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient);
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
@@ -206,7 +209,9 @@ public class ClientController implements ClientUserPage {
         LOG.info("map is {}", map);
         LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
 
-        return oauthClientWebClient.updateClient(map, httpMethod).flatMap(updatedRegisteredClient -> {
+        String accessToken = tokenService.getAccessToken();
+
+        return oauthClientWebClient.updateClient(accessToken, map, httpMethod).flatMap(updatedRegisteredClient -> {
             LOG.info("client updated and registeredClient returned");
             LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
 
@@ -244,7 +249,9 @@ public class ClientController implements ClientUserPage {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        return oauthClientWebClient.getUserClientIds(userId, pageable).flatMap(page -> {
+        String accessToken = tokenService.getAccessToken();
+
+        return oauthClientWebClient.getUserClientIds(accessToken, userId, pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId);
             model.addAttribute("page", page);
             return Mono.just(PATH);
@@ -263,7 +270,10 @@ public class ClientController implements ClientUserPage {
         UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
         LOG.info("userId: {}", userId);
 
-        return oauthClientWebClient.deleteClient(id, userId)
+        String accessToken = tokenService.getAccessToken();
+
+
+        return oauthClientWebClient.deleteClient(accessToken, id, userId)
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     LOG.error("error occurred on deleting client by id: {}", id, throwable);
@@ -299,8 +309,11 @@ public class ClientController implements ClientUserPage {
         LOG.info("oidc.userId: {}", userIdString);
         UUID userId = UUID.fromString(userIdString);
 
-        return setClientInModel(id, model, PATH)
-                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(userId, pageable))
+
+        String accessToken = tokenService.getAccessToken();
+
+        return setClientInModel(accessToken, id, model, PATH)
+                .flatMap(s -> organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable))
                 .doOnNext(restPage -> {
                     LOG.info("organizationList: {}", restPage);
                     LOG.info("print organization rest page as json: {}", getJson(restPage));
@@ -309,7 +322,7 @@ public class ClientController implements ClientUserPage {
                 }).flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(organizationRestPage.getContent(), id)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganization -> {
                                 for (Organization organization : organizationRestPage.getContent()) {
@@ -341,11 +354,13 @@ public class ClientController implements ClientUserPage {
      */
     @GetMapping("{id}/users")
     public Mono<String> getUsers(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
-        return setUsersAndsersInClientOrganizationUserRole(id, model, userPageable);
+        String accessToken = tokenService.getAccessToken();
+
+        return setUsersAndsersInClientOrganizationUserRole(accessToken, id, model, userPageable);
     }
 
     @Override
-    public Mono<String> setUsersAndsersInClientOrganizationUserRole(UUID id, Model model, Pageable userPageable) {
+    public Mono<String> setUsersAndsersInClientOrganizationUserRole(String accessToken, UUID id, Model model, Pageable userPageable) {
         LOG.info("get client users relationships");
         final String PATH = "/admin/clients/users";
         int pageSize = 5;
@@ -358,24 +373,24 @@ public class ClientController implements ClientUserPage {
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
 
 
-        return setClientInModel(id, model, PATH)
-                .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(id))
-                .flatMap(uuid -> organizationWebClient.getOrganizationById(uuid))
+        return setClientInModel(accessToken, id, model, PATH)
+                .flatMap(s -> clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(accessToken, id))
+                .flatMap(uuid -> organizationWebClient.getOrganizationById(accessToken, uuid))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> {
                     LOG.info("get roles");
-                    return roleWebClient.getRolesByOrganizationId(organization.getId(), PageRequest.of(0, Integer.MAX_VALUE))
+                    return roleWebClient.getRolesByOrganizationId(accessToken, organization.getId(), PageRequest.of(0, Integer.MAX_VALUE))
                             .zipWith(Mono.just(organization));
                 })
                 .doOnNext(objects -> {
                     LOG.info("got roles: {}", objects.getT1().getContent());
                     model.addAttribute("roles", objects.getT1().getContent());
                 }) //objects = roles, organizationId
-                .flatMap(objects -> organizationWebClient.getUsersInOrganizationId(objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
+                .flatMap(objects -> organizationWebClient.getUsersInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
                 .flatMap(objects -> {
                     LOG.info("uuidPage: {}", objects.getT1().getContent());
                     model.addAttribute("page", objects.getT1());
-                    return userWebClient.getUserByBatchOfIds(objects.getT1().getContent()).zipWith(Mono.just(objects.getT2()));
+                    return userWebClient.getUserByBatchOfIds(accessToken, objects.getT1().getContent()).zipWith(Mono.just(objects.getT2()));
                 })
                 .doOnNext(objects -> {//objects = users, organization
                     LOG.info("got users: {}", objects.getT1());
@@ -384,7 +399,7 @@ public class ClientController implements ClientUserPage {
                 //find users that have this clientId with a role
                 .flatMap(objects -> {
                     List<UUID> userIds = objects.getT1().stream().map(User::getId).toList();
-                    return roleWebClient.getClientOrganizationUserWithRoles(id, objects.getT2().getId(), userIds)
+                    return roleWebClient.getClientOrganizationUserWithRoles(accessToken, id, objects.getT2().getId(), userIds)
                             .switchIfEmpty(Mono.just(new ArrayList<ClientOrganizationUserWithRole>()))
                             .zipWith(Mono.just(objects.getT1()));
                 })
