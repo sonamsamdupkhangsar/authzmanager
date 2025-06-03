@@ -92,7 +92,7 @@ public class OrganizationWebClient {
                 .retrieve();
 
         return responseSpec.bodyToMono(Organization.class).onErrorResume(throwable -> {
-            LOG.error("error occured on getting organization by id", throwable);
+            LOG.error("error occurred on getting organization by id", throwable);
             return Mono.empty();
         });
     }

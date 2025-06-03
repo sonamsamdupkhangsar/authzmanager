@@ -77,6 +77,7 @@ public class UserSignupIntegTest {
 
         when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
         when( oAuth2AccessToken.getTokenValue()).thenReturn("sonamstoken");
+        when(tokenService.getAccessToken()).thenReturn("dummytoken");
     }
 
     @BeforeAll
@@ -134,10 +135,6 @@ public class UserSignupIntegTest {
         LOG.info("mvcResult: {}", mvcResult.getResponse());
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/oauth2/token");
-
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
 
     }
@@ -162,6 +159,7 @@ public class UserSignupIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"user created\"}"));
 
+        UUID orgId = UUID.randomUUID();
         MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/admin/users")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("firstName", userSignup.getFirstName())
@@ -169,13 +167,14 @@ public class UserSignupIntegTest {
                 .param("email", userSignup.getEmail())
                 .param("authenticationId", userSignup.getAuthenticationId())
                 .param("password", "1234567890")
+                        .param("organizationId", orgId.toString())
                 .param("active", "false")).andDo(print()).andExpect(status().isOk()).andReturn();
 
         LOG.info("mvcResult: {}", mvcResult.getResponse());
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId.toString());
 
     }
 

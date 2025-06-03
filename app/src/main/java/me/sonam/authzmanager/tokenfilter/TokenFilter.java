@@ -3,6 +3,7 @@ package me.sonam.authzmanager.tokenfilter;
 import com.nimbusds.oauth2.sdk.auth.JWTAuthentication;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import io.kubernetes.client.util.credentials.UsernamePasswordAuthentication;
+import org.apache.http.auth.AUTH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -66,6 +67,10 @@ public class TokenFilter {
                 LOG.info("request contains authorization header already");
                 LOG.debug("authorization header: {}", request.headers().getFirst(AUTHORIZATION));
 
+                if (request.headers().getFirst(AUTHORIZATION).contains("Bearer null")) {
+                    LOG.warn("request header contains Bearer but null token");
+                    return processTokenFilter(null, request, next);
+                }
                 ClientRequest filtered = ClientRequest.from(request).build();
                 return next.exchange(filtered);
             }

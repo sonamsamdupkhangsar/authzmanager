@@ -1,8 +1,7 @@
 logging:
   level:
     root: info
-    me:
-      sonam: info
+    me.sonam: info
 info:
   app:
     name: Springboot me.sonam.account.Application
@@ -70,7 +69,7 @@ account-rest-service:
 
 setting-rest-service:
   root: http://localhost:{port}
-  context: ${setting-rest-service}/settings
+  context: ${setting-rest-service.root}/settings
   defaultOrganizationId: /users/{userId}
 
 endpoint:

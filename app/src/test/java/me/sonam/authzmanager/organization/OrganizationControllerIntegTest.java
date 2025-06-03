@@ -82,6 +82,8 @@ public class OrganizationControllerIntegTest {
 
         when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
         when( oAuth2AccessToken.getTokenValue()).thenReturn("sonamstoken");
+
+        when(tokenService.getAccessToken()).thenReturn("dummytoken");
     }
 
     @BeforeAll
@@ -108,6 +110,7 @@ public class OrganizationControllerIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
+        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -171,6 +174,12 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
 
+        UUID defaultOrgId = UUID.randomUUID();
+        LOG.info("defaultOrgId; {}", defaultOrgId);
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getSimpleJson(Map.of("message", Map.of("defaultOrganizationId", defaultOrgId)))));
+
         EntityExchangeResult<String> entityExchangeResult = webTestClient.get().uri("/admin/organizations/"+ organization.getId())
                 .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))) .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
 
@@ -178,6 +187,11 @@ public class OrganizationControllerIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+ organization.getId());
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -458,7 +472,8 @@ public class OrganizationControllerIntegTest {
                 .with("organizationChoice.selected", "false");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
-                .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add").headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .body(formInserter)
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
 
@@ -489,6 +504,19 @@ public class OrganizationControllerIntegTest {
     private static String getJson(Object object) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+        try {
+            String json = objectMapper.writeValueAsString(object);
+            LOG.info("json for object: {}", json);
+            return json;
+        } catch (JsonProcessingException e) {
+            LOG.error("error occurred", e);
+            return null;
+        }
+    }
+
+    private static String getSimpleJson(Object object) {
+        ObjectMapper objectMapper = new ObjectMapper();
+
         try {
             String json = objectMapper.writeValueAsString(object);
             LOG.info("json for object: {}", json);

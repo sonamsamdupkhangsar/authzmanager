@@ -374,6 +374,7 @@ public class OrganizationController {
 
     private Mono<String> removeUserFromOrganization(final String PATH, User user, Model model, Pageable userPageable) {
         LOG.info("remove user from organization: {}", user);
+
         final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.removeUserFromOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())

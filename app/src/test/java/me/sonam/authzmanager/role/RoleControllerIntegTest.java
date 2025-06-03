@@ -80,6 +80,7 @@ public class RoleControllerIntegTest {
 
         when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
         when( oAuth2AccessToken.getTokenValue()).thenReturn("sonamstoken");
+        when(tokenService.getAccessToken()).thenReturn("dummytoken");
     }
 
     @BeforeAll
