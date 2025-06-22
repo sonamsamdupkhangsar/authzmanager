@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 import java.util.Optional;
 
 @Controller
-@RequestMapping("/admin/users")
+@RequestMapping("/admin/organizations/default/users")
 public class AddUserController {
     private static final Logger LOG = LoggerFactory.getLogger(AddUserController.class);
 

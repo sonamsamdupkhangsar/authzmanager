@@ -83,6 +83,9 @@ public class UserSignup {
     public boolean isActive() {
         return this.active;
     }
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;

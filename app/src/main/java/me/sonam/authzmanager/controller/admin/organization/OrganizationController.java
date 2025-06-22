@@ -33,11 +33,11 @@ import java.util.*;
 public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
 
-    private OrganizationWebClient organizationWebClient;
-    private RoleWebClient roleWebClient;
-    private UserWebClient userWebClient;
-    private TokenService tokenService;
-    private SettingWebClient settingWebClient;
+    private final OrganizationWebClient organizationWebClient;
+    private final RoleWebClient roleWebClient;
+    private final UserWebClient userWebClient;
+    private final TokenService tokenService;
+    private final SettingWebClient settingWebClient;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                                   UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService) {
