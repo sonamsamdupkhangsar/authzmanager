@@ -171,10 +171,13 @@ public class ClientControllerIntegTest {
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
 
-        // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
+
+
+
+
     }
 
 

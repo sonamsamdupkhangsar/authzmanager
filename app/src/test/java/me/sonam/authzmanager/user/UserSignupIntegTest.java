@@ -160,7 +160,7 @@ public class UserSignupIntegTest {
                 .setResponseCode(200).setBody("{\"message\": \"user created\"}"));
 
         UUID orgId = UUID.randomUUID();
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/admin/users")
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/admin/organizations/default/users")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("firstName", userSignup.getFirstName())
                 .param("lastName", userSignup.getLastName())
