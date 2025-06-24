@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class UserWebClient {
@@ -27,14 +28,22 @@ public class UserWebClient {
         this.profilePhotoEndpoint = profilePhotoEndpoint;
     }
 
-    public Mono<String> signupUser(UserSignup userSignup) {
-        LOG.info("calling user-rest-service endpoint: {}", userRestServiceEndpoint);
+    public Mono<String> signupUser(String accessToken, UserSignup userSignup) {
+        LOG.info("create user with endpoint: {}", userRestServiceEndpoint);
 
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(userRestServiceEndpoint)
+        WebClient.RequestBodySpec requestBodySpec = webClientBuilder.build().post().uri(userRestServiceEndpoint);
+
+        if (accessToken != null) {
+            LOG.info("add access-token in header");
+            requestBodySpec.headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken));
+        }
+
+        WebClient.ResponseSpec responseSpec = requestBodySpec
                 .bodyValue(userSignup)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
-        return responseSpec.bodyToMono(String.class).thenReturn("User signup success");
+
+        return responseSpec.bodyToMono(String.class);
 
     }
 
@@ -78,9 +87,54 @@ public class UserWebClient {
         return responseSpec.bodyToMono(User.class);
     }
 
-
-    public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
+    /**
+     * this is for finding user by authenticationId for application purpose
+     * @param accessToken
+     * @param authenticationId
+     * @return
+     */
+    public Mono<User> findByAuthenticationId(String accessToken, String authenticationId) {
         LOG.info("find user by authenticationId: {}", authenticationId);
+
+        StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id/")
+                .append(authenticationId);
+
+        LOG.info("find user with authentication-id with endpoint: {}", stringBuilder);
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve();
+
+        return responseSpec.bodyToMono(User.class).onErrorResume(throwable -> {
+            LOG.error("user not found with authenticationId: {}", authenticationId, throwable.getMessage());
+            String errorMessage = throwable.getMessage();
+            if (throwable instanceof WebClientResponseException) {
+                WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
+                LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
+                if (webClientResponseException.getResponseBodyAsString().contains("\"error\":"))
+                {
+                    Map<String, String> errorResponseMap = webClientResponseException.getResponseBodyAs(Map.class);
+                    if (errorResponseMap != null) {
+                        errorMessage = errorResponseMap.get("error");
+                    }
+                    else {
+                        errorMessage = webClientResponseException.getResponseBodyAsString();
+                    }
+                }
+            }
+
+            return Mono.error(new AuthzManagerException(errorMessage));//Mono.just(new User());
+        });
+    }
+
+    /**
+     * this search is dependent upon if the user has turned off profile searching by others
+     * @param accessToken
+     * @param authenticationId
+     * @return
+     */
+    public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
+        LOG.info("find user profile search by authenticationId: {}", authenticationId);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
                 .append(authenticationId);

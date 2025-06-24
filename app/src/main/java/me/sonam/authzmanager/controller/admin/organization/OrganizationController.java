@@ -1,12 +1,16 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.AuthzManagerException;
+import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
+import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
+import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +33,18 @@ import java.util.*;
 public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
 
-    private OrganizationWebClient organizationWebClient;
-    private RoleWebClient roleWebClient;
-    private UserWebClient userWebClient;
-    private TokenService tokenService;
+    private final OrganizationWebClient organizationWebClient;
+    private final RoleWebClient roleWebClient;
+    private final UserWebClient userWebClient;
+    private final TokenService tokenService;
+    private final SettingWebClient settingWebClient;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                                  UserWebClient userWebClient, TokenService tokenService) {
+                                  UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
+        this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
     }
 
@@ -99,19 +105,31 @@ public class OrganizationController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UUID userId = UUID.fromString(oidcUser.getAttribute("userId"));
-        LOG.info("userId: {}", userId);
+        UUID userId = Util.getLoggedInUserId();
 
         Organization org = new Organization(organization.getId(), organization.getName(), userId);
         LOG.info("create organization from organization: {}", organization);
+        org.setDefaultOrganization(organization.isDefaultOrganization());
 
         final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.updateOrganization(accessToken, org, httpMethod).flatMap(organization1 -> {
             LOG.info("got back response: {}", organization1);
             model.addAttribute("organization", organization1);
-            return Mono.just(PATH);
+            //return Mono.just(PATH);
+            if (org.isDefaultOrganization()) {
+                organization1.setDefaultOrganization(true);
+                return settingWebClient.addDefaultOrganization(accessToken, userId, org.getId()).thenReturn(PATH);
+            }
+            else {
+                if (organization.isPreviousDefaultOrganization()) { //previously it was true, or was defaultOrganization
+                    LOG.info("organization isPreviousDefaultOrganization is true");
+                    organization1.setDefaultOrganization(false);
+                    return settingWebClient.removeDefaultOrganization(accessToken, userId).thenReturn(PATH);
+                }
+
+                return Mono.just(PATH);
+            }
         });
     }
 
@@ -121,9 +139,18 @@ public class OrganizationController {
         LOG.info("get organization by id: {}", id);
 
         final String accessToken = tokenService.getAccessToken();
+        UUID userId = Util.getLoggedInUserId();
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .thenReturn(PATH);
+                        .flatMap(organization -> settingWebClient.getDefaultOrganization(accessToken, userId)
+                                                    .doOnNext(uuid -> {
+                                                        if (uuid.equals(organization.getId())) {
+                                                            LOG.info("setting contains a defaultOrganization equal to this organizationId: {}", uuid);
+                                                            organization.setDefaultOrganization(true);
+                                                            organization.setPreviousDefaultOrganization(true);
+                                                        }
+                                                    })
+                                ).thenReturn(PATH);
     }
 
 
@@ -165,6 +192,7 @@ public class OrganizationController {
         return organizationWebClient.deleteOrganization(accessToken, organizationId).doOnNext(s -> {
                     model.addAttribute("message", "deleted organization");
                 })
+                .flatMap(s -> settingWebClient.removeDefaultOrganization(accessToken, Util.getLoggedInUserId()))
                 .then(Mono.just(PATH))
                 .onErrorResume(throwable -> {
                     LOG.error("failed to delete organization", throwable);
@@ -346,6 +374,7 @@ public class OrganizationController {
 
     private Mono<String> removeUserFromOrganization(final String PATH, User user, Model model, Pageable userPageable) {
         LOG.info("remove user from organization: {}", user);
+
         final String accessToken = tokenService.getAccessToken();
 
         return organizationWebClient.removeUserFromOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
@@ -387,4 +416,14 @@ public class OrganizationController {
                 }).thenReturn(PATH);
     }
 
+    @PostMapping(path = "/{id}/default")
+    public Mono<String> setUserDefaultOrganization(@PathVariable("id") UUID id,
+                                                Model model, final Pageable userPageable) {
+        LOG.info("set organization.id {} as default organization for user", id);
+
+        final String path = "/admin/organizations";
+        Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
+
+        return Mono.just(path);
+    }
 }

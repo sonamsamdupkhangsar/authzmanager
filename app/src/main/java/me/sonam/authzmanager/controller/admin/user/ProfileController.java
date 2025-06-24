@@ -36,7 +36,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Controller
-@RequestMapping("/admin/users")
+@RequestMapping("/admin/user/profile")
 public class ProfileController {
     private static final Logger LOG = LoggerFactory.getLogger(ProfileController.class);
 
@@ -51,8 +51,6 @@ public class ProfileController {
     private S3Service s3Service;
     @Autowired
     private S3ClientConfigurationProperties s3ClientConfigurationProperties;
-
-
 
     public ProfileController(UserWebClient userWebClient, TokenService tokenService) {
         this.userWebClient = userWebClient;

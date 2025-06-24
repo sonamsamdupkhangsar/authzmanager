@@ -38,8 +38,9 @@
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/users}">Your Profile</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/admin/user/profile}">Your Profile</a></li>
             </ul>
         </div>
         <div class="col-sm">
@@ -64,7 +65,7 @@
                         </div>
                     </div>
                     <div class="col mt-2">
-                        <form action="#" th:action="@{/admin/users}" th:object="${user}"  enctype="multipart/form-data" method="post">
+                        <form action="#" th:action="@{/admin/user/profile}" th:object="${user}"  enctype="multipart/form-data" method="post">
                             <input type="hidden" th:field="*{id}"/>
                             <div class="mb-3 error text-danger" th:if="${#fields.hasErrors}">
                             <span>Failed to update profile.

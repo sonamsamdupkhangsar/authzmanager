@@ -1,8 +1,7 @@
 logging:
   level:
     root: info
-    me:
-      sonam: info
+    me.sonam: info
 info:
   app:
     name: Springboot me.sonam.account.Application
@@ -68,6 +67,11 @@ account-rest-service:
   context: /accounts
   accountDelete: /accounts/delete
 
+setting-rest-service:
+  root: http://localhost:{port}
+  context: ${setting-rest-service.root}/settings
+  defaultOrganizationId: /users/{userId}
+
 endpoint:
   user:
     signup: "/public/user/signup"
@@ -88,12 +92,13 @@ eureka:
 BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
 REQUEST_SCOPES: bWVzc2FnZS5yZWFkIG1lc3NhZ2Uud3JpdGUK
 
-permitpath:
-  - path: /authzmanager/api/health/*
-    httpMethods: GET
-
 requestFilters:
-
+  - out:
+    outHttpMethods:
+    accessToken:
+      option: request
+      scopes: ${REQUEST_SCOPES}
+      base64EncodedClientIdSecret: ${BASE64_CLIENT_ID_SECRET}
 
 allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1
 
@@ -114,3 +119,4 @@ aws:
     thumbnailSize:
       width: 100
       height: 100
+tokenExpireSeconds: 3

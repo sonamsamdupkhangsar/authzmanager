@@ -3,6 +3,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 public class UserSignup {
     @NotEmpty(message="firstName cannot be empty")
@@ -16,22 +17,24 @@ public class UserSignup {
     @NotEmpty(message="Username cannot be empty")
     @Size(min = 3, max = 50)
     private String authenticationId;
-    @Size(min = 8, max = 50)
-    @NotEmpty(message="password cannot be empty")
+
+    private UUID organizationId;
+
     private char[] password;
 
-    @Override
-    public String toString() {
-        return "UserSignup{" +
-                "firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", authenticationId='" + authenticationId + '\'' +
-                ", password=" + Arrays.toString(password) +
-                '}';
-    }
+    private boolean active; //this field is used to activate a user using the admin
 
     public UserSignup() {
+
+    }
+
+    public UserSignup(String firstName, String lastName, String email, String authenticationId, char[] password, boolean active) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.authenticationId = authenticationId;
+        this.password = password;
+        this.active = active;
     }
 
     public String getFirstName() {
@@ -51,11 +54,13 @@ public class UserSignup {
     }
 
     public String getEmail() {
-        return email;
+        return this.email;
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        if (email != null) {
+            this.email = email.toLowerCase();
+        }
     }
 
     public String getAuthenticationId() {
@@ -63,7 +68,9 @@ public class UserSignup {
     }
 
     public void setAuthenticationId(String authenticationId) {
-        this.authenticationId = authenticationId;
+        if (authenticationId != null) {
+            this.authenticationId = authenticationId.toLowerCase();
+        }
     }
 
     public char[] getPassword() {
@@ -73,4 +80,30 @@ public class UserSignup {
     public void setPassword(char[] password) {
         this.password = password;
     }
+    public boolean isActive() {
+        return this.active;
+    }
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public void setOrganizationId(UUID organizationId) {
+        this.organizationId = organizationId;
+    }
+
+    public UUID getOrganizationId() {
+        return this.organizationId;
+    }
+    @Override
+    public String toString() {
+        return "UserSignup{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", authenticationId='" + authenticationId + '\'' +
+                ", password=" + Arrays.toString(password) +
+                ", active='" +active + '\'' +
+                '}';
+    }
+
 }

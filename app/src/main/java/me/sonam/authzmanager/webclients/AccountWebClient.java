@@ -24,10 +24,9 @@ public class AccountWebClient {
         this.deleteMyAccount = deleteMyAccount;
     }
 
-    public Mono<String> deleteMyAccount(String accessToken) {
+    public Mono<String> deleteMyAccount() {
         LOG.info("delete my account using accessToken");
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(deleteMyAccount)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(String.class);
     }

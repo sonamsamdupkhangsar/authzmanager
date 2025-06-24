@@ -47,6 +47,7 @@ dependencies {
     testImplementation 'net.sourceforge.htmlunit:htmlunit'
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation ("cloud.sonam:digitalocean-s3-lib:1.0.0-SNAPSHOT")
+    testImplementation("org.springframework.security:spring-security-oauth2-resource-server")
 }
 java {
     toolchain {

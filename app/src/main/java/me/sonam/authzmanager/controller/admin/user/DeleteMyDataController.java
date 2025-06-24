@@ -47,7 +47,6 @@ public class DeleteMyDataController {
         String userIdString = defaultOidcUser.getAttribute("userId");
 
         LOG.info("delete user data for userId: {}", userIdString);
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken();
         LOG.info("accessToken {}", accessToken);
 
