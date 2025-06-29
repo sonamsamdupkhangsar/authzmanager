@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+<div th:fragment="menu">
+    <ul class="nav flex-column">
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/user/profile}">Your Profile</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/admin/settings}">Settings</a></li>
+    </ul>
+</div>
+</body>
+
+</html>
