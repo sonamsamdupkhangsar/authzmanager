@@ -11,7 +11,7 @@
 <div class="container">
     <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2" th:insert="~{leftnav :: menu}"></div>
+        <div class="col-2" th:with="activeLink=Roles" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <h1>Roles</h1>
             <div>

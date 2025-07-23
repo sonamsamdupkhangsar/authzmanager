@@ -12,7 +12,7 @@
 <div class="container">
     <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2" th:insert="~{leftnav :: menu}"></div>
+        <div class="col-2" th:with="activeLink=Home" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <div class="m-4">
             <span class="h3">Welcome to the Admin dashboard!</span>
