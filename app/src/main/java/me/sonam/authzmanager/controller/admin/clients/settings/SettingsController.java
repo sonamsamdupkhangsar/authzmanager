@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.clients.settings;
 
 import me.sonam.authzmanager.AuthzManagerException;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.UserSignupController;
 import me.sonam.authzmanager.controller.admin.organization.OrganizationController;
 import me.sonam.authzmanager.controller.util.Util;
@@ -15,11 +16,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -63,20 +63,45 @@ public class SettingsController {
 
         final String noDefaultOrgFound = "No Default organization found";
 
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return  roleWebClient.getAuthzManagerRoleByName(accessToken, "SuperAdmin")
+                .doOnNext(stringStringMap -> {
+                    LOG.info("superAdmin role map: {}", stringStringMap);
+                    UUID uuid = UUID.fromString(stringStringMap.get("message"));
+                    LOG.info("superAdmin id: {}", uuid);
+                    model.addAttribute("authzManagerRoleOrganizationId", uuid);
+                })
+                .flatMap(stringStringMap -> settingWebClient.getDefaultOrganization(accessToken, userId))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
-
+                .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable))
-                .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.getContent());
-                    model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
-                })
-                .doOnNext(users -> {
-                    LOG.info("got users: {}", users);
-                    model.addAttribute("users", users);
+                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable).zipWith(Mono.just(organization)))
+                        .flatMap(orgWithUserIdPage -> {
+                            return userWebClient.getUserByBatchOfIds(accessToken, orgWithUserIdPage.getT1().getContent())
+                                    .doOnNext(users -> {
+
+                                        LOG.info("add users to model: {}", users);
+                                        model.addAttribute("users", users);
+
+                                        LOG.info("add userIdPage to model");
+                                        model.addAttribute("page", orgWithUserIdPage.getT1());
+                                    }).zipWith(Mono.just(orgWithUserIdPage.getT2()).zipWith(Mono.just(orgWithUserIdPage.getT1())));
+                        })
+                        .flatMap(usersWithOrgAndUserIdPage ->
+                             roleWebClient.areUsersSuperAdminInDefaultOrgId(accessToken,
+                                    usersWithOrgAndUserIdPage.getT2().getT1().getId(),
+                                    usersWithOrgAndUserIdPage.getT2().getT2().getContent()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
+                        )
+                .doOnNext(uuidBooleanMapWithUserList -> {
+                    LOG.info("got uuidBooleanMap {}", uuidBooleanMapWithUserList);
+                    List<User> userList = uuidBooleanMapWithUserList.getT2();
+
+                    for(User user: userList) {
+                       UUID authzManagerRoleOrganizationId = uuidBooleanMapWithUserList.getT1().get(user.getId());
+                        if (authzManagerRoleOrganizationId != null) {
+                            user.setAuthzManagerRoleOrganizationId(authzManagerRoleOrganizationId);
+                        }
+                    }
                 })
                 .thenReturn(settingsPage)
                 .onErrorResume(throwable -> {
@@ -93,5 +118,19 @@ public class SettingsController {
                     return Mono.just(settingsPage);
                 });
     }
+
+    @PostMapping
+    public Mono<String> setUserSuperAdmin(@RequestParam("authzManagerRoleId")UUID authzManagerRoleId, @RequestParam("userId") UUID targetUserId,
+                                          @RequestParam("organizationId")UUID organizationId, Model model, Pageable userPageable) {
+        String accessToken = tokenService.getAccessToken();
+        UUID loggedInUserId = Util.getLoggedInUserId();
+
+        return roleWebClient.addUserToSuperAdminRoleInOrganization(accessToken, authzManagerRoleId, organizationId, targetUserId, userPageable)
+                .doOnNext(stringObjectMap -> {
+                    LOG.info("assigned user to superadmin role with a authzManagerRoleOrganiation id {}", stringObjectMap.get("id"));
+                })
+                .then(getUserForDefaultOrganization(model, userPageable));
+    }
+
 
 }

@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class RoleWebClient {
@@ -210,6 +211,44 @@ public class RoleWebClient {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
         return responseSpec.bodyToMono(String.class);
     }
+    public Mono<Map<String, String>> getAuthzManagerRoleByName(String accessToken, String name) {
+        LOG.info("get AuthzManagerRole id by name {}", name);
 
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/name").append(name);
+        LOG.info("get authzManagerRoleId by endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .bodyValue(name).retrieve();
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
+    }
+
+    public Mono<Map<UUID, UUID>> areUsersSuperAdminInDefaultOrgId(String accessToken, UUID organizationId, List<UUID> userIdList) {
+        LOG.info("check if user {} is superAdmin in the default organizationId {}", userIdList, organizationId);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/users/organizations/").append(organizationId);
+        LOG.info("get a list back to find if they are superAdmin using endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .bodyValue(userIdList).retrieve();
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<UUID, UUID>>() {});
+    }
+
+    public Mono<Map<String, Object>> addUserToSuperAdminRoleInOrganization(String accessToken, UUID authzManagerRoleId, UUID organizationId, UUID targetUserId, Pageable pageable) {
+        LOG.info("add user {} to superAdmin role to organization id {}", targetUserId, organizationId);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/users/organizations").append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize());
+        LOG.info("endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .bodyValue(Map.of("userId", targetUserId, "organizationId", organizationId, "authzManagerRoleId", authzManagerRoleId)).retrieve();
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
 
 }

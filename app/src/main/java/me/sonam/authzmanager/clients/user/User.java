@@ -19,6 +19,15 @@ public class User {
     private OrganizationChoice organizationChoice = new OrganizationChoice();
     private Boolean searchable;
     private String profilePhoto;
+    private UUID authzManagerRoleOrganizationId;
+
+    public UUID getAuthzManagerRoleOrganizationId() {
+        return authzManagerRoleOrganizationId;
+    }
+
+    public void setAuthzManagerRoleOrganizationId(UUID authzManagerRoleOrganizationId) {
+        this.authzManagerRoleOrganizationId = authzManagerRoleOrganizationId;
+    }
 
     public Boolean getSearchable() {
         return searchable;
