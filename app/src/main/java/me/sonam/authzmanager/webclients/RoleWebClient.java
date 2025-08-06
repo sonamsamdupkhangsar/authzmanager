@@ -215,7 +215,7 @@ public class RoleWebClient {
         LOG.info("get AuthzManagerRole id by name {}", name);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/authzmanagerroles/name").append(name);
+        stringBuilder.append("/authzmanagerroles/name");
         LOG.info("get authzManagerRoleId by endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
@@ -249,6 +249,19 @@ public class RoleWebClient {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(Map.of("userId", targetUserId, "organizationId", organizationId, "authzManagerRoleId", authzManagerRoleId)).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    public Mono<String> deleteUserFromAuthzManagerRoleOrganization(String accessToken, UUID authzManagerRoleOrganizationId) {
+        LOG.info("deleteUserFromAuthzManagerRoleOrganization by id {}", authzManagerRoleOrganizationId);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint).append("/");
+        stringBuilder.append("/authzmanagerroles/users/organizations/").append(authzManagerRoleOrganizationId);
+
+        LOG.info("deleteUserFromAuthzManagerRoleOrganization endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+        return responseSpec.bodyToMono(String.class);
     }
 
 }

@@ -137,7 +137,7 @@ public class UserWebClient {
         LOG.info("find user profile search by authenticationId: {}", authenticationId);
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
-                .append(authenticationId);
+                .append(authenticationId).append("?ignoreSearchable=true");  //this queryParam is to search regardless of user setting
 
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
