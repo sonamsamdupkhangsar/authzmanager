@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -49,7 +50,7 @@ public class SettingsController {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
 
-        LOG.info("get users for organization by id");
+        LOG.info("get default organization users");
 
         int pageSize = 5;
 
@@ -121,14 +122,25 @@ public class SettingsController {
                 })
                 .thenReturn(settingsPage)
                 .onErrorResume(throwable -> {
-                    LOG.error("Exception occurred", throwable);
+                    LOG.debug("Exception occurred", throwable);
 
                     if (throwable.getMessage().equals(noDefaultOrgFound)) {
-                        model.addAttribute("error", "You need to set a default organization to add user.");
+                        model.addAttribute("error", "You need to set a default organization to enable user for SuperAdmin role");
                         LOG.info("add error message when default org not found");
                     }
                     else {
-                        LOG.info("exception caught with message: {}", throwable.getMessage());
+                        if (throwable instanceof WebClientResponseException) {
+                            WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
+                            String errorMessage = webClientResponseException.getResponseBodyAsString();
+                            LOG.error("error body contains: {}", errorMessage);
+
+                            model.addAttribute("error", errorMessage);
+                        }
+                        else {
+                            LOG.error("exception caught with message: {}", throwable.getMessage());
+                            model.addAttribute("error", "failed to get default organization users");
+                        }
+
                     }
 
                     return Mono.just(settingsPage);
