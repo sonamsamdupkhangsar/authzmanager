@@ -57,6 +57,7 @@ public class ClientUserController {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken();//authentication).getTokenValue();
 
+        LOG.info("accesstoken: {}", accessToken);
         return roleWebClient.deleteClientOrganizationUserRole(accessToken, roleId)
                         .flatMap(s -> {
                             LOG.info("response: {}", s);
