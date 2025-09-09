@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -64,6 +66,7 @@ public class UserSignupController {
         }
         return  userWebClient.signupUser(null, userSignup)
                 .flatMap(s -> {
+
                     LOG.info("user signup successful with message: {}",s);
                     StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
                             .append(", your signup was successful!").append(
@@ -73,12 +76,26 @@ public class UserSignupController {
                     model.addAttribute("message", stringBuilder.toString());
                     return Mono.just(PATH);
                 })
-                .onErrorResume(throwable -> {
-                    setErrorInModel(throwable, model, "failed to signup user");
-                    model.addAttribute("userSignup", userSignup);
-                    return Mono.just(PATH);
-                });
+                .flatMap(s ->  userWebClient.findByAuthenticationId(null, userSignup.getAuthenticationId()))
+                .flatMap(user -> {
+                    String name = userSignup.getOrganization();
+                    if (name == null || name.isEmpty()) {
+                        name = userSignup.getFirstName() + " " + userSignup.getLastName() + " Company";
+                    }
 
+                    Organization org = new Organization(null, name, user.getId());
+                    LOG.info("create organization user signup: {}", org);
+                    org.setDefaultOrganization(true);
+
+                    //create organization and add this user to it
+                    return organizationWebClient.updateOrganization(null, org, HttpMethod.POST);
+                })
+                .thenReturn(PATH)
+                .onErrorResume(throwable -> {
+                                setErrorInModel(throwable, model, "failed to signup user");
+                                model.addAttribute("userSignup", userSignup);
+                                return Mono.just(PATH);
+                });
     }
 
     public Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {
@@ -111,6 +128,7 @@ public class UserSignupController {
                 .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()))
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
+                    LOG.info("exception occured in signing up user by admin {}", throwable.getMessage());
                     setErrorInModel(throwable, model, "failed to add user by admin");
                     model.addAttribute("userSignup", userSignup);
                     return Mono.just(PATH);
@@ -120,7 +138,7 @@ public class UserSignupController {
 
 
     private void setErrorInModel(Throwable throwable, Model model, String defaultErrMessage) {
-        LOG.error("exception", throwable);
+        LOG.error("exception occured in signup user", throwable);
         LOG.error(defaultErrMessage);
 
         if (throwable instanceof WebClientResponseException webClientResponseException) {
