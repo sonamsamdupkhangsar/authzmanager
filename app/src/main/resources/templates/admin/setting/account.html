@@ -60,7 +60,10 @@
                     </li>
                 </ul>
             </div>
-            <div class="col-sm mt-3">
+            <div class="alert alert-primary m-3" role="alert" th:if="${error}">
+                <span th:text="${error}"></span>
+            </div>
+            <div class="col-sm mt-3" th:if="${error == null}">
                 <div class="col-sm-5">
                     <label for="basic-addon1">Find user with their username</label>
                     <form class="mt-3 form-inline"
@@ -133,10 +136,11 @@
                                         </form>
                                     </div>
                                    <div th:if="${user.authzManagerRoleOrganizationId}">
-                                         <button type="button" th:with="page=${page.number}, size=20, url=@{/admin/settings?authzManagerRoleOrganizationId={authzManagerRoleOrganizationId}
+                                       <button th:if="${user.enabled}" type="button" th:with="page=${page.number}, size=20, url=@{/admin/settings?authzManagerRoleOrganizationId={authzManagerRoleOrganizationId}
                                          (authzManagerRoleOrganizationId=${user.authzManagerRoleOrganizationId})}"
                                                  th:onclick="removeUserAsSuperAdmin([[${url}]], [[${page}]], [[${size}]])"
                                                  class="btn btn-primary">Remove SuperAdmin </button>
+                                       <button th:if="${user.enabled == false}" type="submit" class="btn btn-secondary">Superadmin</button>
 
                                     </div>
                                 </td>

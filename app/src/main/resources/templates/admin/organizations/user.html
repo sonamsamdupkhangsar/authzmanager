@@ -64,6 +64,7 @@
                             </div>
                             <input type="text" name="username" class="form-control" placeholder="Username"
                                    aria-label="Username" aria-describedby="basic-addon1">
+                            <button type="submit" class="btn btn-primary">Submit</button>
                         </div>
                     </form>
                 </div>
@@ -128,7 +129,7 @@
                     </div>
 
                     <div class="col mt-4">
-                        <table class="table" th:if="${users}">
+                        <table class="table" th:if="${removableUsers}">
                             <thead>
                             <tr>
                                 <th scope="col">First</th>
@@ -140,7 +141,7 @@
                             </thead>
                             <tbody>
 
-                            <tr th:each="user : ${users}">
+                            <tr th:each="user : ${removableUsers}">
                                 <td><span th:text="${user.firstName}"></span></td>
                                 <td><span th:text="${user.lastName}"></span></td>
                                 <td><span th:text="${user.email}"></span></td>
@@ -148,6 +149,15 @@
                                 <td><button type="button" th:with="organizationId=${organization.id}, myPage=${page.number}, pageSize=${param.size}, url=@{/admin/organizations/{organizationId}/users/{userId}/authenticationId/{authenticationId}(organizationId=${organization.id}, userId=${user.id}, authenticationId=${user.authenticationId})}" th:onclick="sendDelete([[${url}]], [[${organizationId}]], [[${myPage}]], [[${pageSize}]])"
                                                  class="btn btn-primary">Remove user</button></td>
                             </tr>
+
+                            <tr th:each="user : ${nonRemovableUsers}">
+                                <td><span th:text="${user.firstName}"></span></td>
+                                <td><span th:text="${user.lastName}"></span></td>
+                                <td><span th:text="${user.email}"></span></td>
+                                <td><span th:text="${user.authenticationId}"></span></td>
+                                <td><button type="button" class="btn btn-secondary">Not removable</button></td>
+                            </tr>
+
                             </tbody>
                         </table>
                     </div>

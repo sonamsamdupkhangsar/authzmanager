@@ -487,13 +487,13 @@ public class ProfileControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(organizationId)));
 
         //3  getOrganizationById
-        Organization organization = new Organization(UUID.randomUUID(), "Free Press Organization", UUID.randomUUID());
+        Organization organization = new Organization(organizationId, "Free Press Organization", UUID.randomUUID());
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
 
         //  getRolesByOrganizationId
         json = "[Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}]";
-        List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), null));
+        List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", organizationId));
         RestPage<Role> restPage = new RestPage<>(roles, 1, 1, 1, 1, 1);
 
         //4
@@ -514,10 +514,10 @@ public class ProfileControllerIntegTest {
         //6 getUserByBatchOfIds
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userList)));
-        Role role = new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleCareTaker", UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), null);
+        Role role = new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleCareTaker", organizationId);
         me.sonam.authzmanager.controller.admin.clients.carrier.User user = new me.sonam.authzmanager.controller.admin.clients.carrier.User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), role);
         List<ClientOrganizationUserWithRole> clientOrganizations = List.of(
-                new ClientOrganizationUserWithRole(UUID.fromString("f8b36547-9f1e-4905-b726-e50e76a9076b"), UUID.fromString("18a528d0-8686-4ecc-ae7e-fba9a8654f5b"), user));
+                new ClientOrganizationUserWithRole(UUID.fromString("f8b36547-9f1e-4905-b726-e50e76a9076b"), UUID.fromString("18a528d0-8686-4ecc-ae7e-fba9a8654f5b"), user, role));
 
         //7
         //getClientOrganizationUserWithRoles
@@ -560,9 +560,9 @@ public class ProfileControllerIntegTest {
 
         //7
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/client-organization-users/client-id/"
-                +oauthClient.getId()+"/organization-id");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/clients/"+oauthClient.getId()
+                +"/organizations/"+organizationId+"/users/roles");
     }
 
     private String saveOauthClient() throws InterruptedException {

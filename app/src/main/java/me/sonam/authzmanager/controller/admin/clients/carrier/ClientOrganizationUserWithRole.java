@@ -1,5 +1,7 @@
 package me.sonam.authzmanager.controller.admin.clients.carrier;
 
+import jakarta.validation.constraints.NotNull;
+import me.sonam.authzmanager.controller.admin.roles.Role;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -21,14 +23,17 @@ public class ClientOrganizationUserWithRole {
     private UUID clientId;
     private UUID organizationId;
     public User user;
+    @NotNull
+    private Role role;
 
     public ClientOrganizationUserWithRole() {
     }
 
-    public ClientOrganizationUserWithRole(UUID clientId, UUID organizationId, User user) {
+    public ClientOrganizationUserWithRole(UUID clientId, UUID organizationId, User user, Role role) {
         this.clientId = clientId;
         this.organizationId = organizationId;
         this.user = user;
+        this.role = role;
     }
 
     public UUID getClientId() {
@@ -53,6 +58,14 @@ public class ClientOrganizationUserWithRole {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     @Override

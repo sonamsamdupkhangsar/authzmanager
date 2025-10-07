@@ -11,6 +11,7 @@ import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.util.JwtUtil;
+import net.bytebuddy.agent.builder.AgentBuilder;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -41,6 +42,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,15 +109,29 @@ public class RoleControllerIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
+        r.add("setting-rest-service.root", ()->"http://localhost:"+mockWebServer.getPort());
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
-    public void getRolesByUserId() throws InterruptedException {
+    public void getRolesByOrganizationId() throws InterruptedException {
         LOG.info("get roles by userId");
-        Role role = new Role(UUID.randomUUID(), "adminRole", null, null);
+
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        Role role = new Role(UUID.randomUUID(), "adminRole", null);
+
+        //1 get default org
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organizationId)))));
+
+        //2 is superAdmin check response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
         RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 ,1,1);
 
+        //3 get roles by organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(restPage)));
 
@@ -126,7 +142,15 @@ public class RoleControllerIntegTest {
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/user-id/");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organizationId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/organizations/"+organizationId);
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -149,7 +173,18 @@ public class RoleControllerIntegTest {
     public void getRoleById() throws InterruptedException {
         LOG.info("get role by id");
 
-        Role role = new Role(UUID.randomUUID(), "adminRole", null, null);
+        UUID organizationId = UUID.randomUUID();
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+
+        Role role = new Role(UUID.randomUUID(), "adminRole", organizationId);
+
+        //1 get default org
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organizationId)))));
+
+        //2 is superAdmin check response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(role)));
@@ -168,11 +203,15 @@ public class RoleControllerIntegTest {
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/"+role.getId());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/owner/");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organizationId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/"+role.getId());
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -180,7 +219,9 @@ public class RoleControllerIntegTest {
     public void delete() throws InterruptedException {
         LOG.info("delete role by id");
 
-        Role role = new Role(UUID.randomUUID(), "adminRole", null, null);
+        UUID organizationId = UUID.randomUUID();
+
+        Role role = new Role(UUID.randomUUID(), "adminRole", organizationId);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("role and organization association deleted"));
@@ -196,15 +237,26 @@ public class RoleControllerIntegTest {
     }
 
     private void saveRole() throws InterruptedException {
-       Role role = new Role(UUID.randomUUID(), "adminRole", null, null);
-       mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-               .setResponseCode(200).setBody(getJson(role)));
-       Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+       Role role = new Role(UUID.randomUUID(), "adminRole", organizationId);
+
+       //1 get default org
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organizationId)))));
+
+        //2 is superAdmin check response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        //3 update role
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(role)));
+
+       Organization organization = new Organization(organizationId, "my company", UUID.randomUUID());
        List<Organization> list = List.of(organization);
        RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1,1,1);
 
-       mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-               .setResponseCode(200).setBody(getJson(restPage)));
 
        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("name", role.getName());
 
@@ -215,13 +267,18 @@ public class RoleControllerIntegTest {
 
        // take request for mocked response of access token
        RecordedRequest recordedRequest = mockWebServer.takeRequest();
-       Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-       Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles");
-
-       recordedRequest = mockWebServer.takeRequest();
        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-       Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/owner/");
-   }
+       Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organizationId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles");
+
+    }
 
     private static String getJson(Object object) {
         ObjectMapper objectMapper = new ObjectMapper();

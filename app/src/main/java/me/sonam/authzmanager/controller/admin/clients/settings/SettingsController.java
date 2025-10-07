@@ -75,7 +75,7 @@ public class SettingsController {
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable)
+                .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
                         .switchIfEmpty(Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(),pageable.getPageSize(), 0, 0, 0)))
                         .zipWith(Mono.just(organization)))
 
@@ -112,6 +112,9 @@ public class SettingsController {
                     List<User> userList = uuidBooleanMapWithUserList.getT2();
 
                     for(User user: userList) {
+                        if (user.getId().equals(userId)) {
+                            user.setEnabled(false);
+                        }
                        UUID authzManagerRoleOrganizationId = uuidBooleanMapWithUserList.getT1().get(user.getId());
                         if (authzManagerRoleOrganizationId != null) {
                             user.setAuthzManagerRoleOrganizationId(authzManagerRoleOrganizationId);

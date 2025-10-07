@@ -1,10 +1,10 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
-import me.sonam.authzmanager.AuthzManagerException;
-import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
+import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
+import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -12,8 +12,10 @@ import me.sonam.authzmanager.clients.user.User;
 
 import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -49,23 +51,16 @@ public class OrganizationController {
     }
 
     /**
-     * get all organizations created/owned by this user
+     * show the default organization
      *
      * @param model
      * @return
      */
     @GetMapping
-    public Mono<String> getOrganizations(Model model, Pageable pageable) {
-        LOG.info("get organizations");
+    public Mono<String> getOrganizations(Model model, Pageable pageable1) {
+        LOG.info("get organization");
         final String PATH = "/admin/organizations/list";
         int pageSize = 5;
-
-        if (pageable.getPageSize() < 100) {
-            pageSize = pageable.getPageSize();
-            LOG.info("taking page size from pageable: {}", pageSize);
-        }
-
-        pageable = PageRequest.of(pageable.getPageNumber(), pageSize, Sort.by("name"));
 
         DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = oidcUser.getAttribute("userId");
@@ -73,33 +68,48 @@ public class OrganizationController {
         UUID userId = UUID.fromString(userIdString);
 
         final String accessToken = tokenService.getAccessToken();
-        return organizationWebClient.getOrganizationPageByOwner(accessToken, userId, pageable).doOnNext(restPage -> {
-            LOG.info("organizationList: {}", restPage);
-            model.addAttribute("page", restPage);
-        }).then(Mono.just(PATH));
-    }
 
-    @GetMapping("/form")
-    public Mono<String> getCreateForm(Model model) {
-        LOG.info("return createForm");
-        final String PATH = "admin/organizations/form";
-        model.addAttribute("organization", new Organization());
+        if (pageable1.getPageSize() < 100) {
+            pageSize = pageable1.getPageSize();
+            LOG.info("taking page size from pageable: {}", pageSize);
+        }
 
-        return Mono.just(PATH);
+        final Pageable pageable = PageRequest.of(pageable1.getPageNumber(), pageSize, Sort.by("name"));
+
+        return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
+                .flatMap(uuidPage ->
+                    organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.getContent()).zipWith(Mono.just(uuidPage)))
+                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                        .doOnNext(objects -> {
+                    Page<UUID> uuidPage = objects.getT2().getT2();
+                    List<Organization> list = objects.getT2().getT1();
+
+                    list.forEach(organization -> {
+                        if (organization.getId().equals(objects.getT1())) {
+                            organization.setDefaultOrganization(true);
+                            LOG.info("set organization as default");
+                        }
+                    });
+
+                    Page<Organization> page = new RestPage<>(list, uuidPage.getNumber(),
+                                        uuidPage.getSize(), uuidPage.getTotalElements(), uuidPage.getNumberOfElements(), uuidPage.getNumber());
+
+                    model.addAttribute("page", page);
+                }).thenReturn(PATH);
+
     }
 
     @PostMapping
     public Mono<String> updateOrganization(@Valid @ModelAttribute("organization") Organization organization, BindingResult bindingResult, Model model) {
         final String PATH = "admin/organizations/form";
-        HttpMethod httpMethod = HttpMethod.POST;
+        HttpMethod httpMethod;
 
         if (organization.getId() == null) {
             LOG.info("no id, this is for create");
-            httpMethod = HttpMethod.POST;
-        } else {
-            LOG.info("has id, this is for update");
-            httpMethod = HttpMethod.PUT;
+            model.addAttribute("message", "no support for creating organization");
+            return Mono.just(PATH);
         }
+
         if (bindingResult.hasErrors()) {
             LOG.info("user didn't enter required fields");
             model.addAttribute("error", "Data validation failed");
@@ -109,28 +119,51 @@ public class OrganizationController {
 
         Organization org = new Organization(organization.getId(), organization.getName(), userId);
         LOG.info("create organization from organization: {}", organization);
-        org.setDefaultOrganization(organization.isDefaultOrganization());
 
         final String accessToken = tokenService.getAccessToken();
 
-        return organizationWebClient.updateOrganization(accessToken, org, httpMethod).flatMap(organization1 -> {
-            LOG.info("got back response: {}", organization1);
-            model.addAttribute("organization", organization1);
-            //return Mono.just(PATH);
-            if (org.isDefaultOrganization()) {
-                organization1.setDefaultOrganization(true);
-                return settingWebClient.addDefaultOrganization(accessToken, userId, org.getId()).thenReturn(PATH);
-            }
-            else {
-                if (organization.isPreviousDefaultOrganization()) { //previously it was true, or was defaultOrganization
-                    LOG.info("organization isPreviousDefaultOrganization is true");
-                    organization1.setDefaultOrganization(false);
-                    return settingWebClient.removeDefaultOrganization(accessToken, userId).thenReturn(PATH);
-                }
+        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId())
+                .flatMap(isSuperAdmin -> {
+                    if (!isSuperAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organization.getId());
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                    }
+                    return organizationWebClient.updateOrganization(accessToken, org, HttpMethod.PUT);
+                })
+                .flatMap(organization1 -> {
+                    LOG.info("got back response: {}", organization1);
+                    model.addAttribute("organization", organization1);
+                    model.addAttribute("message", "organization updated successfully");
 
-                return Mono.just(PATH);
-            }
-        });
+                    if (organization.getDefaultOrganization() != null){
+
+                        if(organization.getDefaultOrganization()) {
+                            // user set the org as default
+                            organization1.setPreviousDefaultOrganization(true);
+                            organization1.setDefaultOrganization(true);
+                            LOG.info("call setting service to set this org as default org");
+                            return settingWebClient.addDefaultOrganization(accessToken, userId, org.getId()).thenReturn(PATH);
+                        }
+                        else if(!organization.getDefaultOrganization()) {
+                            LOG.info("default checkbox is shown but not selected");
+                            organization1.setPreviousDefaultOrganization(false);
+                            organization1.setDefaultOrganization(false);
+                        }
+                    }
+                    else {
+                        if(organization.isPreviousDefaultOrganization()) {
+                            LOG.info("checkbox is disabled and previously true");
+                            organization1.setPreviousDefaultOrganization(true);
+                            organization1.setDefaultOrganization(true);
+                        }
+
+                    }
+                    return Mono.just(PATH);
+                }).onErrorResume(throwable -> {
+                    LOG.error("error occurred {}", throwable.getMessage());
+
+                    return Mono.just(PATH);
+                });
     }
 
     @GetMapping("/{id}")
@@ -140,17 +173,29 @@ public class OrganizationController {
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+
         return organizationWebClient.getOrganizationById(accessToken, id)
-                .doOnNext(organization -> model.addAttribute("organization", organization))
-                        .flatMap(organization -> settingWebClient.getDefaultOrganization(accessToken, userId)
-                                                    .doOnNext(uuid -> {
-                                                        if (uuid.equals(organization.getId())) {
-                                                            LOG.info("setting contains a defaultOrganization equal to this organizationId: {}", uuid);
-                                                            organization.setDefaultOrganization(true);
-                                                            organization.setPreviousDefaultOrganization(true);
-                                                        }
-                                                    })
-                                ).thenReturn(PATH);
+                .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
+                .flatMap(objects -> {
+                    if (!objects.getT1()) { //not supeadmin for orgId
+                        model.addAttribute("error", "You are not a superadmin for this orgId "+objects.getT2().getName());
+                        return Mono.error(new AuthenticationException("You are not a superadmin for orgId: "+objects.getT2().getName()));
+                    }
+                    return Mono.just(objects);
+                })
+                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                .flatMap(objects -> {
+                    Organization organization = objects.getT2().getT2();
+
+                    if (objects.getT1().equals(organization.getId())) {
+                        LOG.info("the selected orgId is default organization: {}", organization.getId());
+                        organization.setDefaultOrganization(true);
+                        organization.setPreviousDefaultOrganization(true);
+                    }
+                    model.addAttribute("organization", organization);
+
+                    return Mono.just(PATH);
+                });
     }
 
 
@@ -165,40 +210,27 @@ public class OrganizationController {
             pageSize = userPageable.getPageSize();
             LOG.info("taking page size from pageable: {}", pageSize);
         }
+        UUID userId = Util.getLoggedInUserId();
+
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         String accessToken = tokenService.getAccessToken();
-        return organizationWebClient.getOrganizationById(accessToken, id)
-                .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, id, pageable))
-                .doOnNext(roleRestPage ->
-                        model.addAttribute("page", roleRestPage))
-                .thenReturn(PATH);
-    }
-
-    /**
-     * delete operation in the Thymeleaf is called thru a Ajax Java script call.
-     * Just return the dashboard template after execution.
-     * @param organizationId
-     * @param model
-     * @return
-     */
-    @DeleteMapping("/{id}")
-    public Mono<String> delete(@PathVariable("id") UUID organizationId, Model model) {
-        final String PATH = "admin/dashboard";
-        LOG.info("delete organization by id {}", organizationId);
-
-        final String accessToken = tokenService.getAccessToken();
-
-        return organizationWebClient.deleteOrganization(accessToken, organizationId).doOnNext(s -> {
-                    model.addAttribute("message", "deleted organization");
+        return settingWebClient.getDefaultOrganization(accessToken, userId)
+                .doOnNext(uuid -> {
+                    LOG.info("add defaultOrganizationId to model: {}", uuid);
+                    model.addAttribute("defaultOrganizationId", uuid);
                 })
-                .flatMap(s -> settingWebClient.removeDefaultOrganization(accessToken, Util.getLoggedInUserId()))
-                .then(Mono.just(PATH))
-                .onErrorResume(throwable -> {
-                    LOG.error("failed to delete organization", throwable);
-                    model.addAttribute("error", "failed to delete organization");
-                    return Mono.just(PATH);
-                });
+                .flatMap(orgId ->roleWebClient.isSuperAdminInOrgId(accessToken, userId, id))
+                .flatMap(isSuperAdmin -> {
+                    if (!isSuperAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + id);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                    }
+                    return organizationWebClient.getOrganizationById(accessToken, id);
+                })
+                 .doOnNext(organization -> model.addAttribute("organization", organization))
+                .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, id, pageable))
+                .doOnNext(roleRestPage -> model.addAttribute("page", roleRestPage))
+                .thenReturn(PATH);
     }
 
     /*
@@ -206,8 +238,15 @@ public class OrganizationController {
      */
     @GetMapping("/{id}/users")
     public Mono<String> getUserForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+        String accessToken = tokenService.getAccessToken();
+        UUID userId = Util.getLoggedInUserId();
+
+        return getUsersForOrganization(id, userId, accessToken, model, userPageable);
+    }
+
+    private Mono<String> getUsersForOrganization(UUID organizationId, UUID userId, String accessToken, Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
-        LOG.info("get users for organization by id: {}", id);
+        LOG.info("get users for organization by id: {}", organizationId);
         int pageSize = 5;
 
         if (userPageable.getPageSize() < 100) {
@@ -215,11 +254,17 @@ public class OrganizationController {
             LOG.info("taking page size from pageable: {}", pageSize);
         }
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-        String accessToken = tokenService.getAccessToken();
 
-        return organizationWebClient.getOrganizationById(accessToken, id)
+        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organizationId)
+                .flatMap(isSuperAdmin -> {
+                    if (!isSuperAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organizationId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                    }
+                    return organizationWebClient.getOrganizationById(accessToken, organizationId);
+                })
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(accessToken, id, pageable))
+                .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
                 .flatMap(uuidPage -> {
                     LOG.info("uuidPage: {}", uuidPage.getContent());
                     model.addAttribute("page", uuidPage);
@@ -227,7 +272,19 @@ public class OrganizationController {
                 })
                 .doOnNext(users -> {
                     LOG.info("got users: {}", users);
-                    model.addAttribute("users", users);
+                    List<User> removableUsers = new ArrayList<>();
+                    List<User> nonRemovableUsers = new ArrayList<>();
+                    for(User user: users) {
+                        if (!user.getId().equals(userId)) {
+                            removableUsers.add(user);
+                        }
+                        else {
+                            nonRemovableUsers.add(user);
+                        }
+                    }
+                    model.addAttribute("removableUsers", removableUsers);
+                    model.addAttribute("nonRemovableUsers", nonRemovableUsers);
+
                 })
                 .thenReturn(PATH);
     }
@@ -238,8 +295,16 @@ public class OrganizationController {
         final String PATH = "admin/organizations/user";
         LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
+        UUID userId = Util.getLoggedInUserId();
 
-        return organizationWebClient.getOrganizationById(accessToken, organizationId)
+        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organizationId)
+                .flatMap(aBoolean -> {
+                    if (!aBoolean)  {
+                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organizationId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                    }
+                    return Mono.just(aBoolean);
+                }).flatMap(aBoolean -> organizationWebClient.getOrganizationById(accessToken, organizationId))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> {
                     int pageSize = 5;
@@ -249,7 +314,7 @@ public class OrganizationController {
                         LOG.info("taking page size from pageable: {}", pageSize);
                     }
                     Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-                    return organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable)
+                    return organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
                             .flatMap(uuidPage -> {
                                 LOG.info("uuidPage: {}", uuidPage.getContent());
                                 model.addAttribute("page", uuidPage);
@@ -300,20 +365,32 @@ public class OrganizationController {
      * @return
      */
 
-    @PostMapping("/{id}/users/add")
-    public Mono<String> updateUserOrganization(@ModelAttribute("user") User user, Model model, Pageable pageable) {
+    @PostMapping("/{id}/users/add")  //remove as this is not used anymore
+    public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user, Model model, Pageable pageable) {
         final String PATH = "admin/organizations/user";
-        LOG.info("update user by authenticationId: {} to this organization", user);
+        LOG.info("update user in organization");
 
-        if (user.getOrganizationChoice().getSelected()) {
-            LOG.info("add user to organization");
+        final String accessToken = tokenService.getAccessToken();
+        UUID userId = Util.getLoggedInUserId();
 
-            return addUserToOrganization(PATH, user, model, pageable);
-        }
-        else {
-            LOG.info("remove user from organization");
-            return removeUserFromOrganization(PATH, user, model, pageable);
-        }
+        return organizationWebClient.getOrganizationById(accessToken, orgId)
+                .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
+                .flatMap(objects -> {
+                    if (!objects.getT1()) {
+                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + orgId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                    }
+
+                    if (user.getOrganizationChoice().getSelected()) {
+                        LOG.info("choice is selected to add user to organization");
+
+                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
+                    } else {
+                        LOG.info("remove user from organization");
+                        return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
+
+                    }
+                }).thenReturn(PATH);
     }
 
     @DeleteMapping("/{id}/users/{userId}/authenticationId/{authenticationId}")
@@ -325,19 +402,25 @@ public class OrganizationController {
         User user = new User(userId);
         user.setAuthenticationId(authenticationId);
         user.setOrganizationChoice(new OrganizationChoice(orgId));
+        final String accessToken = tokenService.getAccessToken();
+        UUID loggedUserId = Util.getLoggedInUserId();
 
-        return removeUserFromOrganization(PATH, user, model, pageable);
+        return organizationWebClient.getOrganizationById(accessToken, orgId)
+                .flatMap(organization -> removeUserFromOrganization(PATH, user, loggedUserId, organization, accessToken, model, pageable));
     }
 
-    private Mono<String> addUserToOrganization(final String PATH, User user, Model model, Pageable userPageable) {
+    private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable userPageable) {
         LOG.info("add user to organization: {}", user);
-        final String accessToken = tokenService.getAccessToken();
+
+        model.addAttribute("organization", organization);
 
         return organizationWebClient.addUserToOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
-                .doOnNext(stringStringMap -> model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId()))
-                .flatMap(stringStringMap -> organizationWebClient.getOrganizationById(accessToken, user.getOrganizationChoice().getOrganizationId()))
-                .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> {
+                .doOnNext(stringStringMap -> {
+                    model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
+                    LOG.info("added to user to organization, nullify the user so the form does not show this user again");
+                    model.addAttribute("user", null);
+                })
+                .flatMap(stringStringMap -> {
                     int pageSize = 5;
 
                     if (userPageable.getPageSize() < 100) {
@@ -345,43 +428,24 @@ public class OrganizationController {
                         LOG.info("taking page size from pageable: {}", pageSize);
                     }
                     Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-                    return organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable)
-                            .flatMap(uuidPage -> {
-                                LOG.info("uuidPage: {}", uuidPage.getContent());
-                                model.addAttribute("page", uuidPage);
-                                return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
-                            })
-                            .doOnNext(users -> {
-                                LOG.info("got users: {}", users);
-                                model.addAttribute("users", users);
-                            }).thenReturn(organization);
-                })
-                .flatMap(organization -> userWebClient.getUserById(accessToken, user.getId()).flatMap(user1 -> {
-                    user1.getOrganizationChoice().setSelected(true);
-                    user1.getOrganizationChoice().setOrganizationId(organization.getId());
-                    return Mono.just(user1);
-                }))
-                .doOnNext(user1 -> {
-                    model.addAttribute("user", null);
-                    LOG.info("added to user to organization, nullify the user so the form does not show this user again");
-                }
-                ).onErrorResume(throwable -> {
+                    return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, pageable);
+                }).onErrorResume(throwable -> {
                     LOG.error("error occured during adding user to organization", throwable);
                     model.addAttribute("message", "error occured during adding user to organization: " + throwable.getMessage());
-                    return Mono.just(new User());
-                }).thenReturn(PATH);
+                  return  Mono.just(PATH);
+                });
     }
 
-    private Mono<String> removeUserFromOrganization(final String PATH, User user, Model model, Pageable userPageable) {
+    private Mono<String> removeUserFromOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable userPageable) {
         LOG.info("remove user from organization: {}", user);
 
-        final String accessToken = tokenService.getAccessToken();
+        model.addAttribute("organization", organization);
+        model.addAttribute("user", null);
+        LOG.info("removed user from organization, null the user so the form does not show this user again");
 
         return organizationWebClient.removeUserFromOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
                 .doOnNext(stringStringMap -> model.addAttribute("message", "user removed from organization successfully with username: "+user.getAuthenticationId()))
-                .flatMap(stringStringMap -> organizationWebClient.getOrganizationById(accessToken, user.getOrganizationChoice().getOrganizationId()))
-                .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> {
+                .flatMap(stringStringMap -> {
                     int pageSize = 5;
 
                     if (userPageable.getPageSize() < 100) {
@@ -389,31 +453,12 @@ public class OrganizationController {
                         LOG.info("taking page size from pageable: {}", pageSize);
                     }
                     Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-                    return organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable)
-                            .flatMap(uuidPage -> {
-                                LOG.info("uuidPage: {}", uuidPage.getContent());
-                                model.addAttribute("page", uuidPage);
-                                return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
-                            })
-                            .doOnNext(users -> {
-                                LOG.info("got users: {}", users);
-                                model.addAttribute("users", users);
-                            }).thenReturn(organization);
-                })
-                .flatMap(organization -> userWebClient.getUserById(accessToken, user.getId()).flatMap(user1 -> {
-                    user1.getOrganizationChoice().setSelected(false);
-                    user1.getOrganizationChoice().setOrganizationId(organization.getId());
-                    return Mono.just(user1);
-                }))
-                .doOnNext(user1 -> {
-                    model.addAttribute("user", null);
-                    LOG.info("removed user from organization, null the user so the form does not show this user again");
-                }
-                ).onErrorResume(throwable -> {
+                    return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, pageable);
+                }).onErrorResume(throwable -> {
                     LOG.error("error occurred when removing user from organization", throwable);
                     model.addAttribute("message", "error occurred when removing user from organization: " + throwable.getMessage());
-                    return Mono.just(new User());
-                }).thenReturn(PATH);
+                    return Mono.just(PATH);
+                });
     }
 
     @PostMapping(path = "/{id}/default")
@@ -425,5 +470,31 @@ public class OrganizationController {
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), 5, Sort.by("name"));
 
         return Mono.just(path);
+    }
+
+    private Mono<String> getUsersInOrganization(final String PATH, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable pageable) {
+         return organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
+                .flatMap(uuidPage -> {
+                    LOG.info("uuidPage: {}", uuidPage.getContent());
+                    model.addAttribute("page", uuidPage);
+                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
+                })
+                .doOnNext(users -> {
+                    LOG.info("got users: {}", users);
+                    List<User> removableUsers = new ArrayList<>();
+                    List<User> nonRemovableUsers = new ArrayList<>();
+                    for(User user: users) {
+                        if (!user.getId().equals(loggedInUserId)) {
+                            removableUsers.add(user);
+                        }
+                        else {
+                            nonRemovableUsers.add(user);
+                        }
+                    }
+                    model.addAttribute("removableUsers", removableUsers);
+                    model.addAttribute("nonRemovableUsers", nonRemovableUsers);
+
+                })
+                .thenReturn(PATH);
     }
 }

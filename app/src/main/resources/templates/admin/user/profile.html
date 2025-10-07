@@ -90,13 +90,13 @@
                             <div class="mb-3 row">
                                 <label for="email" class="col-sm-4 col-form-label">email</label>
                                 <div class="col-sm-5">
-                                    <input type="email" class="form-control" id="email" th:field="*{email}" readonly/>
+                                    <input type="email" class="form-control" id="email" th:field="*{email}" readonly disabled/>
                                 </div>
                             </div>
                             <div class="mb-3 row">
                                 <label for="authenticationId" class="col-sm-4 col-form-label">username</label>
                                 <div class="col-sm-7">
-                                    <input type="text" class="form-control" id="authenticationId" th:field="*{authenticationId}" readonly/>
+                                    <input type="text" class="form-control" id="authenticationId" th:field="*{authenticationId}" readonly disabled/>
                                 </div>
                             </div>
 
@@ -147,7 +147,7 @@
           formData.append('file', file);
 
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/admin/users/photo');
+          xhr.open('POST', '/admin/user/profile/photo');
 
           xhr.upload.addEventListener('progress', (event) => {
             // Update progress bar here
@@ -161,7 +161,7 @@
               const profilePhotoImageId = document.getElementById('profilePhoto');
              // profilePhotoImageId.src = xhr.responseText;
               console.log("response: " + xhr.responseText);
-              window.location.replace("/admin/users");
+              window.location.replace("/admin/user/profile");
             } else {
               console.error('Upload failed');
             }

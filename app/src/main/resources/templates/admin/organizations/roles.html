@@ -32,7 +32,7 @@
                 </ul>
             </div>
 
-            <div class="col-sm-3 m-3">
+            <div class="col-sm m-3">
                 <div th:if="${page != null}">
                     <div>
                         <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
@@ -56,10 +56,12 @@
                             <a class="dropdown-item" th:href="@{?(page=${page.number},(size='50'))}">50</a>
                         </div>
                     </div>
-                    <div class="col-sm-4 mt-4">
+                    <div class="col-sm-6 mt-4">
                         <ol class="list-group list-group-numbered">
-                            <li th:each="role : ${page.content}">
-                                <a th:text="${role.name}" th:href="@{/admin/roles/{id}(id=${role.id})}"></a>
+
+                            <li class="list-group-item" th:each="role : ${page.content}">
+                                <span th:if="${role.organizationId != defaultOrganizationId}" th:text="${role.name}"></span>
+                                <a th:text="${role.name}" th:href="@{/admin/roles/{id}(id=${role.id})}" th:if="${defaultOrganizationId == role.organizationId}" ></a>
                             </li>
                         </ol>
                     </div>

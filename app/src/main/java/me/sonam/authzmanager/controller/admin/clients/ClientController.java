@@ -14,7 +14,6 @@ import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.*;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.util.Pair;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -125,6 +123,7 @@ public class ClientController implements ClientUserPage {
         LOG.info("update client");
         LOG.info("newClientSecret: {}", client.getNewClientSecret());
         final String PATH = "admin/clients/form";
+
         String accessToken = tokenService.getAccessToken();
 
         DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -171,7 +170,7 @@ public class ClientController implements ClientUserPage {
                     }
                     return Mono.just(PATH);
             }).onErrorResume(throwable -> {
-                oauth2ClientError(bindingResult, (Exception) throwable);
+                checkIfOauth2ClientError(bindingResult, (Exception) throwable);
 
                 LOG.error("Failed to update client {}", throwable.getMessage());
                 model.addAttribute("error", "Failed");
@@ -219,7 +218,7 @@ public class ClientController implements ClientUserPage {
         return Mono.just(false);
     }
 
-    private void oauth2ClientError(BindingResult bindingResult, Exception e) {
+    private void checkIfOauth2ClientError(BindingResult bindingResult, Exception e) {
         if (e.getMessage().startsWith("authorizationCodeTimeToLive")) {
             bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive", "error.user", "authorizationCodeTimeToLive value must be greater than 0");
         } else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
@@ -228,9 +227,6 @@ public class ClientController implements ClientUserPage {
             bindingResult.rejectValue("tokenSettings.deviceCodeTimeToLive", "error.user", "deviceCodeTimeToLive value must be greater than 0");
         } else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
             bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive", "error.user", "refreshTokenTimeToLive value must be greater than 0");
-        } else {
-            LOG.error("unknown error: {}", e.getMessage());
-            bindingResult.rejectValue("error", e.getMessage());
         }
     }
 
@@ -392,7 +388,7 @@ public class ClientController implements ClientUserPage {
                     LOG.info("got roles: {}", objects.getT1().getContent());
                     model.addAttribute("roles", objects.getT1().getContent());
                 }) //objects = roles, organizationId
-                .flatMap(objects -> organizationWebClient.getUsersInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
+                .flatMap(objects -> organizationWebClient.getUserIdsInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
                 .flatMap(objects -> {
                     LOG.info("uuidPage: {}", objects.getT1().getContent());
                     model.addAttribute("page", objects.getT1());
@@ -444,14 +440,14 @@ public class ClientController implements ClientUserPage {
                 })
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
-                    LOG.error("error occured: {}", throwable.getMessage());
+                    LOG.error("error occurred: {}", throwable.getMessage());
                     model.addAttribute("error", "please select Organization for this client first.");
                     return Mono.just(PATH);
                 });
     }
 
     private void allowCreateClient(RestPage<Pair<String, String>> page, Model model) {
-        if (page.getTotalElements() >= 5) {
+        if (page.getTotalElements() >= maxClients) {
             model.addAttribute("showCreateClient", "false");
         }
         else {

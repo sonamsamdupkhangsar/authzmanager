@@ -114,52 +114,86 @@ public class SettingsControllerIntegTest {
     }
 
     private void setMockResponsesGetUsersForDefaultOrganization(UUID defaultOrgId, UUID superAdminAuthzManagerRoleId) {
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
+        if (defaultOrgId == null){
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
 
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", defaultOrgId)))));
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(400).setBody(getJson(Map.of("error", "No Default organization found"))));
+        }
+        else {
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", defaultOrgId)))));
 
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(new Organization(defaultOrgId, "myorg", UUID.fromString(userId)))));
 
-        UUID userId1 = UUID.randomUUID();
-        UUID userId2 = UUID.randomUUID();
-        UUID userId3 = UUID.randomUUID();
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(new Organization(defaultOrgId, "myorg", UUID.fromString(userId)))));
 
-        LOG.info("set restPage of userIds for response");
-        RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3, 3, 1);
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(restPage)));
+            UUID userId1 = UUID.randomUUID();
+            UUID userId2 = UUID.randomUUID();
+            UUID userId3 = UUID.randomUUID();
 
-        User user1 = new User();
-        user1.setId(userId1);
-        user1.setFirstName("Sonam");
+            LOG.info("set restPage of userIds for response");
+            RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3, 3, 1);
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(restPage)));
 
-        User user2 = new User();
-        user2.setId(userId2);
-        user2.setFirstName("Tashi");
+            User user1 = new User();
+            user1.setId(userId1);
+            user1.setFirstName("Sonam");
 
-        User user3 = new User();
-        user3.setId(userId3);
-        user3.setFirstName("Kalsang");
+            User user2 = new User();
+            user2.setId(userId2);
+            user2.setFirstName("Tashi");
 
-        LOG.info("set json for list of users for the ids");
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(List.of(user1, user2, user3))));
+            User user3 = new User();
+            user3.setId(userId3);
+            user3.setFirstName("Kalsang");
 
-        UUID userId4 = UUID.randomUUID();
+            LOG.info("set json for list of users for the ids");
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(List.of(user1, user2, user3))));
 
-        UUID authzManagerRoleOrganizationId1 = UUID.randomUUID();
-        UUID authzManagerRoleOrganizationId2 = UUID.randomUUID();
+            UUID userId4 = UUID.randomUUID();
 
-        Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleOrganizationId1,
-                userId2, authzManagerRoleOrganizationId2);
-        LOG.info("set json for superAdmin map");
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(uuidBooleanMap)));
+            UUID authzManagerRoleOrganizationId1 = UUID.randomUUID();
+            UUID authzManagerRoleOrganizationId2 = UUID.randomUUID();
+
+            Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleOrganizationId1,
+                    userId2, authzManagerRoleOrganizationId2);
+            LOG.info("set json for superAdmin map");
+            mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                    .setResponseCode(200).setBody(getJson(uuidBooleanMap)));
+        }
 
     }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void getUsersWithoutDefaultOrganization() throws InterruptedException {
+        LOG.info("get client by client's id");
+
+        UUID defaultOrgId = UUID.randomUUID();
+
+        UUID superAdminAuthzManagerRoleId = UUID.randomUUID();
+
+        setMockResponsesGetUsersForDefaultOrganization(null, superAdminAuthzManagerRoleId);
+
+        String authenticationId = "dave";
+        Jwt jwt = JwtUtil.jwt(authenticationId);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.get()
+                .uri("/admin/settings")
+                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
+        LOG.info("response: {}", entityExchangeResult.getResponseBody());
+
+        takeRequestForGetUsersForDefaultOrganization(null);
+    }
+
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
@@ -187,30 +221,33 @@ public class SettingsControllerIntegTest {
 
     private void takeRequestForGetUsersForDefaultOrganization(UUID defaultOrgId) throws InterruptedException {
 
+
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/name");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
 
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+defaultOrgId);
+        if (defaultOrgId != null) {
+            recordedRequest = mockWebServer.takeRequest();
+            Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+            Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + defaultOrgId);
 
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+defaultOrgId+"/users");
+            recordedRequest = mockWebServer.takeRequest();
+            Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+            Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + defaultOrgId + "/users");
 
 
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/");
+            recordedRequest = mockWebServer.takeRequest();
+            Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+            Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/");
 
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations/"+defaultOrgId);
+            recordedRequest = mockWebServer.takeRequest();
+            Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+            Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations/" + defaultOrgId);
+        }
 
     }
 
@@ -336,7 +373,7 @@ public class SettingsControllerIntegTest {
         //getDefaultOrganization for logged-in user-id
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
 
         //getOrganizationById
         recordedRequest = mockWebServer.takeRequest();

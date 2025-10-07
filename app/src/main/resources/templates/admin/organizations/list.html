@@ -15,11 +15,6 @@
         <div class="col-2" th:with="activeLink=Organizations" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <h1>Organizations</h1>
-            <div>
-                <p th:if="${page.totalElements} < 50">
-                <h3><a th:href="@{/admin/organizations/form}"> Create Organization</a></h3>
-                </p>
-            </div>
             <div th:if="${page != null}">
                 <div>
                     <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
@@ -43,9 +38,10 @@
                     </div>
                 </div>
                 <div class="col-sm-6 mt-4">
-                    <ol class="list-group list-group-numbered">
+                    <ol class="list-group">
                         <li class="list-group-item" th:each="organization : ${page.content}">
                             <a th:text="${organization.name}" th:href="@{/admin/organizations/{id}(id=${organization.id})}"></a>
+                            <button th:if="${organization.defaultOrganization != null and organization.defaultOrganization}" type="button" class="btn btn-info btn-sm">default</button>
                         </li>
                     </ol>
                 </div>

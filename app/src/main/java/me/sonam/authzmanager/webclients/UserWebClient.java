@@ -28,7 +28,7 @@ public class UserWebClient {
         this.profilePhotoEndpoint = profilePhotoEndpoint;
     }
 
-    public Mono<String> signupUser(String accessToken, UserSignup userSignup) {
+    public Mono<Map> signupUser(String accessToken, UserSignup userSignup) {
         LOG.info("create user with endpoint: {}", userRestServiceEndpoint);
 
         WebClient.RequestBodySpec requestBodySpec = webClientBuilder.build().post().uri(userRestServiceEndpoint);
@@ -43,13 +43,11 @@ public class UserWebClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
-        return responseSpec.bodyToMono(String.class);
+        return responseSpec.bodyToMono(Map.class);
 
     }
 
     public Mono<List<User>> getUserByBatchOfIds(String accessToken, List<UUID> ids) {
-        LOG.info("calling user-rest-service to get batch of users by ids: {}", ids);
-
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/ids/");
         for(int i = 0; i < ids.size(); i++) {
             stringBuilder.append(ids.get(i));
@@ -59,7 +57,7 @@ public class UserWebClient {
         }
         String batchIdEnpoint = stringBuilder.toString();
 
-        LOG.info("user endpoint: {}", batchIdEnpoint);
+        LOG.info("get batch of users by ids with endpoint: {}", batchIdEnpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(batchIdEnpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
@@ -196,10 +194,10 @@ public class UserWebClient {
     }
 
 
-    public Mono<String> deleteUser(String accessToken) {
+    public Mono<String> deleteUser(String accessToken, UUID organizationId) {
         LOG.info("delete user information {}", userRestServiceEndpoint);
-
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(userRestServiceEndpoint)
+        final String endpoint = userRestServiceEndpoint + "/" +organizationId;
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(endpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve();

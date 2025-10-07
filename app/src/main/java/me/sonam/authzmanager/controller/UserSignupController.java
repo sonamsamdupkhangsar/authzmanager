@@ -27,9 +27,9 @@ import java.util.Optional;
 
 /**
  * This controller is for signing up user using the user-rest-service and other microservices
- */
+ *//*
 @Controller
-@RequestMapping("/signup")
+@RequestMapping("/signup")*/
 public class UserSignupController {
     private static final Logger LOG = LoggerFactory.getLogger(UserSignupController.class);
     @Autowired
@@ -51,51 +51,6 @@ public class UserSignupController {
 
         model.addAttribute("userSignup", new UserSignup());
         return Mono.just(PATH);
-    }
-
-    @PostMapping
-    public Mono<String> signupUserFromForm(@Valid @ModelAttribute("userSignup") UserSignup userSignup,
-                                           BindingResult bindingResult, Model model) {
-        final String PATH = "signupform";
-        LOG.info("signing up user: {}", userSignup);
-
-        if (bindingResult.hasErrors()) {
-            LOG.info("user didn't enter required fields");
-            model.addAttribute("error", "Data validation failed");
-            return Mono.just(PATH);
-        }
-        return  userWebClient.signupUser(null, userSignup)
-                .flatMap(s -> {
-
-                    LOG.info("user signup successful with message: {}",s);
-                    StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
-                            .append(", your signup was successful!").append(
-                                    " Please check your email '").append(userSignup.getEmail())
-                            .append("' to activate your account.");
-
-                    model.addAttribute("message", stringBuilder.toString());
-                    return Mono.just(PATH);
-                })
-                .flatMap(s ->  userWebClient.findByAuthenticationId(null, userSignup.getAuthenticationId()))
-                .flatMap(user -> {
-                    String name = userSignup.getOrganization();
-                    if (name == null || name.isEmpty()) {
-                        name = userSignup.getFirstName() + " " + userSignup.getLastName() + " Company";
-                    }
-
-                    Organization org = new Organization(null, name, user.getId());
-                    LOG.info("create organization user signup: {}", org);
-                    org.setDefaultOrganization(true);
-
-                    //create organization and add this user to it
-                    return organizationWebClient.updateOrganization(null, org, HttpMethod.POST);
-                })
-                .thenReturn(PATH)
-                .onErrorResume(throwable -> {
-                                setErrorInModel(throwable, model, "failed to signup user");
-                                model.addAttribute("userSignup", userSignup);
-                                return Mono.just(PATH);
-                });
     }
 
     public Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {

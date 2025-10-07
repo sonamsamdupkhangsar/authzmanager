@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -55,8 +56,8 @@ import static org.mockito.Mockito.when;
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
-public class ClientUserControllerIntegTest {
-    private static final Logger LOG = LoggerFactory.getLogger(ClientUserControllerIntegTest.class);
+public class ClientOrganizationUserControllerIntegTest {
+    private static final Logger LOG = LoggerFactory.getLogger(ClientOrganizationUserControllerIntegTest.class);
 
     @Autowired
     private ClientController clientController;
@@ -117,22 +118,25 @@ public class ClientUserControllerIntegTest {
 
         OauthClient oauthClient = getOauthClient();
         oauthClient.setId(UUID.randomUUID().toString());
-        setMockResponse(oauthClient);
+        UUID organizationId = UUID.randomUUID();
 
-        UUID roleId = UUID.randomUUID();
+        setMockResponse(oauthClient, organizationId);
+
+        UUID id = UUID.randomUUID();
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.delete()
-                .uri("/admin/clients/"+oauthClient.getId()+"/users/client-organization-user-role/"+roleId)
-                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .uri("/admin/clients/"+oauthClient.getId()+"/organizations/users/roles/"+id)
+               // .uri("/admin/clients/"+oauthClient.getId()+"/users/client-organization-user-role/"+roleId)
+                //.headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
 
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/client-organization-users/");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/clients/organizations/users/roles/"+id);
 
-        takeRequests(mockWebServer, oauthClient);
+        takeRequests(mockWebServer, oauthClient, organizationId);
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -142,28 +146,28 @@ public class ClientUserControllerIntegTest {
 
         OauthClient oauthClient = getOauthClient();
         oauthClient.setId(UUID.randomUUID().toString());
-        RegisteredClient registeredClient = oauthClient.getRegisteredClient();
-        Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
         UUID organizationId = UUID.randomUUID();
 
-        User user = new User(UUID.randomUUID(), new Role(UUID.randomUUID(), null));
+        User user = new User(UUID.randomUUID(), new Role(UUID.randomUUID(), "super role", organizationId));
         ClientOrganizationUserWithRole clientOrganizationUserWithRole =
-                new ClientOrganizationUserWithRole(UUID.fromString(oauthClient.getId()), organizationId, user);
+                new ClientOrganizationUserWithRole(UUID.fromString(oauthClient.getId()), organizationId, user, new Role(UUID.randomUUID(), "super role", organizationId));
 
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(clientOrganizationUserWithRole)));
 
-        setMockResponse(oauthClient);
+        setMockResponse(oauthClient, organizationId);
 
+//        UUID organizationId = UUID.fromString("2cc2cf6e-7adb-4c31-a4c6-906d6b024a1e");
         BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("clientId", oauthClient.getId())
-                .with("organizationId", "2cc2cf6e-7adb-4c31-a4c6-906d6b024a1e")
+                .with("organizationId", organizationId.toString())
                 .with("id", "f8b36547-9f1e-4905-b726-e50e76a9076b")
                 .with("user.id", "1f442dab-96a3-459e-8605-7f5cd5f82e25")
-                .with("user.role.id", "40a8a40d-1abf-4e65-9fea-fe5db321ead8");
+                .with("role.id", "40a8a40d-1abf-4e65-9fea-fe5db321ead8");
 
 
-        EntityExchangeResult<String> entityExchangeResult = webTestClient.post().uri("/admin/clients/"+oauthClient.getId()+"/users/role")
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.post().uri(
+                "/admin/clients/"+oauthClient.getId()+"/organizations/users/roles")
                 .body(formInserter).headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
@@ -171,35 +175,36 @@ public class ClientUserControllerIntegTest {
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/client-organization-users");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/clients/organizations/users/roles");
 
-       takeRequests(mockWebServer, oauthClient);
+       takeRequests(mockWebServer, oauthClient, organizationId);
     }
 
 
-    private void setMockResponse(OauthClient oauthClient) {
+    private void setMockResponse(OauthClient oauthClient, UUID organizationId) {
         RegisteredClient registeredClient = oauthClient.getRegisteredClient();
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
         String json = getJson(map);
+        assertThat(oauthClient.getId()).isNotNull();
 
         //1 response for getting a client by id
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(json));
 
         //2  return a UUID for get organizationIdAssociatedWithClientId call
-        UUID organizationId = UUID.randomUUID();
+       // UUID organizationId = UUID.randomUUID();
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organizationId)));
 
         //3  getOrganizationById
 
-        Organization organization = new Organization(UUID.randomUUID(), "Free Press Organization", UUID.randomUUID());
+        Organization organization = new Organization(organizationId, "Free Press Organization", UUID.randomUUID());
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
 
         // 4 getRolesByOrganizationId
         json = "[Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}]";
-        List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), null));
+        List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker",organizationId));
         RestPage<Role> restPage = new RestPage<>(roles, 1, 1, 1, 1, 1);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -219,10 +224,11 @@ public class ClientUserControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userList)));
 
-        Role role = new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleCareTaker", UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), null);
+        Role role = new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleCareTaker", organizationId);
         User user = new User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), role);
         List<ClientOrganizationUserWithRole> clientOrganizations = List.of(
-                new ClientOrganizationUserWithRole(UUID.fromString("f8b36547-9f1e-4905-b726-e50e76a9076b"), UUID.fromString("18a528d0-8686-4ecc-ae7e-fba9a8654f5b"), user));
+                new ClientOrganizationUserWithRole(UUID.fromString("f8b36547-9f1e-4905-b726-e50e76a9076b"),
+                       organizationId, user, role));
 
         //getClientOrganizationUserWithRoles
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -231,43 +237,43 @@ public class ClientUserControllerIntegTest {
         //        "\"user\":\"User\"{\"id\":\"1f442dab-96a3-459e-8605-7f5cd5f82e25\", \"firstName\":\"null\", \"lastName\":\"null\", \"email='null', authenticationId='null', role=Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}}}, ClientOrganziationUserWithRole{clientId=f8b36547-9f1e-4905-b726-e50e76a9076b, organizationId=18a528d0-8686-4ecc-ae7e-fba9a8654f5b, user=User{id=5eb2eb31-e80c-4924-be00-50a96b12aa3b, firstName='null', lastName='null', email='null', authenticationId='null', role=Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}}}]
 
     }
-    public void takeRequests(MockWebServer mockWebServer, OauthClient oauthClient) throws InterruptedException {
+    public void takeRequests(MockWebServer mockWebServer, OauthClient oauthClient, UUID organizationId) throws InterruptedException {
 
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //2
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients/"+oauthClient.getId()+"/organizations/id");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //3
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //4
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/organizations/");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //5
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //6
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
 
         //7
         recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/client-organization-users/client-id/"
-                +oauthClient.getId()+"/organization-id");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/clients/"+oauthClient.getId()
+                + "/organizations/"+organizationId+"/users/roles");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
     }
 
     private String getJson(Object object) {

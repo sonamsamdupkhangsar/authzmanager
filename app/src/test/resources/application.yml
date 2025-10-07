@@ -70,7 +70,7 @@ account-rest-service:
 setting-rest-service:
   root: http://localhost:{port}
   context: ${setting-rest-service.root}/settings
-  defaultOrganizationId: /users/{userId}
+  defaultOrganizationId: ${setting-rest-service.context}/users/{userId}
 
 endpoint:
   user:
@@ -120,3 +120,9 @@ aws:
       width: 100
       height: 100
 tokenExpireSeconds: 3
+
+
+maxClients: 5
+maxOrganizations: 1
+maxUserPerOrganization: 5
+maxRoles: 5

@@ -103,11 +103,11 @@ public class ClientOrganizationWebClient {
                         .switchIfEmpty(Mono.error(
                                 new AuthzManagerException("Please select a organization for this client.")))
                 .map(uuid-> {
-                    LOG.info("got back response from auth-server for getting organizationId for client.id: {}", uuid);
+                    LOG.info("got back response from auth-server for getting organizationId: {} using client.id", uuid);
 
                     return uuid;
                 }).onErrorResume(throwable -> {
-                    LOG.error("error occured: {}", throwable.getMessage());
+                    LOG.error("error occurred: {}", throwable.getMessage());
                     return Mono.error(new AuthzManagerException("No Organization selected"));
                     //return Mono.empty();
                 });
