@@ -106,6 +106,7 @@ public class UserSignup {
                 ", authenticationId='" + authenticationId + '\'' +
                 ", password=" + Arrays.toString(password) +
                 ", active='" +active + '\'' +
+                ", organizationId='" + organizationId +'\'' +
                 '}';
     }
 

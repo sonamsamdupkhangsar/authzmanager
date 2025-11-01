@@ -161,6 +161,9 @@ public class UserSignupIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"added user to organization\"}"));
 
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("{\"message\": \"added defaultOrganizationId\"}"));
+
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("firstName", userSignup.getFirstName());
@@ -207,6 +210,11 @@ public class UserSignupIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
+
+        //add defaultOrganizationId for user
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
 
         LOG.info("done signing up user by admin");
         LOG.info("mvcResult: {}", entityExchangeResult.getResponseBody());

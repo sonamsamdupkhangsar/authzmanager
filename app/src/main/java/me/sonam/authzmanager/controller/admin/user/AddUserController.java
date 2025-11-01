@@ -145,7 +145,8 @@ public class AddUserController {
                     return Mono.just(PATH);
                 })
                 .flatMap(s -> userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId()))
-                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()))
+                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()).zipWith(Mono.just(user)))
+                .flatMap(objects -> settingWebClient.addDefaultOrganization(accessToken, objects.getT2().getId(), userSignup.getOrganizationId()))
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     LOG.info("exception occured in signing up user by admin {}", throwable.getMessage());
