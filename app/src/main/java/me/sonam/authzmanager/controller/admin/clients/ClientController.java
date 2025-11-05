@@ -2,6 +2,7 @@ package me.sonam.authzmanager.controller.admin.clients;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
@@ -10,14 +11,16 @@ import me.sonam.authzmanager.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.oauth2.OauthClient;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpMethod;
+import org.springframework.data.util.Pair;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -25,7 +28,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.result.view.Rendering;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -44,6 +47,8 @@ public class ClientController implements ClientUserPage {
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
     private TokenService tokenService;
+    @Value("${maxClients}")
+    private int maxClients;
 
     public ClientController(OauthClientWebClient oauthClientWebClient,
                             OrganizationWebClient organizationWebClient,
@@ -75,14 +80,6 @@ public class ClientController implements ClientUserPage {
     public Mono<String> getClientByClientId(@PathVariable("id") UUID id, Model model) {
         LOG.info("get client by id {}", id);
         final String PATH = "admin/clients/form";
-
-        LOG.info("principal: {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
-        LOG.info("authentication: {}", SecurityContextHolder.getContext().getAuthentication());
-
-       /* DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userIdString = defaultOidcUser.getAttribute("userId");
-
-        LOG.info("userId: {}", userIdString);*/
         String accessToken = tokenService.getAccessToken();
 
         return setClientInModel(accessToken, id, model, PATH).thenReturn(PATH);
@@ -112,20 +109,6 @@ public class ClientController implements ClientUserPage {
         });
     }
 
-    @GetMapping("/hello")
-    public Mono<String> hello() {
-        //final String PATH = "yoman";
-        final String PATH = "admin/clients/form";
-        LOG.info("returning yo man");
-
-        if (true) {
-            LOG.info("throwing exception from hello");
-            throw new RuntimeException("hello, testing excepiton");
-        }
-        return Mono.just(PATH);
-        //return Mono.just(Rendering.view("yoman.html").modelAttribute("client", "I am a client").build());
-    }
-
     /**
      * This will handle the client creation and client update.
      *
@@ -134,7 +117,6 @@ public class ClientController implements ClientUserPage {
      * @param model
      * @return
      */
-    //I removed ModelAttribute("client") because test didn't work
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
 
@@ -142,19 +124,85 @@ public class ClientController implements ClientUserPage {
         LOG.info("newClientSecret: {}", client.getNewClientSecret());
         final String PATH = "admin/clients/form";
 
-        LOG.info("client: {}", client);
-        if (bindingResult.hasErrors()) {
-            LOG.info("client.getId: {}", client.getId());
-            LOG.info("user didn't enter required fields: {}, allerror: {}", bindingResult.getFieldError(), bindingResult.getAllErrors());
+        String accessToken = tokenService.getAccessToken();
 
+        DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userIdString = defaultOidcUser.getAttribute("userId");
+
+        return hasDataValidationError(client, PATH, bindingResult, model)
+            .flatMap(aBoolean -> getRegisteredClient(client))
+            .flatMap(registeredClient -> {
+                if (registeredClient.getId() == null) {
+                    LOG.info("a new client to create, check if max count of clients reached");
+                    return oauthClientWebClient.getClientCount(accessToken).zipWith(Mono.just(registeredClient));
+                }
+                return Mono.just(0).zipWith(Mono.just(registeredClient));
+            })
+                .flatMap(objects -> {
+                    if (objects.getT1() <= maxClients) {
+                        RegisteredClient registeredClient = objects.getT2();
+                        Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
+                        map.put("userId", userIdString);
+
+                        LOG.info("map is {}", map);
+                        LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
+
+                        return Mono.just(map);
+                    }
+                    return Mono.error(new BadRequestException("max client count reached"));
+                })
+                .flatMap(map -> oauthClientWebClient.updateClient(accessToken, map))
+                .flatMap(updatedRegisteredClient -> {
+                    LOG.info("client updated and registeredClient returned");
+                    LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
+
+                    OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
+                    LOG.info("oauthClient {}", oauthClient);
+
+                    model.addAttribute("client", oauthClient);
+                    LOG.info("returning to path: {}", PATH);
+
+                    if (client.getId() == null || client.getId().isEmpty()) {
+                        model.addAttribute("message", "Client created successfully!");
+                    }
+                    else {
+                        model.addAttribute("message", "Client updated!");
+                    }
+                    return Mono.just(PATH);
+            }).onErrorResume(throwable -> {
+                checkIfOauth2ClientError(bindingResult, (Exception) throwable);
+
+                LOG.error("Failed to update client {}", throwable.getMessage());
+                model.addAttribute("error", "Failed");
+
+                if (throwable instanceof WebClientResponseException) {
+                    WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
+                    LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
+                    model.addAttribute("error", webClientResponseException.getResponseBodyAsString());
+                }
+                return Mono.just(PATH);
+            });
+    }
+
+    private Mono<RegisteredClient> getRegisteredClient(OauthClient client) {
+            if (client.getId() == null || client.getId().isEmpty()) {
+                client.setTokenSettings(null);
+                client.setClientSettings(null);
+                LOG.info("it's a create client");
+            }
+            else {
+                LOG.info("client.id is not null and not empty, it's an update");
+            }
+            return Mono.just(client.getRegisteredClient());
+    }
+
+    private Mono<Boolean> hasDataValidationError(OauthClient client, String PATH, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            LOG.info("user didn't enter required fields: {}, errors: {}", bindingResult.getFieldError(), bindingResult.getAllErrors());
             model.addAttribute("error", "Data validation failed");
-            return Mono.just(PATH);
+            return Mono.error(new BadRequestException("data validation error"));
         }
 
-
-        LOG.info("get map from client");
-
-        RegisteredClient registeredClient = null;
         LOG.info("client.getAuthorizationGrantTypes: {}", client.getAuthorizationGrantTypes());
 
         if (client.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase())) {
@@ -163,71 +211,23 @@ public class ClientController implements ClientUserPage {
                 final String error = "redirect uris is needed for AuthorizationGrantType of AUTHORIZATION_CODE";
                 LOG.error(error);
                 bindingResult.rejectValue("redirectUris", "error.user", error);
-                return Mono.just(PATH);
-            } else {
-                LOG.info("redirectUris is not empty: '{}'", client.getRedirectUris());
+
+                return Mono.error(new BadRequestException("data validation error"));
             }
         }
-        HttpMethod httpMethod = HttpMethod.POST;
+        return Mono.just(false);
+    }
 
-        try {
-            if (client.getId() == null || client.getId().isEmpty()) {
-                client.setTokenSettings(null);
-                client.setClientSettings(null);
-                LOG.info("it's a create client");
-            } else {
-                httpMethod = HttpMethod.PUT;
-                LOG.info("client.id is not null and not empty, it's an update");
-            }
-
-            registeredClient = client.getRegisteredClient();
-            LOG.info("registeredClient.newClientSecret: {}", registeredClient.getNewClientSecret());
-        } catch (Exception e) {
-            LOG.error("exception occured when creating client: {}", e.getMessage());
-
-            if (e.getMessage().startsWith("authorizationCodeTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive", "error.user", "authorizationCodeTimeToLive value must be greater than 0");
-            } else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.accessTokenTimeToLive", "error.user", "accessTokenTimeToLive value must be greater than 0");
-            } else if (e.getMessage().startsWith("deviceCodeTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.deviceCodeTimeToLive", "error.user", "deviceCodeTimeToLive value must be greater than 0");
-            } else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
-                bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive", "error.user", "refreshTokenTimeToLive value must be greater than 0");
-            } else {
-                LOG.error("unknown error: {}", e.getMessage());
-                bindingResult.rejectValue("error", e.getMessage());
-            }
-            return Mono.just(PATH);
+    private void checkIfOauth2ClientError(BindingResult bindingResult, Exception e) {
+        if (e.getMessage().startsWith("authorizationCodeTimeToLive")) {
+            bindingResult.rejectValue("tokenSettings.authorizationCodeTimeToLive", "error.user", "authorizationCodeTimeToLive value must be greater than 0");
+        } else if (e.getMessage().startsWith("accessTokenTimeToLive")) {
+            bindingResult.rejectValue("tokenSettings.accessTokenTimeToLive", "error.user", "accessTokenTimeToLive value must be greater than 0");
+        } else if (e.getMessage().startsWith("deviceCodeTimeToLive")) {
+            bindingResult.rejectValue("tokenSettings.deviceCodeTimeToLive", "error.user", "deviceCodeTimeToLive value must be greater than 0");
+        } else if (e.getMessage().startsWith("refreshTokenTimeToLive")) {
+            bindingResult.rejectValue("tokenSettings.refreshTokenTimeToLive", "error.user", "refreshTokenTimeToLive value must be greater than 0");
         }
-
-        Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
-
-        DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userIdString = defaultOidcUser.getAttribute("userId");
-
-        map.put("userId", userIdString);
-        LOG.info("map is {}", map);
-        LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
-
-        String accessToken = tokenService.getAccessToken();
-
-        return oauthClientWebClient.updateClient(accessToken, map, httpMethod).flatMap(updatedRegisteredClient -> {
-            LOG.info("client updated and registeredClient returned");
-            LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
-
-            OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
-            LOG.info("oauthClient {}", oauthClient);
-
-            model.addAttribute("client", oauthClient);
-            LOG.info("returning to path: {}", PATH);
-
-            return Mono.just(PATH);
-        }).onErrorResume(throwable -> {
-            LOG.error("Failed to update client {}", throwable.getMessage());
-            model.addAttribute("error", "Failed");
-
-            return Mono.just(PATH);
-        });
     }
 
     @GetMapping
@@ -254,6 +254,8 @@ public class ClientController implements ClientUserPage {
         return oauthClientWebClient.getUserClientIds(accessToken, userId, pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId);
             model.addAttribute("page", page);
+            allowCreateClient(page, model);
+
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
             LOG.error("error occued on calling get user clientIds: {}", throwable);
@@ -386,7 +388,7 @@ public class ClientController implements ClientUserPage {
                     LOG.info("got roles: {}", objects.getT1().getContent());
                     model.addAttribute("roles", objects.getT1().getContent());
                 }) //objects = roles, organizationId
-                .flatMap(objects -> organizationWebClient.getUsersInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
+                .flatMap(objects -> organizationWebClient.getUserIdsInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
                 .flatMap(objects -> {
                     LOG.info("uuidPage: {}", objects.getT1().getContent());
                     model.addAttribute("page", objects.getT1());
@@ -438,10 +440,19 @@ public class ClientController implements ClientUserPage {
                 })
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
-                    LOG.error("error occured: {}", throwable.getMessage());
+                    LOG.error("error occurred: {}", throwable.getMessage());
                     model.addAttribute("error", "please select Organization for this client first.");
                     return Mono.just(PATH);
                 });
+    }
+
+    private void allowCreateClient(RestPage<Pair<String, String>> page, Model model) {
+        if (page.getTotalElements() >= maxClients) {
+            model.addAttribute("showCreateClient", "false");
+        }
+        else {
+            model.addAttribute("showCreateClient", "true");
+        }
     }
 
     private ObjectMapper objectMapper = new ObjectMapper();

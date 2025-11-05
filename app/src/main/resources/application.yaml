@@ -66,7 +66,7 @@ auth-server:
   root: ${AUTH_SERVER}
   contextPath: /issuer
   clients: /clients
-  clientOrganizations: /clients
+#  clientOrganizations: /clients
   authenticate: /authenticate
   oauth2token:
     path: /oauth2/token
@@ -127,3 +127,9 @@ aws:
 
 profilePhotoFolder: profile/
 tokenExpireSeconds: 180
+
+maxClients: 5
+maxOrganizations: 1
+maxUserPerOrganization: 5
+maxRoles: 5
+maxUsersPerOrganization: 10

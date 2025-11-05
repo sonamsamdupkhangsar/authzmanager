@@ -33,7 +33,6 @@
         <div class="col-2">
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Login</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/signup}">Signup</a></li>
             </ul>
         </div>
         <div class="col-sm">
@@ -43,7 +42,7 @@
                 <p>
                     This is for managing OAuth2 Client configuration and for setting roles with organization.
 
-                    You can <a href="/signup">sign-up</a> and create an account to create OAuth2 client and manage roles.
+                    You can <a th:href="${@environment.getProperty('ISSUER_URI')} +'/signup'">sign-up</a> and create an account to create OAuth2 client and manage roles.
                 </p>
                 <p class="mt-4">
                     This AuthzManager and the Authorization Server supports a single tenant authorization server.

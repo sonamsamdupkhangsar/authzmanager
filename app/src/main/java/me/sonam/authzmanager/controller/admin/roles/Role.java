@@ -13,37 +13,23 @@ public class Role {
     @NotEmpty(message = "name cannot be empty")
     @Size(min = 3, max = 50)
     private String name;
-
-    private UUID userId;
-
-    private RoleOrganization roleOrganization;
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public RoleOrganization getRoleOrganization() {
-        return roleOrganization;
-    }
-
-    public void setRoleOrganization(RoleOrganization roleOrganization) {
-        this.roleOrganization = roleOrganization;
-    }
+    private UUID organizationId;
 
     public Role() {
-
     }
 
-    public Role(UUID id, UUID userId) {
-        this.id = id;
-        this.userId = userId;
-    }
-
-    public Role(UUID id, String name, UUID userId, RoleOrganization roleOrganization) {
+    public Role(UUID id, String name, UUID organizationId) {
         this.id = id;
         this.name = name;
-        this.userId = userId;
-        this.roleOrganization = roleOrganization;
+        this.organizationId = organizationId;
+
+    }
+    public UUID getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(UUID organizationId) {
+        this.organizationId = organizationId;
     }
 
     public UUID getId() {
@@ -54,17 +40,12 @@ public class Role {
         return name;
     }
 
-    public UUID getUserId() {
-        return this.userId;
-    }
-
     @Override
     public String toString() {
         return "Role{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", userId=" + userId +
-                ", roleOrganization=" + roleOrganization +
+                ", organizationId=" + organizationId +
                 '}';
     }
 

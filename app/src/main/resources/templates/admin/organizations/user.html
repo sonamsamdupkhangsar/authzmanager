@@ -29,22 +29,9 @@
 </head>
 <body>
 <div class="container">
-    <!-- Content here -->
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
-    </div>
+    <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link"th:href="@{/admin/user/profile}">Your Profile</a></li>
-            </ul>
-        </div>
+        <div class="col-2" th:with="activeLink=Organizations" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm p-2 pe-4 m-1">
             <div>
                 <ul class="nav nav-tabs">
@@ -77,6 +64,7 @@
                             </div>
                             <input type="text" name="username" class="form-control" placeholder="Username"
                                    aria-label="Username" aria-describedby="basic-addon1">
+                            <button type="submit" class="btn btn-primary">Submit</button>
                         </div>
                     </form>
                 </div>
@@ -141,7 +129,7 @@
                     </div>
 
                     <div class="col mt-4">
-                        <table class="table" th:if="${users}">
+                        <table class="table" th:if="${removableUsers}">
                             <thead>
                             <tr>
                                 <th scope="col">First</th>
@@ -153,7 +141,7 @@
                             </thead>
                             <tbody>
 
-                            <tr th:each="user : ${users}">
+                            <tr th:each="user : ${removableUsers}">
                                 <td><span th:text="${user.firstName}"></span></td>
                                 <td><span th:text="${user.lastName}"></span></td>
                                 <td><span th:text="${user.email}"></span></td>
@@ -161,6 +149,15 @@
                                 <td><button type="button" th:with="organizationId=${organization.id}, myPage=${page.number}, pageSize=${param.size}, url=@{/admin/organizations/{organizationId}/users/{userId}/authenticationId/{authenticationId}(organizationId=${organization.id}, userId=${user.id}, authenticationId=${user.authenticationId})}" th:onclick="sendDelete([[${url}]], [[${organizationId}]], [[${myPage}]], [[${pageSize}]])"
                                                  class="btn btn-primary">Remove user</button></td>
                             </tr>
+
+                            <tr th:each="user : ${nonRemovableUsers}">
+                                <td><span th:text="${user.firstName}"></span></td>
+                                <td><span th:text="${user.lastName}"></span></td>
+                                <td><span th:text="${user.email}"></span></td>
+                                <td><span th:text="${user.authenticationId}"></span></td>
+                                <td><button type="button" class="btn btn-secondary">Not removable</button></td>
+                            </tr>
+
                             </tbody>
                         </table>
                     </div>
@@ -169,8 +166,7 @@
         </div>
     </div>
     <div class="p-4 m-4 bg-secondary-subtle rounded-2">
-        <div class="col-4">Authorization manager web application 2024</div>
-        <div class="col-4"></div>
+        <div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>

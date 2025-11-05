@@ -1,7 +1,6 @@
 package me.sonam.authzmanager.webclients;
 
 
-import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 
 import me.sonam.authzmanager.rest.RestPage;
@@ -14,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,9 +51,8 @@ public class OrganizationWebClient {
     }
 
     // use httpMethod for update or post
-
     public Mono<Organization> updateOrganization(String accessToken, Organization organization, HttpMethod httpMethod) {
-        LOG.info("create organization: {} with endpoint: {}", organization, organizationEndpoint);
+        LOG.info("update organization: {} with endpoint: {}", organization, organizationEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(organizationEndpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
@@ -97,19 +96,19 @@ public class OrganizationWebClient {
         });
     }
 
-    public Mono<RestPage<UUID>> getUsersInOrganizationId(String accessToken, UUID id, Pageable pageable) {
-        LOG.info("get users by organization id: {}", id);
+    public Mono<RestPage<UUID>> getUserIdsInOrganizationId(String accessToken, UUID id, Pageable pageable) {
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
         stringBuilder.append("/").append(id).append("/users")
                 .append("?page=").append(pageable.getPageNumber())
                 .append("&size=").append(pageable.getPageSize());
 
-        LOG.info("get users in organization by id endpoint: {}", stringBuilder);
+        LOG.info("get user ids in organization by id endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<UUID>>() {})
+                .doOnNext(uuids -> LOG.info("got userIds: {}", uuids))
                 .onErrorResume(throwable -> {
                     LOG.error("error retrieving users in organization by id", throwable);
                     return Mono.error(throwable);
@@ -160,6 +159,22 @@ public class OrganizationWebClient {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
 
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+                .doOnNext(stringStringMap -> LOG.info("got response: {}", stringStringMap));
+    }
+
+
+    public Mono<List<Organization>> getOrganizationByIdsIn(String accessToken, List<UUID> orgIds) {
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/ids");
+
+        LOG.info("get a list of organization by a list of ids using endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .bodyValue(orgIds).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<Organization>>() {})
+                .doOnNext(organizationList -> LOG.info("got organization by ids response: {}", organizationList));
     }
 }

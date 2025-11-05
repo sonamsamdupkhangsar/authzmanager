@@ -24,8 +24,10 @@ public class BeanConfig {
     @Value("${auth-server.root}${auth-server.contextPath}${auth-server.clients}")
     private String authServerClientsEndpoint;
 
+/*
     @Value("${auth-server.root}${auth-server.contextPath}${auth-server.clientOrganizations}")
     private String authServerClientOrganizationsEndpoint;
+*/
 
     @Value("${auth-server.root}${auth-server.contextPath}${auth-server.authenticate}")
     private String springAuthorizationServerAuthenticationEp;
@@ -86,7 +88,7 @@ public class BeanConfig {
 
     @Bean
     public ClientOrganizationWebClient clientOrganizationWebClient() {
-        return new ClientOrganizationWebClient(webClientWithTokenFilter, authServerClientOrganizationsEndpoint);
+        return new ClientOrganizationWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
     }
 
     @Bean

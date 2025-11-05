@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Pageable;
+
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -28,36 +30,14 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         this.clientsEndpoint = clientsEndpoint;
     }
 
-    public Mono<RegisteredClient> createClient(String accessToken, Map<String, Object> map) {
-        LOG.info("calling auth-server create client endpoint {}", clientsEndpoint);
-
-        LOG.info("payload: {}", map);
-
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(clientsEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
-                .bodyValue(map).retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
-            LOG.info("got back response from auth-server create client call: {}", responseMap);
-            return registeredClientUtil.build(responseMap);
-        }).onErrorResume(throwable -> {
-            String stringBuilder = "auth-server create client failed: " +
-                    throwable.getMessage();
-
-            if (throwable instanceof WebClientResponseException) {
-                WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
-                LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
-            }
-            else {
-                LOG.error(stringBuilder, throwable);
-            }
-
-            return Mono.error(throwable);
-        });
-    }
-
-
-    public Mono<RegisteredClient> updateClient(String accessToken, Map<String, Object> map, HttpMethod httpMethod) {
+    public Mono<RegisteredClient> updateClient(String accessToken, Map<String, Object> map) {
         LOG.info("update client with endpoint {}", clientsEndpoint);
+        HttpMethod httpMethod = HttpMethod.POST;
+
+        if (map.get("id") != null && !map.get("id").toString().isEmpty()) {
+            LOG.info("id is not null, using PUT for update of client, map.get(id): '{}'", map.get("id"));
+                httpMethod = HttpMethod.PUT;
+        }
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(clientsEndpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
@@ -80,7 +60,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         LOG.info("delete client by id: {} and ownerId: {}", id, userId);
 
         StringBuilder deleteEndpoint = new StringBuilder(clientsEndpoint).append("/")
-                .append(id).append("/user-id/").append(userId);
+                .append(id);
         LOG.info("calling auth-server delete client endpoint {}", deleteEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(deleteEndpoint.toString())
@@ -88,6 +68,25 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .retrieve();
 
         return responseSpec.bodyToMono(String.class).then();
+    }
+
+    public Mono<Integer> getClientCount(String accessToken) {
+        LOG.info("call oauth rest service to get client count");
+
+        String endpoint = clientsEndpoint + "/count/users";
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(endpoint)
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(Integer.class)
+                .doOnNext(count -> LOG.info("got {} count", count))
+                .onErrorResume(throwable -> {
+            String errorMessage = "auth-server get clientId count for userId failed: " +
+                    throwable.getMessage();
+            LOG.error(errorMessage);
+            return Mono.error(throwable);
+        });
     }
 
     /**
@@ -98,11 +97,11 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
      * @return return a list of clientId strings
      */
 
-    public Mono<RestPage<MyPair<String, String>>> getUserClientIds(String accessToken, UUID userId, Pageable pageable) {
+    public Mono<RestPage<Pair<String, String>>> getUserClientIds(String accessToken, UUID userId, Pageable pageable) {
         LOG.info("get user '{}' clients", userId);
 
-        StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/users/")
-                .append(userId.toString()).append("?page=").append(pageable.getPageNumber())
+        StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/organizations")
+                .append("?page=").append(pageable.getPageNumber())
                 .append("&size=").append(pageable.getPageSize())
                 .append("&sortBy=clientName");
         LOG.info("calling auth-server get clientIds for userId endpoint {}", clientsEndpoint);
@@ -112,7 +111,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<MyPair<String, String>>>() {}).map(list-> {
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Pair<String, String>>>() {}).map(list-> {
             LOG.info("got back response from auth-server for List of Pairs with id and client name call: {}", list);
             return list;
         }).onErrorResume(throwable -> {
@@ -165,7 +164,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
 
     public Mono<String> deleteClient(String accessToken) {
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint);
-        LOG.info("calling auth-server get clientId by clientId with endpoint {}", clientsEndpoint);
+        LOG.info("calling auth-server to delete all clients with endpoint {}", clientsEndpoint);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(clientsEndpoint.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))

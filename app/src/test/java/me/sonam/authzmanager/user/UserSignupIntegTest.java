@@ -3,7 +3,9 @@ package me.sonam.authzmanager.user;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.sonam.authzmanager.Application;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.admin.clients.ClientController;
+import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.security.WithMockCustomUser;
@@ -34,6 +36,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -102,47 +107,14 @@ public class UserSignupIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
-    }
-
-    @Test
-    public void userSignup() throws Exception {
-        UserSignup userSignup = new UserSignup("Sonam", "Wangyal", "mugambo@1234sonam.com", "mugambo", "hello".toCharArray(), false);
-
-        Map<String, Object> map = new HashMap<>();
-        map.put("firstName", "Sonam");
-        map.put("lastName", "Wangyal");
-        map.put("email", "SOnAm@123zuma.com");
-        map.put("authenticationId", "soNAM");
-        map.put("password", "12345");
-        map.put("active", false);
-
-        //on signup we need to return a token because the user is not logged-in.  The app will generate a token and send to /users endpoint
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(token));
-
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody("{\"message\": \"user created\"}"));
-
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/signup")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("firstName", userSignup.getFirstName())
-                        .param("lastName", userSignup.getLastName())
-                        .param("email", userSignup.getEmail())
-                        .param("authenticationId", userSignup.getAuthenticationId())
-                        .param("password", "1234567890")
-                        .param("active", "false")).andDo(print()).andExpect(status().isOk()).andReturn();
-
-        LOG.info("mvcResult: {}", mvcResult.getResponse());
-        RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
-
+        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
     public void admInUserSignup() throws Exception {
-        UserSignup userSignup = new UserSignup("Sonam", "Wangyal", "mugambo@1234sonam.com", "mugambo", "hello".toCharArray(), false);
+        LOG.info("signup user by admin");
+        UserSignup userSignup = new UserSignup("Sonam", "Wangyal", "mugambo@1234sonam.com", "mugambo", "hello".toCharArray(), false, "myOrganization");
 
         Map<String, Object> map = new HashMap<>();
         map.put("firstName", "Sonam");
@@ -152,30 +124,100 @@ public class UserSignupIntegTest {
         map.put("password", "12345");
         map.put("active", false);
 
+        UUID orgId = UUID.randomUUID();
 
-      /*  mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody(token));*/
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+
+        Organization organization = new Organization(orgId, "my company", UUID.randomUUID());
+
+        //1 get default organization
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organization.getId())))));
+
+        //2 superAdmin check response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        //2 get organization by id response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(organization)));
+
+        //
+        User user = new User();
+        user.setFirstName(map.get("firstName").toString());
+        user.setLastName(map.get("lastName").toString());
+        user.setId(UUID.randomUUID());
+        user.setAuthenticationId(map.get("authenticationId").toString());
+
+        //3 user signup response
+       mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("{\"message\": \"user added successfully\"}"));
+
+       //4 find user by auth-id response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(user)));
+
+        //5 add user to org response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("{\"message\": \"added user to organization\"}"));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody("{\"message\": \"user created\"}"));
+                .setResponseCode(200).setBody("{\"message\": \"added defaultOrganizationId\"}"));
 
-        UUID orgId = UUID.randomUUID();
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/admin/organizations/default/users")
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("firstName", userSignup.getFirstName());
+        formData.add("lastName", userSignup.getLastName());
+        formData.add("email", userSignup.getEmail());
+        formData.add("authenticationId", userSignup.getAuthenticationId());
+        formData.add("password", "1234567890");
+        formData.add("organizationId", orgId.toString());
+        formData.add("active", "false");
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
+                .uri("/admin/organizations/users")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("firstName", userSignup.getFirstName())
-                .param("lastName", userSignup.getLastName())
-                .param("email", userSignup.getEmail())
-                .param("authenticationId", userSignup.getAuthenticationId())
-                .param("password", "1234567890")
-                        .param("organizationId", orgId.toString())
-                .param("active", "false")).andDo(print()).andExpect(status().isOk()).andReturn();
+                .bodyValue(formData)
+                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
+        LOG.info("response: {}", entityExchangeResult.getResponseBody());
 
-        LOG.info("mvcResult: {}", mvcResult.getResponse());
+
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-
+        // get default org take
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId.toString());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
 
+        //is user superadmin in org take
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organization.getId());
+
+        //get org by id take
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId);
+
+        //signup user take
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+
+        //find user by auth id take
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/"+userSignup.getAuthenticationId());
+
+        //add user to org take
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
+
+        //add defaultOrganizationId for user
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
+
+        LOG.info("done signing up user by admin");
+        LOG.info("mvcResult: {}", entityExchangeResult.getResponseBody());
     }
 
 

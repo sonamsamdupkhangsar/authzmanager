@@ -19,6 +19,16 @@ public class User {
     private OrganizationChoice organizationChoice = new OrganizationChoice();
     private Boolean searchable;
     private String profilePhoto;
+    private UUID authzManagerRoleOrganizationId;
+    private boolean enabled = true;
+
+    public UUID getAuthzManagerRoleOrganizationId() {
+        return authzManagerRoleOrganizationId;
+    }
+
+    public void setAuthzManagerRoleOrganizationId(UUID authzManagerRoleOrganizationId) {
+        this.authzManagerRoleOrganizationId = authzManagerRoleOrganizationId;
+    }
 
     public Boolean getSearchable() {
         return searchable;
@@ -153,5 +163,13 @@ public class User {
                 ", searchable=" + searchable +
                 ", profilePhoto='" + profilePhoto + '\'' +
                 '}';
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

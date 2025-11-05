@@ -26,30 +26,14 @@
 </head>
 <body>
 <div class="container">
-    <!-- Content here -->
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
-    </div>
+    <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link"th:href="@{/admin/user/profile}">Your Profile</a></li>
-            </ul>
-        </div>
+        <div class="col-2" th:with="activeLink=Roles" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
 
             <ul class="nav nav-tabs">
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" th:href="@{/admin/roles/{id}(id=${role.id})}" th:classappend="${role.id ==null}? 'disabled'">Roles</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" aria-current="page" th:href="@{/admin/roles/{id}/organizations(id=${role.id})}" th:classappend="${role.id ==null}? 'disabled'">Assign to Organization</a>
                 </li>
             </ul>
             <div class="row">
@@ -72,6 +56,7 @@
 
                     <form th:if="${role}" action="#" th:action="@{/admin/roles}" th:object="${role}" method="post">
                         <input type="hidden" th:field="*{id}"/>
+                        <input type="hidden" th:field="*{organizationId}"/>
                         <div class="mb-3">
                             <label for="name" class="form-label">Role name</label>
                             <p th:if="${#fields.hasErrors('name')}" class="text-danger">Please enter role name</p>
@@ -79,48 +64,19 @@
                                    placeholder="role name"/>
                         </div>
 
-
-                       <!-- <div class="mb-3" th:if="${organizationPage}">
-                            <label for="selectOrg" class="form-label">Organization</label>
-                            <div>
-                                <select id="selectOrg" th:field="*{roleOrganization.organizationId}">
-                                    <option th:each="org : ${organizationPage.content}" th:value="${org.id}"
-                                            th:text="${org.name}"  >
-                                    </option>
-                                </select>
-                            </div>
-                        </div>-->
-
                         <div class="mb-3 mt-5">
                             <button type="submit" class="btn btn-primary mb-3">Submit</button>
                             <button type="reset" class="btn btn-secondary mb-3">Reset</button>
                         </div>
                     </form>
                 </div>
-                <!--
-                                <div class="col">
-                                    <div th:if="${organizationPage != null}">
-                                        <ul>
-                                            <li th:if="${organizationPage.totalElements} < 100">
-                                                <h3><a th:href="@{/admin/organizations/new}"> - Create Organization</a></h3>
-                                            </li>
-
-                                            <select th:field="*{organizationId}">
-                                                <option th:each="org : ${organizationPage.content}" th:value="${org.id}" th:text="${org.name}">
-
-                                                </option>
-                                            </select>
-                                        </ul>
-                                    </div>
-                                </div>-->
 
             </div>
         </div>
     </div>
 
     <div class="p-4 m-4 bg-secondary-subtle rounded-2">
-        <div class="col-4">Authorization manager web application 2024</div>
-        <div class="col-4"></div>
+        <<div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>

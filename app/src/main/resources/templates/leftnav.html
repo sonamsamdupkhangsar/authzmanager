@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+<div th:fragment="menu">
+    <ul class="nav flex-column nav-pills" th:fragment="navibar(activeLink)">
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Home')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/dashboard}">Home</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Clients')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/clients}">Clients</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Organizations')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/organizations}">Organization</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Add User')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/organizations/users}">Add User</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Roles')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/roles}">Roles</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Your Profile')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/user/profile}">Your Profile</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Settings')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/settings}">Settings</a></li>
+    </ul>
+</div>
+</body>
+
+</html>

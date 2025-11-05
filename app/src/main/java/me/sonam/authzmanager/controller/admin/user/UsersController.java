@@ -10,10 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -67,7 +65,7 @@ public class UsersController {
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUsersInOrganizationId(accessToken, organization.getId(), pageable))
+                .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
                 .flatMap(uuidPage -> {
                     LOG.info("uuidPage: {}", uuidPage.getContent());
                     model.addAttribute("page", uuidPage);

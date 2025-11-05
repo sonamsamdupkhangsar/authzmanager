@@ -10,29 +10,13 @@
 <body>
 
 <div class="container">
-    <!-- Content here -->
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
-    </div>
+    <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
-                <li class="nav-item"><a class="nav-link"th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link"th:href="@{/admin/user/profile}">Your Profile</a></li>
-            </ul>
-        </div>
+        <div class="col-2" th:with="activeLink='Add User'" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="#">Users</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/admin/organizations/default/users/add}">Add User</a>
+                    <a class="nav-link" th:href="@{/admin/organizations/users}">Add User</a>
                 </li>
             </ul>
 
@@ -101,8 +85,7 @@
     </div>
 
     <div class="p-4 m-4 bg-secondary-subtle rounded-2">
-        <div class="col-4">Authorization manager web application 2024</div>
-        <div class="col-4"></div>
+        <div th:insert="~{footer :: copyright}"></div>
     </div>
 
 </div>

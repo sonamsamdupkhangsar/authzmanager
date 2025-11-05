@@ -27,22 +27,9 @@
 </head>
 <body>
 <div class="container">
-    <!-- Content here -->
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
-    </div>
+    <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/user/profile}">Your Profile</a></li>
-            </ul>
-        </div>
+        <div class="col-2" th:with="activeLink='Your Profile'" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
@@ -103,13 +90,13 @@
                             <div class="mb-3 row">
                                 <label for="email" class="col-sm-4 col-form-label">email</label>
                                 <div class="col-sm-5">
-                                    <input type="email" class="form-control" id="email" th:field="*{email}" readonly/>
+                                    <input type="email" class="form-control" id="email" th:field="*{email}" readonly disabled/>
                                 </div>
                             </div>
                             <div class="mb-3 row">
                                 <label for="authenticationId" class="col-sm-4 col-form-label">username</label>
                                 <div class="col-sm-7">
-                                    <input type="text" class="form-control" id="authenticationId" th:field="*{authenticationId}" readonly/>
+                                    <input type="text" class="form-control" id="authenticationId" th:field="*{authenticationId}" readonly disabled/>
                                 </div>
                             </div>
 
@@ -137,8 +124,7 @@
 
     </div>
     <div class="p-4 m-4 bg-secondary-subtle rounded-2">
-        <div class="col-4">Authorization manager web application 2024</div>
-        <div class="col-4"></div>
+        <div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
@@ -161,7 +147,7 @@
           formData.append('file', file);
 
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/admin/users/photo');
+          xhr.open('POST', '/admin/user/profile/photo');
 
           xhr.upload.addEventListener('progress', (event) => {
             // Update progress bar here
@@ -175,7 +161,7 @@
               const profilePhotoImageId = document.getElementById('profilePhoto');
              // profilePhotoImageId.src = xhr.responseText;
               console.log("response: " + xhr.responseText);
-              window.location.replace("/admin/users");
+              window.location.replace("/admin/user/profile");
             } else {
               console.error('Upload failed');
             }

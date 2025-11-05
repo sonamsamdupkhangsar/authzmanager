@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 @Controller
-@RequestMapping("/admin/clients/organizations")
+//@RequestMapping("/admin/clients/organizations")
 public class ClientOrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(ClientOrganizationController.class);
     private ClientOrganizationWebClient clientOrganizationWebClient;

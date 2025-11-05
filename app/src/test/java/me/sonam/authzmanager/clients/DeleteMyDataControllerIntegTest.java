@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+import static me.sonam.authzmanager.clients.ClientControllerIntegTest.getJson;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -97,6 +98,7 @@ public class DeleteMyDataControllerIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
+        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
     /**
@@ -108,6 +110,17 @@ public class DeleteMyDataControllerIntegTest {
     @Test
     public void deleteMyInfo() throws InterruptedException {
         LOG.info("get client by client's id");
+
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+
+        //1  return a UUID for get organizationIdAssociatedWithClientId call
+        UUID organizationId = UUID.randomUUID();
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organizationId)))));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
+                .setResponseCode(200).setBody("{\"message\": true}"));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
                 .setResponseCode(200).setBody("{\"message\": \"deleted user client data\"}"));
@@ -124,6 +137,14 @@ public class DeleteMyDataControllerIntegTest {
 
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organizationId);
+
+        recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
 

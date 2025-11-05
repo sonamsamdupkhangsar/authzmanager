@@ -18,6 +18,8 @@ public class UserSignup {
     @Size(min = 3, max = 50)
     private String authenticationId;
 
+    private String organization;
+
     private UUID organizationId;
 
     private char[] password;
@@ -28,13 +30,14 @@ public class UserSignup {
 
     }
 
-    public UserSignup(String firstName, String lastName, String email, String authenticationId, char[] password, boolean active) {
+    public UserSignup(String firstName, String lastName, String email, String authenticationId, char[] password, boolean active, String organization) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.authenticationId = authenticationId;
         this.password = password;
         this.active = active;
+        this.organization = organization;
     }
 
     public String getFirstName() {
@@ -103,7 +106,15 @@ public class UserSignup {
                 ", authenticationId='" + authenticationId + '\'' +
                 ", password=" + Arrays.toString(password) +
                 ", active='" +active + '\'' +
+                ", organizationId='" + organizationId +'\'' +
                 '}';
     }
 
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
+    }
 }

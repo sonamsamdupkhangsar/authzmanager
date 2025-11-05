@@ -1,7 +1,10 @@
 package me.sonam.authzmanager.config;
 
+import me.sonam.authzmanager.interceptor.UserGroupInterceptor;
 import me.sonam.authzmanager.interceptor.UserIdCheckInterceptor;
 import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.webclients.RoleWebClient;
+import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +19,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Autowired
     private UserWebClient userWebClient;
+    @Autowired
+    private RoleWebClient roleWebClient;
+    @Autowired
+    private SettingWebClient settingWebClient;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         //registry.addInterceptor(new UserIdCheckInterceptor(tokenService, userWebClient));
+        //registry.addInterceptor(new UserGroupInterceptor(tokenService, roleWebClient, settingWebClient));
     }
 }

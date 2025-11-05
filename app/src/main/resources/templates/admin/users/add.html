@@ -11,22 +11,9 @@
 </head>
 <body>
 <div class="container">
-    <!-- Content here -->
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
-    </div>
+    <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/clients}">Clients</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations}">Organizations</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/organizations/default/users}">Add User</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/roles}">Roles</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/admin/user/profile}">Your Profile</a></li>
-            </ul>
-        </div>
+        <div class="col-2" th:with="activeLink='Add User'" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
@@ -56,7 +43,7 @@
                     <div th:if="${message}" class="alert alert-success">
                         <strong>User Signup Success!</strong>
                         <span th:text="${message}"></span>
-                        <span>You can find the user in the <a th:href="@{/admin/organizations/default/users}">users tab</a></span>
+                        <span>You can find the user in the <a th:href="@{/admin/organizations/{id}/users(id=${organization.id})}">users tab</a></span>
 
                     </div>
                     <div th:if="${error}" class="alert alert-danger">
@@ -66,7 +53,7 @@
 
                 <!-- should contain a org.id (default org) and the signup was not success or has not started-->
                 <div class="col m-2" th:if="${organization.id != null && message == null}">
-                    <form action="#" th:action="@{/admin/organizations/default/users}" th:object="${signupUser}" enctype="multipart/form-data"
+                    <form action="#" th:action="@{/admin/organizations/users}" th:object="${signupUser}" enctype="multipart/form-data"
                           method="post" class="needs-validation" id="myForm">
 
                         <input type="hidden"  id="organizationId" name="organizationId" th:value="${organization.id}" />
@@ -151,8 +138,7 @@
 
     </div>
     <div class="p-4 m-4 bg-secondary-subtle rounded-2">
-        <div class="col-4">Authorization manager web application 2024</div>
-        <div class="col-4"></div>
+        <div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
