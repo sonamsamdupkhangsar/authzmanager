@@ -27,7 +27,7 @@
 <div class="container">
     <!-- Content here -->
     <div class="row jumbotron m-4">
-        <div class="col"><h1 class="display-4">OAuth2 Client And User manager</h1></div>
+        <div class="col"><h1 class="display-4">SpringAuth</h1></div>
     </div>
     <div class="row">
         <div class="col-2">
@@ -37,21 +37,23 @@
         </div>
         <div class="col-sm">
             <div class="m-4">
-                <span class="h3">Welcome to Sonam's Authorization Server manager</span>
+                <span class="h3">Authzmanager</span>
                 <p class="mt-4">This is the Authorization Manager web application.</p>
                 <p>
-                    This is for managing OAuth2 Client configuration and for setting roles with organization.
-
-                    You can <a th:href="${@environment.getProperty('ISSUER_URI')} +'/signup'">sign-up</a> and create an account to create OAuth2 client and manage roles.
+                    This is the admin client that is used in creating OAuth2 client, adding and assigning roles to user,
+                     creating and adding user to your default organization.
                 </p>
-                <p class="mt-4">
-                    This AuthzManager and the Authorization Server supports a single tenant authorization server.
-                </p>
-                <p>For a how to create a client, roles and organization I have
-                    a documentation on how to create them <a th:href="@{https://sonamsamdupkhangsar.github.io/my-authorization-server/about/}">here</a>.
+                <p>
+                    To create your account with a organization
+                    <a th:href="${@environment.getProperty('ISSUER_URI')} +'/signup'">sign-up</a> here.
                 </p>
 
-                <p>[You are free to use this Authorziation and AuthzManager application at your own risk.]</p>
+                <p> The new features in this release has user and its related items under a organization.
+                    For how to signup, create OAuth2 client, roles and users visit this
+                    <a th:href="@{https://github.com/sonamsamdupkhangsar/sonamsamdupkhangsar.github.io/tree/main/my-authorization-server/how-to}">
+                    how-to page
+                    </a>
+                </p>
             </div>
         </div>
     </div>
