@@ -32,9 +32,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,17 +44,21 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.ui.Model;
 import org.springframework.validation.support.BindingAwareModelMap;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
@@ -66,10 +71,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@EnableSpringDataWebSupport
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
+@AutoConfigureWebTestClient
 public class ClientControllerIntegTest {
     private static final Logger LOG = LoggerFactory.getLogger(ClientControllerIntegTest.class);
 
@@ -80,7 +88,7 @@ public class ClientControllerIntegTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
 
     @Autowired
@@ -88,6 +96,26 @@ public class ClientControllerIntegTest {
     private static MockWebServer mockWebServer;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
+    @Autowired
+    WebApplicationContext context;
+
+    @org.junit.jupiter.api.BeforeEach
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient
+                .bindToApplicationContext(this.context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+    }
+
+    @BeforeEach
+    public void setMockMvc() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity()) // Apply the spring security filters
+                .build();
+    }
 
     @BeforeEach
     public void setTokenServiceMockBehavior() {
@@ -122,7 +150,7 @@ public class ClientControllerIntegTest {
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
-    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    //@WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
     public void getCreateForm() {
         Model model = new BindingAwareModelMap();
@@ -139,7 +167,7 @@ public class ClientControllerIntegTest {
     public void createClient() throws Exception {
         final String clientId = saveOauthClient();
     }
-    @MockBean
+    @MockitoBean
     ReactiveJwtDecoder jwtDecoder;
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -191,7 +219,7 @@ public class ClientControllerIntegTest {
             clientIds.add(new MyPair<>(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
         }
 
-        RestPage<MyPair<String, String>> clientPage = new RestPage<>(clientIds, 1,1,1,1,1);
+        RestPage<MyPair<String, String>> clientPage = new RestPage<>(clientIds, 1,1,1, 1);
 
         String json = getJson(clientPage);
 
@@ -321,16 +349,16 @@ public class ClientControllerIntegTest {
         //  getRolesByOrganizationId
         json = "[Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}]";
         List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", organizationId));
-        RestPage<Role> restPage = new RestPage<>(roles, 1, 1, 1, 1, 1);
+        RestPage<Role> CustomRestPage = new RestPage<>(roles, 1, 1, 1, 1);
 
         //4
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(restPage)));
+                .setResponseCode(200).setBody(getJson(CustomRestPage)));
 
         // 5 getUsersInOrganizationId
         //List<User> userList = List.of(new User(UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"), "test6@sonam.email"), new User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), "tom@tom.com"));
         List<UUID> userIds = List.of(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"));
-        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,1,1,1);
+        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,2, 1);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(usersInOrg)));

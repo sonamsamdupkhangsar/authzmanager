@@ -3,7 +3,6 @@ package me.sonam.authzmanager.organization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.gargoylesoftware.htmlunit.WebClient;
 import me.sonam.authzmanager.Application;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.clients.user.User;
@@ -17,6 +16,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
+import org.htmlunit.WebClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,23 +26,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.core.io.Resource;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
@@ -53,7 +55,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@EnableSpringDataWebSupport
+@AutoConfigureWebTestClient
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -77,9 +82,19 @@ public class OrganizationControllerIntegTest {
 
     @LocalServerPort
     private int randomPort;
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
+    @Autowired
+    WebApplicationContext context;
 
+    @org.junit.jupiter.api.BeforeEach
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient.bindToApplicationContext(context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+    }
     @BeforeEach
     public void setTokenServiceMockBehavior() {
         OAuth2AccessToken oAuth2AccessToken = mock(OAuth2AccessToken.class);
@@ -127,7 +142,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,1,1,1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 2);
 
         //1 get orgIds of super admin roles
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -380,7 +395,7 @@ public class OrganizationControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(organization)));
 
         Role role = new Role(UUID.randomUUID(), "adminRole", null);
-        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 ,1,1);
+        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 , 1);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(restPage)));
@@ -452,7 +467,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,1,1,1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
         //3
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
@@ -505,7 +520,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,1,1,1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
         //3 get user ids in organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
@@ -588,7 +603,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,1,1,1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
 
         //3
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -676,7 +691,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,1,1,1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
         //4 get userIds in organization
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));

@@ -2,7 +2,6 @@ package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
-import me.sonam.authzmanager.controller.util.MyPair;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

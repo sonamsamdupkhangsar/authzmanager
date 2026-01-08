@@ -324,10 +324,10 @@ public class ClientController implements ClientUserPage {
                 }).flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.content(), id)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganization -> {
-                                for (Organization organization : organizationRestPage.getContent()) {
+                                for (Organization organization : organizationRestPage.content()) {
                                     if (id.equals(clientOrganization.getClientId()) &&
                                             organization.getId().equals(clientOrganization.getOrganizationId())) {
                                         ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, true);
@@ -385,14 +385,14 @@ public class ClientController implements ClientUserPage {
                             .zipWith(Mono.just(organization));
                 })
                 .doOnNext(objects -> {
-                    LOG.info("got roles: {}", objects.getT1().getContent());
-                    model.addAttribute("roles", objects.getT1().getContent());
+                    LOG.info("got roles: {}", objects.getT1().content());
+                    model.addAttribute("roles", objects.getT1().content());
                 }) //objects = roles, organizationId
                 .flatMap(objects -> organizationWebClient.getUserIdsInOrganizationId(accessToken, objects.getT2().getId(), pageable).zipWith(Mono.just(objects.getT2())))
                 .flatMap(objects -> {
-                    LOG.info("uuidPage: {}", objects.getT1().getContent());
+                    LOG.info("uuidPage: {}", objects.getT1().content());
                     model.addAttribute("page", objects.getT1());
-                    return userWebClient.getUserByBatchOfIds(accessToken, objects.getT1().getContent()).zipWith(Mono.just(objects.getT2()));
+                    return userWebClient.getUserByBatchOfIds(accessToken, objects.getT1().content()).zipWith(Mono.just(objects.getT2()));
                 })
                 .doOnNext(objects -> {//objects = users, organization
                     LOG.info("got users: {}", objects.getT1());
@@ -447,7 +447,7 @@ public class ClientController implements ClientUserPage {
     }
 
     private void allowCreateClient(RestPage<Pair<String, String>> page, Model model) {
-        if (page.getTotalElements() >= maxClients) {
+        if (page.totalElements() >= maxClients) {
             model.addAttribute("showCreateClient", "false");
         }
         else {

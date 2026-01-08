@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.util.Pair;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -80,7 +79,7 @@ public class RoleController {
                     return roleWebClient.getRolesByOrganizationId(accessToken, objects.getT2(), finalPageable);
                 })
                 .doOnNext(roleRestPage -> {
-                    LOG.info("roleRestPage: {}", roleRestPage.getSize());
+                    LOG.info("roleRestPage: {}", roleRestPage.size());
                     model.addAttribute("page", roleRestPage);
 
                     allowCreateRole(roleRestPage, model);
@@ -226,7 +225,7 @@ public class RoleController {
     }
 
     private void allowCreateRole(RestPage<Role> page, Model model) {
-        if (page.getTotalElements() >= maxRoles) {
+        if (page.totalElements() >= maxRoles) {
             model.addAttribute("showCreateRole", "false");
         }
         else {

@@ -10,6 +10,7 @@ import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.util.JwtUtil;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -19,26 +20,29 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.context.WebApplicationContext;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -46,12 +50,12 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@AutoConfigureWebTestClient
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
@@ -67,22 +71,34 @@ public class UserSignupIntegTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @MockitoBean
+    ReactiveJwtDecoder jwtDecoder;
     private static MockWebServer mockWebServer;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
     private final String token = "{\"access_token\": \"eyJraWQiOiJlOGQ3MjIzMC1iMDgwLTRhZjEtODFkOC0zMzE3NmNhMTM5ODIiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI3NzI1ZjZmZC1kMzk2LTQwYWYtOTg4Ni1jYTg4YzZlOGZjZDgiLCJhdWQiOiI3NzI1ZjZmZC1kMzk2LTQwYWYtOTg4Ni1jYTg4YzZlOGZjZDgiLCJuYmYiOjE3MTQ3NTY2ODIsImlzcyI6Imh0dHA6Ly9teS1zZXJ2ZXI6OTAwMSIsImV4cCI6MTcxNDc1Njk4MiwiaWF0IjoxNzE0NzU2NjgyLCJqdGkiOiI0NDBlZDY0My00MzdkLTRjOTMtYTZkMi1jNzYxNjFlNDRlZjUifQ.fjqgoczZbbmcnvYpVN4yakpbplp7EkDyxslvar5nXBFa6mgIFcZa29fwIKfcie3oUMQ8MDWxayak5PZ_QIuHwTvKSWHs0WL91ljf-GT1sPi1b4gDKf0rJOwi0ClcoTCRIx9-WGR6t2BBR1Rk6RGF2MW7xKw8M-RMac2A2mPEPJqoh4Pky1KgxhZpEXixegpAdQIvBgc0KBZeQme-ZzTYugB8EPUmGpMlfd-zX_vcR1ijxi8e-LRRJMqmGkc9GXfrH7MOKNQ_nu6pc6Gish2v_iuUEcpPHXrfqzGb9IHCLvfuLSaTDcYKYjQaEUAp-1uDW8-5posjiUV2eBiU48ajYg\", \"token_type\":\"Bearer\", \"expires_in\":\"299\"}";
 
 
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
+    @Autowired
+    WebApplicationContext context;
 
-    @BeforeEach
-    public void setTokenServiceMockBehavior() {
+    @org.junit.jupiter.api.BeforeEach
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient.bindToApplicationContext(context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+
         OAuth2AccessToken oAuth2AccessToken = mock(OAuth2AccessToken.class);
 
         when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
         when( oAuth2AccessToken.getTokenValue()).thenReturn("sonamstoken");
         when(tokenService.getAccessToken()).thenReturn("dummytoken");
+
+        LOG.info("setup for token mock");
     }
 
     @BeforeAll
@@ -114,6 +130,10 @@ public class UserSignupIntegTest {
     @Test
     public void admInUserSignup() throws Exception {
         LOG.info("signup user by admin");
+        String authenticationId = "dave";
+        Jwt jwt = JwtUtil.jwt(authenticationId);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
         UserSignup userSignup = new UserSignup("Sonam", "Wangyal", "mugambo@1234sonam.com", "mugambo", "hello".toCharArray(), false, "myOrganization");
 
         Map<String, Object> map = new HashMap<>();

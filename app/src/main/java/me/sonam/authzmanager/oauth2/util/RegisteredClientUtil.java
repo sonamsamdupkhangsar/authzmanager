@@ -1,14 +1,13 @@
 package me.sonam.authzmanager.oauth2.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import me.sonam.authzmanager.oauth2.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.jackson2.SecurityJackson2Modules;
+import org.springframework.security.jackson.SecurityJacksonModules;
+import org.springframework.security.oauth2.server.authorization.jackson.OAuth2AuthorizationServerJacksonModule;
 import org.springframework.util.StringUtils;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -21,15 +20,21 @@ import java.util.*;
 
 public class RegisteredClientUtil {
     private static final Logger LOG = LoggerFactory.getLogger(RegisteredClientUtil.class);
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     public DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
 
     public RegisteredClientUtil() {
-        this.objectMapper = JsonMapper.builder().findAndAddModules().build();
-        List<Module> securityModules = SecurityJackson2Modules.getModules(this.getClass().getClassLoader());
-        this.objectMapper.registerModules(securityModules);
-        this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
+        //this.objectMapper = JsonMapper.builder().findAndAddModules().build();
+        //List<Module> securityModules = SecurityJackson2Modules.getModules(this.getClass().getClassLoader());
+        //this.objectMapper.registerModules(securityModules);
+        //this.objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
+
+        jsonMapper = tools.jackson.databind.json.JsonMapper.builder()
+                .addModules(SecurityJacksonModules.getModules(this.getClass().getClassLoader()))
+                .addModules(new OAuth2AuthorizationServerJacksonModule())
+                .build();
     }
+
     public Map<String, Object> getMapObject1(RegisteredClient registeredClient) {
         List<String> clientAuthenticationMethods = new ArrayList<>(registeredClient.getClientAuthenticationMethods().size());
         registeredClient.getClientAuthenticationMethods().forEach(clientAuthenticationMethod ->
@@ -82,8 +87,8 @@ public class RegisteredClientUtil {
 
     public Map<String, Object> parseMap(String data) {
         try {
-            return this.objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
-            });
+            LOG.info("data: {}", data);
+            return this.jsonMapper.readValue(data, new TypeReference<Map<String, Object>>() {});
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
@@ -91,7 +96,7 @@ public class RegisteredClientUtil {
 
     private String writeMap(Map<String, Object> data) {
         try {
-            String string = this.objectMapper.writeValueAsString(data);
+            String string = this.jsonMapper.writeValueAsString(data);
             LOG.info("string: {}", string);
             return string;
         } catch (Exception ex) {

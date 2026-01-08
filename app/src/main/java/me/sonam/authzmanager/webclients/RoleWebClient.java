@@ -1,7 +1,5 @@
 package me.sonam.authzmanager.webclients;
 
-
-
 import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.clients.user.ClientOrganizationUserRole;
 import me.sonam.authzmanager.controller.admin.roles.RoleOrganization;
@@ -72,9 +70,9 @@ public class RoleWebClient {
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {}).doOnNext(roleRestPage -> {
-            if (roleRestPage != null) {
-                LOG.info("got roles: {}", roleRestPage.getContent());
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {}).doOnNext(roleCustomRestPage -> {
+            if (roleCustomRestPage != null) {
+                LOG.info("got roles: {}", roleCustomRestPage.content());
             }
         });
     }
@@ -228,7 +226,7 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
     }
 
-    //   return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Role>>() {});
+    //   return responseSpec.bodyToMono(new ParameterizedTypeReference<CustomRestPage<Role>>() {});
 
     public Mono<RestPage<UUID>> getOrgIdsOfSuperAdminOrganizationForUser(String accessToken, Pageable pageable) {
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);

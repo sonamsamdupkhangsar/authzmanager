@@ -40,23 +40,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.core.io.Resource;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.support.BindingAwareModelMap;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -80,7 +84,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@EnableSpringDataWebSupport
+@AutoConfigureWebTestClient
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
@@ -97,7 +104,7 @@ public class ProfileControllerIntegTest {
     @Autowired
     private MockMvc mockMvc;
     private static MockWebServer mockWebServer;
-    @MockBean
+    @MockitoBean
     private S3AsyncClient s3Client;
 
     @Autowired
@@ -106,16 +113,24 @@ public class ProfileControllerIntegTest {
     @Value("classpath:langur.jpg")
     private Resource langurPhoto;
 
-    @SpyBean
+    @MockitoSpyBean
     private S3FileUploadService s3Service;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
+    @Autowired
+    WebApplicationContext context;
 
     @BeforeEach
-    public void setTokenServiceMockBehavior() {
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient.bindToApplicationContext(context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+
         OAuth2AccessToken oAuth2AccessToken = mock(OAuth2AccessToken.class);
 
         when(tokenService.getAccessToken(any())).thenReturn(oAuth2AccessToken);
@@ -369,7 +384,7 @@ public class ProfileControllerIntegTest {
             clientIds.add(new MyPair<>(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
         }
 
-        RestPage<MyPair<String, String>> restPage = new RestPage<>(clientIds, 1, 1, 1, 1, 1);
+        RestPage<MyPair<String, String>> restPage = new RestPage<>(clientIds, 1, 1, 5, 1);
 
         String json = getJson(restPage);
 
@@ -494,7 +509,7 @@ public class ProfileControllerIntegTest {
         //  getRolesByOrganizationId
         json = "[Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}]";
         List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", organizationId));
-        RestPage<Role> restPage = new RestPage<>(roles, 1, 1, 1, 1, 1);
+        RestPage<Role> restPage = new RestPage<>(roles, 1, 1, 1, 1);
 
         //4
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -503,7 +518,7 @@ public class ProfileControllerIntegTest {
         // getUsersInOrganizationId
         //List<User> userList = List.of(new User(UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"), "test6@sonam.email"), new User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), "tom@tom.com"));
         List<UUID> userIds = List.of(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"));
-        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,1,1,1);
+        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,2, 1);
 
         //5
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)

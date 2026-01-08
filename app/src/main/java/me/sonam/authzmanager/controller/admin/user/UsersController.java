@@ -67,9 +67,9 @@ public class UsersController {
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
                 .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.getContent());
+                    LOG.info("uuidPage: {}", uuidPage.content());
                     model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
+                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                 })
                 .doOnNext(users -> {
                     LOG.info("got users: {}", users);

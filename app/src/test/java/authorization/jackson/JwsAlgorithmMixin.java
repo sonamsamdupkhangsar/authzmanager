@@ -1,4 +1,4 @@
-package me.sonam.authzmanager.oauth2;
+package authorization.jackson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

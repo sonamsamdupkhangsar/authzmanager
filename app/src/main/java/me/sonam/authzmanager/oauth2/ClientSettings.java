@@ -1,6 +1,8 @@
 package me.sonam.authzmanager.oauth2;
 
 import java.util.Map;
+
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
 import org.springframework.util.Assert;
 import me.sonam.authzmanager.oauth2.ConfigurationSettingNames.Client;
 
