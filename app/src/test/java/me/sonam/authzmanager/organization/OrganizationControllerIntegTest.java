@@ -142,7 +142,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 2);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
 
         //1 get orgIds of super admin roles
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -395,7 +395,7 @@ public class OrganizationControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(organization)));
 
         Role role = new Role(UUID.randomUUID(), "adminRole", null);
-        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 , 1);
+        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 );
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(restPage)));
@@ -467,7 +467,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
         //3
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
@@ -520,7 +520,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
         //3 get user ids in organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
@@ -603,7 +603,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
 
         //3
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -691,7 +691,7 @@ public class OrganizationControllerIntegTest {
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
         List<UUID> userIdList =  List.of(userId1, userId2);
-        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2, 1);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
         //4 get userIds in organization
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));

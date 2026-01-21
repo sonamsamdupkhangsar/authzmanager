@@ -3,7 +3,6 @@ package me.sonam.authzmanager.controller.admin.clients.settings;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.util.Util;
-import me.sonam.authzmanager.rest.CustomRestPage;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -77,7 +76,7 @@ public class SettingsController {
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
-                        .switchIfEmpty(Mono.just(new RestPage<>(List.of(), pageable.getPageNumber(),pageable.getPageSize(), 0, 0)))
+                        .switchIfEmpty(Mono.just(new RestPage<>(List.of(), pageable.getPageNumber(),pageable.getPageSize(), 0)))
                         .zipWith(Mono.just(organization)))
 
                         .flatMap(orgWithUserIdPage -> {
@@ -245,11 +244,11 @@ public class SettingsController {
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> {
                     if (user == null) {
-                        return Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0,0))
+                        return Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0))
                                 .zipWith(Mono.just(organization));
                     }
                     else {
-                        return Mono.just(new RestPage<UUID>(List.of(user.getId()), pageable.getPageNumber(), pageable.getPageSize(), 1, 1))
+                        return Mono.just(new RestPage<UUID>(List.of(user.getId()), pageable.getPageNumber(), pageable.getPageSize(), 1))
                                 .zipWith(Mono.just(organization));
                     }
                 })

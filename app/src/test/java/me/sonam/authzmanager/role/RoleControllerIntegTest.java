@@ -145,7 +145,7 @@ public class RoleControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
-        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1,1 );
+        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 );
 
         //3 get roles by organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -207,7 +207,7 @@ public class RoleControllerIntegTest {
 
         Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
         List<Organization> list = List.of(organization);
-        RestPage<Organization> CustomRestPage = new RestPage<Organization>(list, 0, 1,1, 1);
+        RestPage<Organization> CustomRestPage = new RestPage<Organization>(list, 0, 1,1);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(CustomRestPage)));
@@ -271,7 +271,7 @@ public class RoleControllerIntegTest {
 
        Organization organization = new Organization(organizationId, "my company", UUID.randomUUID());
        List<Organization> list = List.of(organization);
-       RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1,1);
+       RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1);
 
 
        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("name", role.getName());

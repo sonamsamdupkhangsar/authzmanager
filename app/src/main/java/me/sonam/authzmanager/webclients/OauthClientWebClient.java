@@ -2,6 +2,7 @@ package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +97,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
      * @return return a list of clientId strings
      */
 
-    public Mono<RestPage<Pair<String, String>>> getUserClientIds(String accessToken, UUID userId, Pageable pageable) {
+    public Mono<RestPage<CustomPair<String, String>>> getUserClientIds(String accessToken, UUID userId, Pageable pageable) {
         LOG.info("get user '{}' clients", userId);
 
         StringBuilder clientsEndpoint = new StringBuilder(this.clientsEndpoint).append("/organizations")
@@ -110,7 +111,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
 
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Pair<String, String>>>() {}).map(list-> {
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<CustomPair<String, String>>>() {}).map(list-> {
             LOG.info("got back response from auth-server for List of Pairs with id and client name call: {}", list);
             return list;
         }).onErrorResume(throwable -> {

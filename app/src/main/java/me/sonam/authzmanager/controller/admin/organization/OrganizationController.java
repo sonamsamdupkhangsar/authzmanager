@@ -90,8 +90,7 @@ public class OrganizationController {
                         }
                     });
 
-                    RestPage<Organization> page = new RestPage<>(list, uuidPage.number(),
-                                    uuidPage.size(), uuidPage.totalElements(), uuidPage.numberOfElements());
+                    RestPage<Organization> page = new RestPage<>(list, uuidPage.number(), uuidPage.size(), uuidPage.totalElements());
 
                     model.addAttribute("page", page);
                 }).thenReturn(PATH);

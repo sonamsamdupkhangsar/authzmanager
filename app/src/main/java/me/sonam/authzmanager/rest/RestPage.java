@@ -11,11 +11,10 @@ public record RestPage<T>(List<T> content, int number, int size, long totalEleme
     public RestPage(@JsonProperty("content") List<T> content,
                     @JsonProperty("number") int number,
                     @JsonProperty("size") int size,
-                    @JsonProperty("totalElements") long totalElements,
-                    @JsonProperty("numberOfElements") int numberOfElements
+                    @JsonProperty("totalElements") long totalElements
 
     ) {
-        this(content, number, size, totalElements, numberOfElements, calculateTotalPages(totalElements, size));
+        this(content, number, size, totalElements, content != null ? content.size() : 0, calculateTotalPages(totalElements, size));
     }
     public boolean isEmpty() {
         return content.isEmpty();

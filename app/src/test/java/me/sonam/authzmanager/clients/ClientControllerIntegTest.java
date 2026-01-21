@@ -219,7 +219,7 @@ public class ClientControllerIntegTest {
             clientIds.add(new MyPair<>(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
         }
 
-        RestPage<MyPair<String, String>> clientPage = new RestPage<>(clientIds, 1,1,1, 1);
+        RestPage<MyPair<String, String>> clientPage = new RestPage<>(clientIds, 1,1,1);
 
         String json = getJson(clientPage);
 
@@ -349,7 +349,7 @@ public class ClientControllerIntegTest {
         //  getRolesByOrganizationId
         json = "[Role{id=a617b9c7-c46a-41cf-97c3-cbeee3c454e7, name='AppleTreeCareTaker', userId=1f442dab-96a3-459e-8605-7f5cd5f82e25, roleOrganization=null}]";
         List<Role> roles = List.of(new Role(UUID.fromString("a617b9c7-c46a-41cf-97c3-cbeee3c454e7"), "AppleTreeCareTaker", organizationId));
-        RestPage<Role> CustomRestPage = new RestPage<>(roles, 1, 1, 1, 1);
+        RestPage<Role> CustomRestPage = new RestPage<>(roles, 1, 1, 1);
 
         //4
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -358,7 +358,7 @@ public class ClientControllerIntegTest {
         // 5 getUsersInOrganizationId
         //List<User> userList = List.of(new User(UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"), "test6@sonam.email"), new User(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), "tom@tom.com"));
         List<UUID> userIds = List.of(UUID.fromString("1f442dab-96a3-459e-8605-7f5cd5f82e25"), UUID.fromString("5eb2eb31-e80c-4924-be00-50a96b12aa3b"));
-        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,2, 1);
+        RestPage<UUID> usersInOrg = new RestPage<>(userIds, 1,1,2);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(usersInOrg)));

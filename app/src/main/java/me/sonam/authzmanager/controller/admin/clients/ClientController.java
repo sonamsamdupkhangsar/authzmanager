@@ -11,6 +11,7 @@ import me.sonam.authzmanager.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.oauth2.OauthClient;
 import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.*;
@@ -446,7 +447,7 @@ public class ClientController implements ClientUserPage {
                 });
     }
 
-    private void allowCreateClient(RestPage<Pair<String, String>> page, Model model) {
+    private void allowCreateClient(RestPage<CustomPair<String, String>> page, Model model) {
         if (page.totalElements() >= maxClients) {
             model.addAttribute("showCreateClient", "false");
         }

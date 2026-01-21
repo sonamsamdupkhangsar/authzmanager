@@ -57,11 +57,11 @@
                     <p>Users in this organization</p>
                     <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
                         <li  class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number-1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}" tabindex="-1">Previous</a>
+                            <a class="page-link" th:href="@{/admin/clients/{id}/users?page={pageNumber}__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__(id=${client.id},pageNumber=${page.number-1})}" tabindex="-1">Previous</a>
                         </li>
 
                         <li class="page-item" th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number+1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}">Next Page</a>
+                            <a class="page-link" th:href="@{/admin/clients/{id}/users?page={pageNumber}__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__(id=${client.id},pageNumber=${page.number+1})}">Next Page</a>
                         </li>
                     </ul>
                 </div>
@@ -90,7 +90,6 @@
                         <tbody>
 
                         <tr th:each="userInClientOrganizationWithRole : ${usersInClientOrganizationUserRole}">
-
                             <td><span th:text="${userInClientOrganizationWithRole.user.firstName}"></span></td>
                             <td><span th:text="${userInClientOrganizationWithRole.user.lastName}"></span></td>
                             <td><span th:text="${userInClientOrganizationWithRole.user.email}"></span></td>

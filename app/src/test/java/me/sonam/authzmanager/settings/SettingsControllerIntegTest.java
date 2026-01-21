@@ -147,7 +147,7 @@ public class SettingsControllerIntegTest {
             UUID userId3 = UUID.randomUUID();
 
             LOG.info("set restPage of userIds for response");
-            RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3, 3);
+            RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3);
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(200).setBody(getJson(restPage)));
 

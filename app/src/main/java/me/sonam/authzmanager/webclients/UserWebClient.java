@@ -170,7 +170,7 @@ public class UserWebClient {
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
 
-        LOG.info("endpoint: {}", stringBuilder);
+        LOG.info("update profile with endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(user).accept(MediaType.APPLICATION_JSON)
