@@ -6,6 +6,7 @@ import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -58,11 +59,10 @@ public class ClientOrganizationUserController {
     }
 
     @DeleteMapping("/{clientOrganizationUserRoleId}")
-    public Mono<String> deleteClientOrganizationUserRole(@PathVariable("clientId")UUID clientsId, @PathVariable("clientOrganizationUserRoleId") UUID id, Model model, Pageable userPageable) {
+    public Mono<String> deleteClientOrganizationUserRole(@PathVariable("clientId")UUID clientsId, @PathVariable("clientOrganizationUserRoleId") UUID id, Model model, final Pageable userPageable) {
         LOG.info("delete client organization user role by id: {} in client.id: {}", id, clientsId);
         final String PATH = "/admin/clients/users";
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = tokenService.getAccessToken();
 
         LOG.info("accesstoken: {}", accessToken);

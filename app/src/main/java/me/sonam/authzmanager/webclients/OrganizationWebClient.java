@@ -2,7 +2,6 @@ package me.sonam.authzmanager.webclients;
 
 
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +46,23 @@ public class OrganizationWebClient {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {});
+        return responseSpec.bodyToMono(
+        new ParameterizedTypeReference<RestPage<Organization>>() {}).doOnNext(organizationCustomRestPage -> {
+            LOG.info("organizations page by owner {}", organizationCustomRestPage);
+        });
+                /*.flatMap(string ->{
+            LOG.info("response: {}", string);
+            ObjectMapper objectMapper = new ObjectMapper();
+            CustomRestPage<Organization> customRestPage = null;
+            try {
+                customRestPage = objectMapper.readValue(string, CustomRestPage.class);
+                LOG.info("got customRestPage from string");
+            } catch (JsonProcessingException e) {
+                LOG.error("json error", e);
+                throw new RuntimeException(e);
+            }
+            return Mono.just(customRestPage);
+        });*///new ParameterizedTypeReference<CustomRestPage<Organization>>() {});
     }
 
     // use httpMethod for update or post

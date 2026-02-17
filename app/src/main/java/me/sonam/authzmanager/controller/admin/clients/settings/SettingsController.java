@@ -76,7 +76,7 @@ public class SettingsController {
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
-                        .switchIfEmpty(Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(),pageable.getPageSize(), 0, 0, 0)))
+                        .switchIfEmpty(Mono.just(new RestPage<>(List.of(), pageable.getPageNumber(),pageable.getPageSize(), 0)))
                         .zipWith(Mono.just(organization)))
 
                         .flatMap(orgWithUserIdPage -> {
@@ -91,7 +91,7 @@ public class SettingsController {
                                 return Mono.just(new ArrayList<User>()).zipWith(Mono.just(orgWithUserIdPage.getT2()).zipWith(Mono.just(orgWithUserIdPage.getT1())));
                             }
                             else {
-                                return userWebClient.getUserByBatchOfIds(accessToken, orgWithUserIdPage.getT1().getContent())
+                                return userWebClient.getUserByBatchOfIds(accessToken, orgWithUserIdPage.getT1().content())
                                         .doOnNext(users -> {
 
                                             LOG.info("add users to model: {}", users);
@@ -105,7 +105,7 @@ public class SettingsController {
                         .flatMap(usersWithOrgAndUserIdPage ->
                              roleWebClient.areUsersSuperAdminInDefaultOrgId(accessToken,
                                     usersWithOrgAndUserIdPage.getT2().getT1().getId(),
-                                    usersWithOrgAndUserIdPage.getT2().getT2().getContent()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
+                                    usersWithOrgAndUserIdPage.getT2().getT2().content()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
                         )
                 .doOnNext(uuidBooleanMapWithUserList -> {
                     LOG.info("got uuidBooleanMap {}", uuidBooleanMapWithUserList);
@@ -215,7 +215,7 @@ public class SettingsController {
 
     }
 
-    // This is called to show this only `user` in the RestPage when a user is found by searching for their username
+    // This is called to show this only `user` in the CustomRestPage when a user is found by searching for their username
     public Mono<String> showUserForDefaultOrganization(String accessToken, UUID loggedInUserId, User user, Model model, Pageable userPageable) {
         LOG.info("get users for organization by id");
 
@@ -244,11 +244,11 @@ public class SettingsController {
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> {
                     if (user == null) {
-                        return Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 1, 1, 0))
+                        return Mono.just(new RestPage<UUID>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0))
                                 .zipWith(Mono.just(organization));
                     }
                     else {
-                        return Mono.just(new RestPage<UUID>(List.of(user.getId()), pageable.getPageNumber(), pageable.getPageSize(), 1, 1, 0))
+                        return Mono.just(new RestPage<UUID>(List.of(user.getId()), pageable.getPageNumber(), pageable.getPageSize(), 1))
                                 .zipWith(Mono.just(organization));
                     }
                 })
@@ -278,7 +278,7 @@ public class SettingsController {
                 .flatMap(usersWithOrgAndUserIdPage ->
                         roleWebClient.areUsersSuperAdminInDefaultOrgId(accessToken,
                                 usersWithOrgAndUserIdPage.getT2().getT1().getId(),
-                                usersWithOrgAndUserIdPage.getT2().getT2().getContent()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
+                                usersWithOrgAndUserIdPage.getT2().getT2().content()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
                 )
                 .doOnNext(uuidBooleanMapWithUserList -> {
                     LOG.info("got uuidBooleanMap {}", uuidBooleanMapWithUserList);

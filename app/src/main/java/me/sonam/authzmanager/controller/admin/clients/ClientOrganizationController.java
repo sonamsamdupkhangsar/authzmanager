@@ -81,10 +81,10 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), id)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.content(), id)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
-                                for (Organization organization : organizationRestPage.getContent()) {
+                                for (Organization organization : organizationRestPage.content()) {
                                     if (id.equals(clientOrganizationResponse.getClientId()) &&
                                             organization.getId().equals(clientOrganizationResponse.getOrganizationId())) {
                                         ClientOrganization clientOrganization1 = new ClientOrganization(id, organization, true);
@@ -129,10 +129,10 @@ public class ClientOrganizationController {
                 .flatMap(organizationRestPage -> {
                     List<ClientOrganization> clientOrganizationList = new ArrayList<>();
 
-                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.getContent(), clientsId)
+                    return clientOrganizationWebClient.getClientIdOrganizationIdMatch(accessToken, organizationRestPage.content(), clientsId)
                             .switchIfEmpty(Mono.just(new ClientOrganization()))
                             .doOnNext(clientOrganizationResponse -> {
-                                for (Organization organization : organizationRestPage.getContent()) {
+                                for (Organization organization : organizationRestPage.content()) {
                                     if (clientsId.equals(clientOrganizationResponse.getClientId()) &&
                                             organization.getId().equals(clientOrganizationResponse.getOrganizationId())) {
                                         ClientOrganization clientOrganization1 = new ClientOrganization(clientsId, organization, true);

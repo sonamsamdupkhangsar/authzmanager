@@ -3,7 +3,6 @@ package me.sonam.authzmanager.role;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.gargoylesoftware.htmlunit.WebClient;
 import me.sonam.authzmanager.Application;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.roles.Role;
@@ -11,11 +10,11 @@ import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.util.JwtUtil;
-import net.bytebuddy.agent.builder.AgentBuilder;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
+import org.htmlunit.WebClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,18 +24,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.core.io.Resource;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
 
 import java.io.IOException;
@@ -49,7 +52,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@EnableSpringDataWebSupport
+@AutoConfigureWebTestClient
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -73,9 +79,19 @@ public class RoleControllerIntegTest {
     @LocalServerPort
     private int randomPort;
 
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
+    @Autowired
+    WebApplicationContext context;
 
+    @org.junit.jupiter.api.BeforeEach
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient.bindToApplicationContext(context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+    }
     @BeforeEach
     public void setTokenServiceMockBehavior() {
         OAuth2AccessToken oAuth2AccessToken = mock(OAuth2AccessToken.class);
@@ -129,7 +145,7 @@ public class RoleControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
-        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 ,1,1);
+        RestPage<Role> restPage = new RestPage<>(List.of(role), 1, 1,1 );
 
         //3 get roles by organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -191,10 +207,10 @@ public class RoleControllerIntegTest {
 
         Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
         List<Organization> list = List.of(organization);
-        RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1,1,1);
+        RestPage<Organization> CustomRestPage = new RestPage<Organization>(list, 0, 1,1);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(restPage)));
+                .setResponseCode(200).setBody(getJson(CustomRestPage)));
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.get().uri("/admin/roles/"+role.getId())
                 .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))) .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
@@ -255,7 +271,7 @@ public class RoleControllerIntegTest {
 
        Organization organization = new Organization(organizationId, "my company", UUID.randomUUID());
        List<Organization> list = List.of(organization);
-       RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1,1,1);
+       RestPage<Organization> restPage = new RestPage<Organization>(list, 1, 1,1);
 
 
        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("name", role.getName());

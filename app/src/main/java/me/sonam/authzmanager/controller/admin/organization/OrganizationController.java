@@ -15,7 +15,6 @@ import me.sonam.authzmanager.webclients.UserWebClient;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -78,10 +77,10 @@ public class OrganizationController {
 
         return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
                 .flatMap(uuidPage ->
-                    organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.getContent()).zipWith(Mono.just(uuidPage)))
+                    organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.content()).zipWith(Mono.just(uuidPage)))
                 .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
                         .doOnNext(objects -> {
-                    Page<UUID> uuidPage = objects.getT2().getT2();
+                    RestPage<UUID> uuidPage = objects.getT2().getT2();
                     List<Organization> list = objects.getT2().getT1();
 
                     list.forEach(organization -> {
@@ -91,8 +90,7 @@ public class OrganizationController {
                         }
                     });
 
-                    Page<Organization> page = new RestPage<>(list, uuidPage.getNumber(),
-                                        uuidPage.getSize(), uuidPage.getTotalElements(), uuidPage.getNumberOfElements(), uuidPage.getNumber());
+                    RestPage<Organization> page = new RestPage<>(list, uuidPage.number(), uuidPage.size(), uuidPage.totalElements());
 
                     model.addAttribute("page", page);
                 }).thenReturn(PATH);
@@ -266,9 +264,9 @@ public class OrganizationController {
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
                 .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.getContent());
+                    LOG.info("uuidPage: {}", uuidPage.content());
                     model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
+                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                 })
                 .doOnNext(users -> {
                     LOG.info("got users: {}", users);
@@ -316,9 +314,9 @@ public class OrganizationController {
                     Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
                     return organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
                             .flatMap(uuidPage -> {
-                                LOG.info("uuidPage: {}", uuidPage.getContent());
+                                LOG.info("uuidPage: {}", uuidPage.content());
                                 model.addAttribute("page", uuidPage);
-                                return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
+                                return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                             })
                             .doOnNext(users -> {
                                 LOG.info("got users: {}", users);
@@ -475,9 +473,9 @@ public class OrganizationController {
     private Mono<String> getUsersInOrganization(final String PATH, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable pageable) {
          return organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
                 .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.getContent());
+                    LOG.info("uuidPage: {}", uuidPage.content());
                     model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.getContent());
+                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                 })
                 .doOnNext(users -> {
                     LOG.info("got users: {}", users);

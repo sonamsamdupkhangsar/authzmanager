@@ -7,10 +7,6 @@ import me.sonam.authzmanager.Application;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.admin.clients.ClientController;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
-import me.sonam.authzmanager.controller.admin.roles.Role;
-import me.sonam.authzmanager.oauth2.OauthClient;
-import me.sonam.authzmanager.oauth2.RegisteredClient;
-import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
@@ -27,36 +23,40 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.ui.Model;
-import org.springframework.validation.support.BindingAwareModelMap;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+@EnableSpringDataWebSupport
+@AutoConfigureWebTestClient
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
@@ -70,14 +70,25 @@ public class SettingsControllerIntegTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @MockBean
+    @MockitoBean
     private TokenService tokenService;
 
     @Autowired
     private MockMvc mockMvc;
     private static MockWebServer mockWebServer;
-    @MockBean
+    @MockitoBean
     ReactiveJwtDecoder jwtDecoder;
+    @Autowired
+    WebApplicationContext context;
+
+    @org.junit.jupiter.api.BeforeEach
+    public void setup() {
+        this.webTestClient = MockMvcWebTestClient.bindToApplicationContext(context)
+                // add Spring Security test Support
+                .apply(springSecurity())
+                .configureClient()
+                .build();
+    }
 
     @BeforeEach
     public void setTokenServiceMockBehavior() {
@@ -136,7 +147,7 @@ public class SettingsControllerIntegTest {
             UUID userId3 = UUID.randomUUID();
 
             LOG.info("set restPage of userIds for response");
-            RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3, 3, 1);
+            RestPage<UUID> restPage = new RestPage<>(List.of(userId1, userId2, userId3), 1, 5, 3);
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(200).setBody(getJson(restPage)));
 

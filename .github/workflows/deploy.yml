@@ -3,7 +3,7 @@ on:
     branches:
       - main
       - feature/*
-
+      - update-springboot-4
 jobs:
 
   build:
