@@ -1,3 +1,4 @@
+<!-- Landing page for the tenant-aware authzmanager UI. -->
 <!doctype html>
 <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/html">
 <head>
@@ -46,7 +47,7 @@
                 </p>
                 <p>
                     To create your account with a organization
-                    <a th:href="${@environment.getProperty('ISSUER_URI')} +'/signup'">sign-up</a> here.
+                    <a th:href="${@tenantAuthorizationUrlResolver.currentIssuerUri()} + '/signup'">sign-up</a> here.
                 </p>
 
                 <p> The new features in this release has user and its related items under a organization.

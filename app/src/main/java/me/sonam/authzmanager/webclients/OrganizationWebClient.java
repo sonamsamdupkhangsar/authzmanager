@@ -148,6 +148,25 @@ public class OrganizationWebClient {
                 });
     }
 
+    public Mono<List<UUID>> getOrganizationIdsForUser(String accessToken, UUID userId) {
+        LOG.info("get organization ids for user {}", userId);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/users/").append(userId).append("/ids");
+
+        LOG.info("get organization ids for user endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<UUID>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get organization ids for user {}", userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
     public Mono<Map<String, String>> addUserToOrganization(String accessToken, UUID userId, UUID organizationId) {
         LOG.info("add user {} to organization {}", userId, organizationId);
 

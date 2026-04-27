@@ -1,3 +1,4 @@
+# Kubernetes profile values for tenant-aware authzmanager deployment.
 # this profile is activated by kubernetes dependencies
 spring:
   cloud:
@@ -23,7 +24,7 @@ SETTING_REST_SERVICE: http://setting-rest-service
 
 allowedOrigins: https://api-gateway.sonam.cloud
 
-ISSUER_ADDRESS: http://authorization.sonam.cloud
+ISSUER_ADDRESS: https://platform.openissuer.com
 
-ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+ISSUER_URI: ${ISSUER_ADDRESS}
 OAUTH_AUDIENCES: oauth-client

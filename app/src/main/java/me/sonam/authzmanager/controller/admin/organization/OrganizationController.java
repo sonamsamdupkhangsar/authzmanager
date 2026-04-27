@@ -33,6 +33,7 @@ import java.util.*;
 @RequestMapping("/admin/organizations")
 public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
+    private static final String USER_IN_ANOTHER_ORG_MESSAGE = "user is already in another organization";
 
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
@@ -324,6 +325,18 @@ public class OrganizationController {
                             }).thenReturn(organization);
                 })
                 .flatMap(organization -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId))
+                .flatMap(user -> organizationWebClient.getOrganizationIdsForUser(accessToken, user.getId())
+                        .flatMap(organizationIds -> {
+                            boolean belongsToDifferentOrganization = organizationIds.stream()
+                                    .anyMatch(existingOrganizationId -> !existingOrganizationId.equals(organizationId));
+
+                            if (belongsToDifferentOrganization) {
+                                LOG.warn("user {} with id {} belongs to another organization, existing organizationIds: {}, requested organizationId: {}",
+                                        user.getAuthenticationId(), user.getId(), organizationIds, organizationId);
+                                return Mono.error(new AuthenticationException(USER_IN_ANOTHER_ORG_MESSAGE));
+                            }
+                            return Mono.just(user);
+                        }))
                 .doOnNext(user -> {
                     LOG.info("found user: {}", user);
                     model.addAttribute("message", "Found user with username '" + authenticationId + "'");
@@ -345,7 +358,12 @@ public class OrganizationController {
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 
-                    model.addAttribute("message", "failed to find user, "+ throwable.getMessage());
+                    if (USER_IN_ANOTHER_ORG_MESSAGE.equals(throwable.getMessage())) {
+                        model.addAttribute("message", USER_IN_ANOTHER_ORG_MESSAGE);
+                    }
+                    else {
+                        model.addAttribute("message", "failed to find user, " + throwable.getMessage());
+                    }
                     return Mono.just(false);
                 })
                 .thenReturn(PATH);

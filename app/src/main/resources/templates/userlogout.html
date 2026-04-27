@@ -1,3 +1,4 @@
+<!-- Logout page for the tenant-aware authzmanager UI. -->
 <!doctype html>
 <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
@@ -34,7 +35,7 @@
             <ul class="nav flex-column">
                 <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Login</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/signup}">Signup</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="${@tenantAuthorizationUrlResolver.currentIssuerUri()} + '/signup'">Signup</a></li>
             </ul>
         </div>
         <div class="col-sm">
