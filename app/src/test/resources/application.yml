@@ -38,7 +38,7 @@ POSTGRES_PASSWORD: dpassword
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
   root: http://localhost:9001
-  contextPath:
+  contextPath: /issuer
   clients: /clients
   clientOrganizations: /clients
   authenticate: /authenticate

@@ -570,7 +570,7 @@ public class OrganizationControllerIntegTest {
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+ organization.getId()+"/users/"+userId1);
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users/"+userId1+"/ids");
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")

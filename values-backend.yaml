@@ -5,6 +5,8 @@
 replicaCount: 1
 
 image:
+  repository: ghcr.io/sonamsamdupkhangsar/authzmanager
+  tag: multitenancy
   pullPolicy: Always
 
 imagePullSecrets:
@@ -14,12 +16,25 @@ fullnameOverride: "authzmanager"
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: false
+  create: true
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name:
+
+rbac:
+  create: true
+  rules:
+    - apiGroups:
+        - ""
+      resources:
+        - services
+        - endpoints
+      verbs:
+        - get
+        - list
+        - watch
 
 podSecurityContext: {}
 # fsGroup: 2000
@@ -42,17 +57,25 @@ istio:
   enabled: false
 
 ingress:
-  enabled: true
-  ingressClass: nginx
-  hosts:
-    - host: authzmanager.sonam.cloud
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: sonam.cloud
-      hosts:
-        - "*.sonam.cloud"
+  enabled: false
+
+httproute:
+  gatewayName: "shared-tls-gateway"
+  namespace: "main"
+  pathPrefix: "/"
+  hostRoutes:
+    - name: platform-admin
+      hostname: "platform.admin.openissuer.com"
+      httpsListenerName: "https-platform-admin"
+      httpListenerName: "http-platform-admin"
+    - name: business1-admin
+      hostname: "business1.admin.openissuer.com"
+      httpsListenerName: "https-business1-admin"
+      httpListenerName: "http-business1-admin"
+    - name: business2-admin
+      hostname: "business2.admin.openissuer.com"
+      httpsListenerName: "https-business2-admin"
+      httpListenerName: "http-business2-admin"
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -82,13 +105,15 @@ envs:
   - name: DB_SSLMODE
     value: "REQUIRE"
   - name: API_GATEWAY
-    value: "https://api-gateway.sonam.cloud"
+    value: "https://platform.openissuer.com"
   - name: ISSUER_URI
-    value: "https://authorization.sonam.cloud/issuer"
+    value: "https://platform.openissuer.com"
   - name: OAUTH_AUDIENCES
     value: "oauth-client"
   - name: SERVER_PORT
     value: "8080"
+  - name: SPRING_PROFILES_ACTIVE
+    value: "kubernetes"
 
 
 health:
