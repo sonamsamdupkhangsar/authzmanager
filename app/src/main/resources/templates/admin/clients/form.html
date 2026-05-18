@@ -98,7 +98,7 @@
 
                 </div>
 
-                <div class="mb-3 row" th:if="*{#strings.isEmpty(id)}">
+                <div class="mb-3 row" th:if="*{#strings.isEmpty(id) and prependUuidToClientId}">
                     <label for="clientId" class="col-sm-4 col-form-label">Client-id (uuid + input)</label>
                     <div class="col-sm-4">
                         <label for="clientIdUuid">uuid</label>
@@ -107,6 +107,14 @@
 
                     <div class="col-sm-4">
                         <label for="clientId">Enter client-id subpart</label>
+                        <label th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-danger">Client id error - enter a client id</label>
+                        <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
+                    </div>
+                </div>
+
+                <div class="mb-3 row" th:if="*{#strings.isEmpty(id) and not prependUuidToClientId}">
+                    <label for="clientId" class="col-sm-4 col-form-label">Client id</label>
+                    <div class="col-sm-7">
                         <label th:if="${#fields.hasErrors('clientId')}" th:errors="*{clientId}" class="text-danger">Client id error - enter a client id</label>
                         <input type="text" class="form-control" id="clientId" th:field="*{clientId}" placeholder="unique client id" />
                     </div>

@@ -86,8 +86,21 @@ authzmanager:
     registration-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
     client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
     client-secret: ${AUTHZMANAGER_INITIAL_SECRET}
+    prepend-uuid-to-created-client-id: true
+    prepend-uuid-to-created-client-id-hosts: ${AUTHZMANAGER_OAUTH2_PREPEND_UUID_TO_CREATED_CLIENT_ID_HOSTS:}
   tenancy:
     host-label: admin
+  user-search:
+    hosts:
+      free.openissuer.com:
+        allowed-email-domains:
+          - "*"
+      business1.openissuer.com:
+        allowed-email-domains:
+          - business1.com
+      business2.openissuer.com:
+        allowed-email-domains:
+          - business2.com
 
 aws:
   s3:

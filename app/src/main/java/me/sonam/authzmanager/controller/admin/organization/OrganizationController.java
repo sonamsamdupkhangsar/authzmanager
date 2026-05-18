@@ -1,10 +1,12 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.service.UserSearchPolicyService;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -40,14 +42,17 @@ public class OrganizationController {
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
     private final SettingWebClient settingWebClient;
+    private final UserSearchPolicyService userSearchPolicyService;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                                  UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService) {
+                                  UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService,
+                                  UserSearchPolicyService userSearchPolicyService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
+        this.userSearchPolicyService = userSearchPolicyService;
     }
 
     /**
@@ -324,7 +329,7 @@ public class OrganizationController {
                                 model.addAttribute("users", users);
                             }).thenReturn(organization);
                 })
-                .flatMap(organization -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId))
+                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId))
                 .flatMap(user -> organizationWebClient.getOrganizationIdsForUser(accessToken, user.getId())
                         .flatMap(organizationIds -> {
                             boolean belongsToDifferentOrganization = organizationIds.stream()
@@ -368,6 +373,12 @@ public class OrganizationController {
                 })
                 .thenReturn(PATH);
 
+    }
+
+    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId) {
+        return userSearchPolicyService.validateSearch(authenticationId)
+                .<Mono<User>>map(error -> Mono.error(new AuthzManagerException(error)))
+                .orElseGet(() -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId));
     }
 
 
