@@ -169,15 +169,23 @@ public class UserSignupIntegTest {
         user.setId(UUID.randomUUID());
         user.setAuthenticationId(map.get("authenticationId").toString());
 
-        //3 user signup response
+        //3 selected organization can accept users from this subdomain
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        //4 user does not exist yet for user-specific preflight
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(404).setBody(getJson(Map.of("error", "user not found"))));
+
+        //5 user signup response
        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"user added successfully\"}"));
 
-       //4 find user by auth-id response
+       //6 find user by auth-id response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(user)));
 
-        //5 add user to org response
+        //7 add user to org response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"added user to organization\"}"));
 
@@ -216,6 +224,17 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId);
 
+        //preflight organization can accept user from subdomain
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/organizations/" + orgId + "/can-add-user");
+
+        //preflight existing user lookup
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/"+userSignup.getAuthenticationId());
+
         //signup user take
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
@@ -246,4 +265,3 @@ public class UserSignupIntegTest {
         return objectMapper.writeValueAsString(o);
     }
 }
-

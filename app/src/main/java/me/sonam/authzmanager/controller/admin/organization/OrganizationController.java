@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.controller.util.MessageConstants;
@@ -393,7 +394,8 @@ public class OrganizationController {
      */
 
     @PostMapping("/{id}/users/add")  //remove as this is not used anymore
-    public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user, Model model, Pageable pageable) {
+    public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user,
+                                               Model model, Pageable pageable, HttpServletRequest request) {
         final String PATH = "admin/organizations/user";
         LOG.info("update user in organization");
 
@@ -411,7 +413,8 @@ public class OrganizationController {
                     if (user.getOrganizationChoice().getSelected()) {
                         LOG.info("choice is selected to add user to organization");
 
-                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
+                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken,
+                                model, pageable, request.getServerName());
                     } else {
                         LOG.info("remove user from organization");
                         return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
@@ -436,12 +439,16 @@ public class OrganizationController {
                 .flatMap(organization -> removeUserFromOrganization(PATH, user, loggedUserId, organization, accessToken, model, pageable));
     }
 
-    private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable userPageable) {
+    private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization,
+                                               String accessToken, Model model, Pageable userPageable, String subdomain) {
         LOG.info("add user to organization: {}", user);
 
         model.addAttribute("organization", organization);
 
-        return organizationWebClient.addUserToOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
+        return organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
+                        user.getOrganizationChoice().getOrganizationId(), subdomain)
+                .then(organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                        user.getOrganizationChoice().getOrganizationId(), subdomain, true))
                 .doOnNext(stringStringMap -> {
                     model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
                     LOG.info("added to user to organization, nullify the user so the form does not show this user again");

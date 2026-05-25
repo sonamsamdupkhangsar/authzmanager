@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.user;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.UserSignupController;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
@@ -93,7 +94,7 @@ public class AddUserController {
 
     @PostMapping// (consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public Mono<String> signupUserFromForm(@Valid @ModelAttribute("signupUser") UserSignup userSignup,
-        BindingResult bindingResult, Model model) {
+        BindingResult bindingResult, Model model, HttpServletRequest request) {
 
         LOG.info("delegate user add to userSignupController for userSignup {}", userSignup);
 
@@ -115,10 +116,11 @@ public class AddUserController {
                 })
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                         .flatMap(organization -> userSignupByAdmin(accessToken, userSignup,
-                                bindingResult, model, USER_ADD));
+                                bindingResult, model, USER_ADD, request.getServerName()));
     }
 
-    private Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {
+    private Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult,
+                                           Model model, final String PATH, String subdomain) {
         LOG.info("User signup initiated by admin for user: {}", userSignup);
 
         if (bindingResult.hasErrors()) {
@@ -126,7 +128,8 @@ public class AddUserController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        return userWebClient.signupUser(accessToken, userSignup)
+        return preflightCanAddUserToOrganization(accessToken, userSignup, subdomain)
+                .then(userWebClient.signupUser(accessToken, userSignup))
                 .flatMap(s -> {
                     LOG.info("user has been added successfully with message: {}", s);
                     StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
@@ -145,7 +148,8 @@ public class AddUserController {
                     return Mono.just(PATH);
                 })
                 .flatMap(s -> userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId()))
-                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()).zipWith(Mono.just(user)))
+                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                        userSignup.getOrganizationId(), subdomain, true).zipWith(Mono.just(user)))
                 .flatMap(objects -> settingWebClient.addDefaultOrganization(accessToken, objects.getT2().getId(), userSignup.getOrganizationId()))
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
@@ -155,6 +159,18 @@ public class AddUserController {
                     return Mono.just(PATH);
                 });
 
+    }
+
+    private Mono<Void> preflightCanAddUserToOrganization(String accessToken, UserSignup userSignup, String subdomain) {
+        return organizationWebClient.canAddUserToOrganization(accessToken, userSignup.getOrganizationId(), subdomain)
+                .then(userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId())
+                        .onErrorResume(throwable -> {
+                            LOG.info("user {} does not exist yet, skipping user-specific organization preflight",
+                                    userSignup.getAuthenticationId());
+                            return Mono.empty();
+                        })
+                        .flatMap(user -> organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
+                                userSignup.getOrganizationId(), subdomain)));
     }
 
     private void setErrorInModel(Throwable throwable, Model model, String defaultErrMessage) {
