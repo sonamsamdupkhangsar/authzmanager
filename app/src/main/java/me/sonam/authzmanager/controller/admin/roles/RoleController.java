@@ -1,12 +1,12 @@
 package me.sonam.authzmanager.controller.admin.roles;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import org.apache.coyote.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,21 +33,19 @@ public class RoleController {
     private RoleWebClient roleWebClient;
     private OrganizationWebClient organizationWebClient;
     private TokenService tokenService;
-    private SettingWebClient settingWebClient;
 
     @Value("${maxRoles}")
     private int maxRoles;
 
     public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient,
-                          SettingWebClient settingWebClient, TokenService tokenService) {
+                          TokenService tokenService) {
         this.roleWebClient = roleWebClient;
         this.organizationWebClient = organizationWebClient;
         this.tokenService = tokenService;
-        this.settingWebClient = settingWebClient;
     }
 
     @GetMapping
-    public Mono<String> getRolesByOrganizationId(Model model, Pageable pageable) {
+    public Mono<String> getRolesByOrganizationId(Model model, Pageable pageable, HttpServletRequest request) {
         final String PATH = "admin/roles/list";
         LOG.info("get roles by owner id");
         int pageSize = 5;
@@ -69,7 +67,7 @@ public class RoleController {
 
         Pageable finalPageable = pageable;
 
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
@@ -99,7 +97,8 @@ public class RoleController {
     }
 
     @PostMapping
-    public Mono<String> updateRole(@Valid  @ModelAttribute("role") Role role, BindingResult bindingResult, Model model, Pageable userPageable) {
+    public Mono<String> updateRole(@Valid  @ModelAttribute("role") Role role, BindingResult bindingResult,
+                                   Model model, Pageable userPageable, HttpServletRequest request) {
         final String PATH = "admin/roles/form";
         HttpMethod httpMethod;
         int pageSize = 5;
@@ -132,7 +131,7 @@ public class RoleController {
         final String accessToken = tokenService.getAccessToken();
 
 
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .flatMap(defaultOrgId -> {
                     LOG.info("orgId: {}, role.orgId: {}", defaultOrgId, role.getOrganizationId());
                     if (role.getOrganizationId() == null) {
@@ -169,7 +168,8 @@ public class RoleController {
     }
 
     @GetMapping("/{id}")
-    public Mono<String> getRoleById(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+    public Mono<String> getRoleById(@PathVariable("id") UUID id, Model model, Pageable userPageable,
+                                    HttpServletRequest request) {
         final String PATH = "admin/roles/form";
         LOG.info("get role by id: {}", id);
         int pageSize = 5;
@@ -185,7 +185,7 @@ public class RoleController {
 
         final String accessToken = tokenService.getAccessToken();
 
-        return  settingWebClient.getDefaultOrganization(accessToken, userId)
+        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {

@@ -78,11 +78,6 @@ account-rest-service:
   context: /accounts
   accountDelete: /accounts/delete
 
-setting-rest-service:
-  root: http://localhost:{port}
-  context: ${setting-rest-service.root}/settings
-  defaultOrganizationId: ${setting-rest-service.context}/users/{userId}
-
 endpoint:
   user:
     signup: "/public/user/signup"

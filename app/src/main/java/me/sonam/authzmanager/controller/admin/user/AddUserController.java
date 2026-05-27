@@ -3,7 +3,6 @@ package me.sonam.authzmanager.controller.admin.user;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
-import me.sonam.authzmanager.controller.UserSignupController;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 
@@ -12,18 +11,12 @@ import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.data.util.Pair;
-import org.springframework.http.MediaType;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -42,7 +35,6 @@ public class AddUserController {
     private static final Logger LOG = LoggerFactory.getLogger(AddUserController.class);
 
     private final TokenService tokenService;
-    private final SettingWebClient settingWebClient;
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
@@ -51,24 +43,22 @@ public class AddUserController {
     @Value("${maxUsersPerOrganization}")
     private int maxUsersPerOrganization;
 
-    public AddUserController(SettingWebClient settingWebClient,
-                             OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
+    public AddUserController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                              TokenService tokenService, UserWebClient userWebClient) {
         this.tokenService = tokenService;
-        this.settingWebClient = settingWebClient;
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
     }
 
     @GetMapping
-    public Mono<String> getSignupForm(Model model) {
+    public Mono<String> getSignupForm(Model model, HttpServletRequest request) {
         LOG.info("returning {}", USER_ADD);
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
 
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
                         .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                         .flatMap(objects -> {
@@ -83,8 +73,8 @@ public class AddUserController {
                         .doOnNext(organization -> model.addAttribute("signupUser", new UserSignup()))
                 .thenReturn(USER_ADD)
                 .onErrorResume(throwable -> {
-                    LOG.debug("error occurred in setting defaultOrganization", throwable);
-                    LOG.error("failed to set default organization {}", throwable.getMessage());
+                    LOG.debug("error occurred in getting defaultOrganization", throwable);
+                    LOG.error("failed to get default organization {}", throwable.getMessage());
 
                     model.addAttribute("organization", new Organization());
                     model.addAttribute("signupUser", new UserSignup());
@@ -104,7 +94,7 @@ public class AddUserController {
         userSignup.setAuthenticationId(userSignup.getEmail());
         UUID userId = Util.getLoggedInUserId();
 
-        return  settingWebClient.getDefaultOrganization(accessToken, userId)
+        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
@@ -150,7 +140,8 @@ public class AddUserController {
                 .flatMap(s -> userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId()))
                 .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(),
                         userSignup.getOrganizationId(), subdomain, true).zipWith(Mono.just(user)))
-                .flatMap(objects -> settingWebClient.addDefaultOrganization(accessToken, objects.getT2().getId(), userSignup.getOrganizationId()))
+                .flatMap(objects -> organizationWebClient.setDefaultOrganization(accessToken,
+                        userSignup.getOrganizationId(), objects.getT2().getId()))
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     LOG.info("exception occured in signing up user by admin {}", throwable.getMessage());

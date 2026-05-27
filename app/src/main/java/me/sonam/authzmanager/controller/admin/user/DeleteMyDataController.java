@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.admin.user;
 
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
@@ -28,15 +29,16 @@ public class DeleteMyDataController {
     private final TokenService tokenService;
     private final OauthClientWebClient oauthClientWebClient;
     private final UserWebClient userWebClient;
-    private final SettingWebClient settingWebClient;
+    private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
 
     public DeleteMyDataController(UserWebClient userWebClient, OauthClientWebClient oauthClientWebClient,
-                                  TokenService tokenService, SettingWebClient settingWebClient, RoleWebClient roleWebClient) {
+                                  TokenService tokenService, OrganizationWebClient organizationWebClient,
+                                  RoleWebClient roleWebClient) {
         this.userWebClient = userWebClient;
         this.oauthClientWebClient = oauthClientWebClient;
         this.tokenService = tokenService;
-        this.settingWebClient = settingWebClient;
+        this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
     }
 
@@ -48,7 +50,7 @@ public class DeleteMyDataController {
     }
 
     @DeleteMapping
-    public Mono<String> deleteMyInfo(Model model) {
+    public Mono<String> deleteMyInfo(Model model, HttpServletRequest request) {
         DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = defaultOidcUser.getAttribute("userId");
 
@@ -57,7 +59,7 @@ public class DeleteMyDataController {
         LOG.info("accessToken {}", accessToken);
         UUID userId = Util.getLoggedInUserId();
 
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {

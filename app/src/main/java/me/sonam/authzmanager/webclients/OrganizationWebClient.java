@@ -168,6 +168,54 @@ public class OrganizationWebClient {
                 });
     }
 
+    public Mono<UUID> getDefaultOrganizationIdForUser(String accessToken, UUID userId, String subdomain) {
+        LOG.info("get default organization id for user {} in subdomain {}", userId, subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain)
+                .append("/users/").append(userId).append("/default-organization-id");
+
+        LOG.info("get default organization id endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .flatMap(map -> {
+                    Object message = map.get("message");
+                    if (message == null) {
+                        return Mono.empty();
+                    }
+                    return Mono.just(UUID.fromString(message.toString()));
+                })
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get default organization id for user {}", userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<String> setDefaultOrganization(String accessToken, UUID organizationId, UUID userId) {
+        LOG.info("set default organization {} for user {}", organizationId, userId);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/").append(organizationId)
+                .append("/users/").append(userId).append("/default");
+
+        LOG.info("set default organization endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+                .map(map -> map.get("message"))
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to set default organization {} for user {}", organizationId, userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
     public Mono<Map<String, String>> addUserToOrganization(String accessToken, UUID userId, UUID organizationId) {
         return addUserToOrganization(accessToken, userId, organizationId, null, false);
     }

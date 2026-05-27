@@ -13,7 +13,6 @@ import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
@@ -42,16 +41,14 @@ public class OrganizationController {
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
-    private final SettingWebClient settingWebClient;
     private final UserSearchPolicyService userSearchPolicyService;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                                  UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService,
+                                  UserWebClient userWebClient, TokenService tokenService,
                                   UserSearchPolicyService userSearchPolicyService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
-        this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
         this.userSearchPolicyService = userSearchPolicyService;
     }
@@ -63,7 +60,7 @@ public class OrganizationController {
      * @return
      */
     @GetMapping
-    public Mono<String> getOrganizations(Model model, Pageable pageable1) {
+    public Mono<String> getOrganizations(Model model, Pageable pageable1, HttpServletRequest request) {
         LOG.info("get organization");
         final String PATH = "/admin/organizations/list";
         int pageSize = 5;
@@ -85,7 +82,8 @@ public class OrganizationController {
         return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
                 .flatMap(uuidPage ->
                     organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.content()).zipWith(Mono.just(uuidPage)))
-                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        userId, request.getServerName()).zipWith(Mono.just(objects)))
                         .doOnNext(objects -> {
                     RestPage<UUID> uuidPage = objects.getT2().getT2();
                     List<Organization> list = objects.getT2().getT1();
@@ -105,7 +103,8 @@ public class OrganizationController {
     }
 
     @PostMapping
-    public Mono<String> updateOrganization(@Valid @ModelAttribute("organization") Organization organization, BindingResult bindingResult, Model model) {
+    public Mono<String> updateOrganization(@Valid @ModelAttribute("organization") Organization organization,
+                                           BindingResult bindingResult, Model model) {
         final String PATH = "admin/organizations/form";
         HttpMethod httpMethod;
 
@@ -146,8 +145,9 @@ public class OrganizationController {
                             // user set the org as default
                             organization1.setPreviousDefaultOrganization(true);
                             organization1.setDefaultOrganization(true);
-                            LOG.info("call setting service to set this org as default org");
-                            return settingWebClient.addDefaultOrganization(accessToken, userId, org.getId()).thenReturn(PATH);
+                            LOG.info("call organization service to set this org as default org");
+                            return organizationWebClient.setDefaultOrganization(accessToken, org.getId(), userId)
+                                    .thenReturn(PATH);
                         }
                         else if(!organization.getDefaultOrganization()) {
                             LOG.info("default checkbox is shown but not selected");
@@ -172,7 +172,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{id}")
-    public Mono<String> getOrganizationById(@PathVariable("id") UUID id, Model model) {
+    public Mono<String> getOrganizationById(@PathVariable("id") UUID id, Model model, HttpServletRequest request) {
         final String PATH = "admin/organizations/form";
         LOG.info("get organization by id: {}", id);
 
@@ -188,7 +188,8 @@ public class OrganizationController {
                     }
                     return Mono.just(objects);
                 })
-                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        userId, request.getServerName()).zipWith(Mono.just(objects)))
                 .flatMap(objects -> {
                     Organization organization = objects.getT2().getT2();
 
@@ -205,7 +206,8 @@ public class OrganizationController {
 
 
     @GetMapping("/{id}/roles")
-    public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+    public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable,
+                                                  HttpServletRequest request) {
         final String PATH = "admin/organizations/roles";
         LOG.info("get roles for organization by id: {}", id);
 
@@ -219,7 +221,7 @@ public class OrganizationController {
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         String accessToken = tokenService.getAccessToken();
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .doOnNext(uuid -> {
                     LOG.info("add defaultOrganizationId to model: {}", uuid);
                     model.addAttribute("defaultOrganizationId", uuid);

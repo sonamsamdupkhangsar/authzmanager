@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.controller.admin.clients.settings;
 
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.util.Util;
@@ -8,7 +9,6 @@ import me.sonam.authzmanager.service.UserSearchPolicyService;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,16 +32,14 @@ public class SettingsController {
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
-    private final SettingWebClient settingWebClient;
     private final UserSearchPolicyService userSearchPolicyService;
 
     public SettingsController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                              UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService,
+                              UserWebClient userWebClient, TokenService tokenService,
                               UserSearchPolicyService userSearchPolicyService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
-        this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
         this.userSearchPolicyService = userSearchPolicyService;
     }
@@ -50,7 +48,7 @@ public class SettingsController {
     get users in the organization id
      */
     @GetMapping
-    public Mono<String> getUsersForDefaultOrganization(Model model, Pageable userPageable) {
+    public Mono<String> getUsersForDefaultOrganization(Model model, Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
 
@@ -74,7 +72,8 @@ public class SettingsController {
                     model.addAttribute("authzManagerRoleId", uuid);
                 })
                 .switchIfEmpty(Mono.error(new AuthzManagerException("No SuperAdmin authzManagerRole found")))
-                .flatMap(stringStringMap -> settingWebClient.getDefaultOrganization(accessToken, userId))
+                .flatMap(stringStringMap -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        userId, request.getServerName()))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
@@ -156,7 +155,8 @@ public class SettingsController {
 
     @PostMapping
     public Mono<String> setUserSuperAdmin(@RequestParam("authzManagerRoleId")UUID authzManagerRoleId, @RequestParam("userId") UUID targetUserId,
-                                          @RequestParam("organizationId")UUID organizationId, Model model, Pageable userPageable) {
+                                          @RequestParam("organizationId")UUID organizationId, Model model,
+                                          Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
 
@@ -164,7 +164,7 @@ public class SettingsController {
                 .doOnNext(stringObjectMap -> {
                     LOG.info("assigned user to superadmin role with a authzManagerRoleOrganiation id {}", stringObjectMap.get("id"));
                 })
-                .then(getUsersForDefaultOrganization(model, userPageable));
+                .then(getUsersForDefaultOrganization(model, userPageable, request));
     }
 
     @DeleteMapping
@@ -180,7 +180,8 @@ public class SettingsController {
 
     @PostMapping("{organizationId}/users")
     public Mono<String> findUserByAuthenticationId(@PathVariable("organizationId") UUID organizationId,
-                                                   @ModelAttribute("username") String authenticationId, final Model model, Pageable userPageable) {
+                                                   @ModelAttribute("username") String authenticationId, final Model model,
+                                                   Pageable userPageable, HttpServletRequest request) {
         LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
@@ -208,7 +209,8 @@ public class SettingsController {
                         return Mono.just(objects);
                     }
                 })
-                .flatMap(objects -> showUserForDefaultOrganization(accessToken, loggedInUserId, objects.getT2(), model, userPageable))
+                .flatMap(objects -> showUserForDefaultOrganization(accessToken, loggedInUserId, objects.getT2(),
+                        model, userPageable, request.getServerName()))
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 
@@ -226,7 +228,8 @@ public class SettingsController {
     }
 
     // This is called to show this only `user` in the CustomRestPage when a user is found by searching for their username
-    public Mono<String> showUserForDefaultOrganization(String accessToken, UUID loggedInUserId, User user, Model model, Pageable userPageable) {
+    public Mono<String> showUserForDefaultOrganization(String accessToken, UUID loggedInUserId, User user,
+                                                       Model model, Pageable userPageable, String subdomain) {
         LOG.info("get users for organization by id");
 
         int pageSize = 5;
@@ -247,7 +250,8 @@ public class SettingsController {
                     model.addAttribute("authzManagerRoleId", uuid);
                 })
                 .switchIfEmpty(Mono.error(new AuthzManagerException("No SuperAdmin authzManagerRole found")))
-                .flatMap(stringStringMap -> settingWebClient.getDefaultOrganization(accessToken, loggedInUserId))
+                .flatMap(stringStringMap -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        loggedInUserId, subdomain))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))

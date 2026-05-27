@@ -39,12 +39,6 @@ public class BeanConfig {
     @Value("${account-rest-service.accountDelete}")
     private String deleteMyAccountEndpoint;
 
-    @Value("${setting-rest-service.users}")
-    private String userSettingEndpoint;
-
-    @Value("${setting-rest-service.defaultOrganization}")
-    private String defaultOrganizationSettingEndpoint;
-
     @Autowired
     @Qualifier("regular")
     private WebClient.Builder webClientBuilder;
@@ -120,13 +114,5 @@ public class BeanConfig {
     @Bean
     public AccountWebClient accountWebClient() {
         return new AccountWebClient(webClientWithTokenFilter, deleteMyAccountEndpoint);
-    }
-
-    /**
-     * Creates the settings service client.
-     */
-    @Bean
-    public SettingWebClient settingWebClient() {
-        return new SettingWebClient(webClientWithTokenFilter, userSettingEndpoint, defaultOrganizationSettingEndpoint);
     }
 }

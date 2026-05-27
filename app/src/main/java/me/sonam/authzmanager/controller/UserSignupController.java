@@ -6,7 +6,6 @@ import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +37,6 @@ public class UserSignupController {
 
     @Autowired
     private OrganizationWebClient organizationWebClient;
-
-    @Autowired
-    private SettingWebClient settingWebClient;
 
     public UserSignupController(UserWebClient userWebClient) {
         this.userWebClient = userWebClient;

@@ -20,12 +20,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -48,6 +51,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -123,7 +127,210 @@ public class UserSignupIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
-        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @ParameterizedTest(name = "admin signup passes request subdomain {0}")
+    @ValueSource(strings = {
+            "business1.admin.openissuer.test",
+            "business2.admin.openissuer.test",
+            "localhost"
+    })
+    public void adminSignupChecksEachRequestSubdomain(String subdomain) throws Exception {
+        String email = "tenantuser@sonam.cloud";
+        String authenticationId = "tenant-user";
+        Jwt jwt = JwtUtil.jwt(authenticationId);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+        User signedUpUser = new User();
+        signedUpUser.setFirstName("Tenant");
+        signedUpUser.setLastName("User");
+        signedUpUser.setId(UUID.randomUUID());
+        signedUpUser.setAuthenticationId(authenticationId);
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(Map.of("error", "user not found")).setResponseCode(404));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
+        mockWebServer.enqueue(jsonResponse(signedUpUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "added user to organization")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "default organization updated")));
+
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Tenant", "User", email, false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).returnResult();
+
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("Tenant User has been added successfully");
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + orgId + "/can-add-user");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/" + email);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/" + email);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8())
+                .contains("\"subdomain\":\"" + subdomain + "\"")
+                .contains("\"restrictToSubdomain\":true");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/" + orgId + "/users/" + signedUpUser.getId() + "/default");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupChecksExistingUserAgainstSubdomainBeforeSignup() throws Exception {
+        String subdomain = "business1.admin.openissuer.test";
+        String authenticationId = "existing-user";
+        Jwt jwt = JwtUtil.jwt(authenticationId);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+        User existingUser = new User();
+        existingUser.setId(UUID.randomUUID());
+        existingUser.setAuthenticationId(authenticationId + "@sonam.cloud");
+        existingUser.setFirstName("Existing");
+        existingUser.setLastName("User");
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(existingUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
+        mockWebServer.enqueue(jsonResponse(existingUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "added user to organization")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "default organization updated")));
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Existing", "User", authenticationId + "@sonam.cloud", true))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("Existing User has been added successfully")
+                        .contains("Their account is now active"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        assertUserLookup(authenticationId + "@sonam.cloud");
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/subdomain/" + subdomain + "/users/" + existingUser.getId()
+                        + "/organizations/" + orgId + "/can-add");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+
+        assertUserLookup(authenticationId + "@sonam.cloud");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8())
+                .contains("\"subdomain\":\"" + subdomain + "\"")
+                .contains("\"restrictToSubdomain\":true");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/" + orgId + "/users/" + existingUser.getId() + "/default");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupShowsErrorWhenOrganizationRejectsSubdomain() throws Exception {
+        String subdomain = "blocked.admin.openissuer.test";
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "blocked company", UUID.randomUUID());
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false, "reason", "subdomain is not allowed")));
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Blocked", "User", "blocked-user@sonam.cloud", false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body).contains("subdomain is not allowed"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupShowsErrorWhenExistingUserCannotJoinSubdomainOrganization() throws Exception {
+        String subdomain = "business2.admin.openissuer.test";
+        String authenticationId = "cross-tenant-user";
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+        User existingUser = new User();
+        existingUser.setId(UUID.randomUUID());
+        existingUser.setAuthenticationId(authenticationId + "@sonam.cloud");
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(existingUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false, "reason", "user belongs to another subdomain")));
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Cross", "Tenant", authenticationId + "@sonam.cloud", false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body).contains("user belongs to another subdomain"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        assertUserLookup(authenticationId + "@sonam.cloud");
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/subdomain/" + subdomain + "/users/" + existingUser.getId()
+                        + "/organizations/" + orgId + "/can-add");
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -152,7 +359,7 @@ public class UserSignupIntegTest {
 
         //1 get default organization
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organization.getId())))));
+                .setResponseCode(200).setBody(getJson(Map.of("message", organization.getId()))));
 
         //2 superAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -190,7 +397,7 @@ public class UserSignupIntegTest {
                 .setResponseCode(200).setBody("{\"message\": \"added user to organization\"}"));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody("{\"message\": \"added defaultOrganizationId\"}"));
+                .setResponseCode(200).setBody("{\"message\": \"default organization updated\"}"));
 
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -212,7 +419,8 @@ public class UserSignupIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         // get default org take
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
 
         //is user superadmin in org take
         recordedRequest = mockWebServer.takeRequest();
@@ -250,10 +458,11 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
 
-        //add defaultOrganizationId for user
+        //set default organization for user
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/" + orgId + "/users/" + user.getId() + "/default");
 
         LOG.info("done signing up user by admin");
         LOG.info("mvcResult: {}", entityExchangeResult.getResponseBody());
@@ -263,5 +472,61 @@ public class UserSignupIntegTest {
     public String getJson(Object o) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.writeValueAsString(o);
+    }
+
+    private void enqueueAdminSignupSetup(Organization organization, UUID loggedInUserId, boolean superAdmin)
+            throws JsonProcessingException {
+        mockWebServer.enqueue(jsonResponse(Map.of("message", organization.getId())));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", superAdmin)));
+        mockWebServer.enqueue(jsonResponse(organization));
+    }
+
+    private void assertAdminSignupSetupRequests(UUID loggedInUserId, UUID organizationId) throws InterruptedException {
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + loggedInUserId + "/default-organization-id");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + loggedInUserId + "/organizations/" + organizationId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + organizationId);
+    }
+
+    private void assertOrganizationSubdomainPreflight(String subdomain, UUID organizationId) throws InterruptedException {
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + organizationId + "/can-add-user");
+    }
+
+    private void assertUserLookup(String authenticationId) throws InterruptedException {
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/authentication-id/" + authenticationId);
+    }
+
+    private MultiValueMap<String, String> signupFormData(UUID organizationId, String firstName, String lastName,
+                                                         String email, boolean active) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("firstName", firstName);
+        formData.add("lastName", lastName);
+        formData.add("email", email);
+        formData.add("authenticationId", email);
+        formData.add("password", "1234567890");
+        formData.add("organizationId", organizationId.toString());
+        formData.add("active", Boolean.toString(active));
+        return formData;
+    }
+
+    private MockResponse jsonResponse(Object object) throws JsonProcessingException {
+        return new MockResponse()
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200)
+                .setBody(getJson(object));
     }
 }

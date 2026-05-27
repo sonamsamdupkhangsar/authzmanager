@@ -20,7 +20,6 @@ AUTH_SERVER: http://authorization-server
 ORGANIZATION_REST_SERVICE: http://organization-rest-service
 ROLE_REST_SERVICE: http://role-rest-service
 ACCOUNT_REST_SERVICE: http://account-rest-service
-SETTING_REST_SERVICE: http://setting-rest-service
 
 allowedOrigins: https://platform.admin.openissuer.com, https://business1.admin.openissuer.com, https://business2.admin.openissuer.com
 

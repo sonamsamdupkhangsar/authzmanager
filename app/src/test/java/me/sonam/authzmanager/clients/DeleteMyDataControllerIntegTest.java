@@ -107,7 +107,6 @@ public class DeleteMyDataControllerIntegTest {
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
-        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
     /**
@@ -126,7 +125,7 @@ public class DeleteMyDataControllerIntegTest {
         UUID organizationId = UUID.randomUUID();
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", organizationId)))));
+                .setResponseCode(200).setBody(getJson(Map.of("message", organizationId))));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
                 .setResponseCode(200).setBody("{\"message\": true}"));
@@ -147,7 +146,8 @@ public class DeleteMyDataControllerIntegTest {
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users/"+userId);
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
