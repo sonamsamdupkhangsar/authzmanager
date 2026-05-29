@@ -8,6 +8,7 @@ import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.service.UserSearchPolicyService;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -42,15 +43,18 @@ public class OrganizationController {
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
     private final UserSearchPolicyService userSearchPolicyService;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                                   UserWebClient userWebClient, TokenService tokenService,
-                                  UserSearchPolicyService userSearchPolicyService) {
+                                  UserSearchPolicyService userSearchPolicyService,
+                                  TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.tokenService = tokenService;
         this.userSearchPolicyService = userSearchPolicyService;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     /**
@@ -78,12 +82,13 @@ public class OrganizationController {
         }
 
         final Pageable pageable = PageRequest.of(pageable1.getPageNumber(), pageSize, Sort.by("name"));
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
                 .flatMap(uuidPage ->
                     organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.content()).zipWith(Mono.just(uuidPage)))
                 .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
-                        userId, request.getServerName()).zipWith(Mono.just(objects)))
+                        userId, organizationHost).zipWith(Mono.just(objects)))
                         .doOnNext(objects -> {
                     RestPage<UUID> uuidPage = objects.getT2().getT2();
                     List<Organization> list = objects.getT2().getT1();
@@ -178,6 +183,7 @@ public class OrganizationController {
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
@@ -189,7 +195,7 @@ public class OrganizationController {
                     return Mono.just(objects);
                 })
                 .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
-                        userId, request.getServerName()).zipWith(Mono.just(objects)))
+                        userId, organizationHost).zipWith(Mono.just(objects)))
                 .flatMap(objects -> {
                     Organization organization = objects.getT2().getT2();
 
@@ -221,7 +227,8 @@ public class OrganizationController {
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         String accessToken = tokenService.getAccessToken();
-        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .doOnNext(uuid -> {
                     LOG.info("add defaultOrganizationId to model: {}", uuid);
                     model.addAttribute("defaultOrganizationId", uuid);
@@ -415,8 +422,9 @@ public class OrganizationController {
                     if (user.getOrganizationChoice().getSelected()) {
                         LOG.info("choice is selected to add user to organization");
 
+                        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
                         return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken,
-                                model, pageable, request.getServerName());
+                                model, pageable, organizationHost);
                     } else {
                         LOG.info("remove user from organization");
                         return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);

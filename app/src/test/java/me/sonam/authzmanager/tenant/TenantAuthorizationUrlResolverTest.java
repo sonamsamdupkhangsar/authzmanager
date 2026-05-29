@@ -51,4 +51,17 @@ class TenantAuthorizationUrlResolverTest {
         assertEquals("business2.openissuer.test", resolver.currentAuthorizationHost());
         assertEquals("http://business2.openissuer.test:9001", resolver.currentIssuerUri());
     }
+
+    @Test
+    void resolvesFreeAuthorizationHostFromLocalAdminSubdomain() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServerName("free.admin.openissuer.test");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        TenantAuthorizationUrlResolver resolver =
+                new TenantAuthorizationUrlResolver("admin", "http://platform.openissuer.test:9001");
+
+        assertEquals("free.openissuer.test", resolver.currentAuthorizationHost());
+        assertEquals("http://free.openissuer.test:9001", resolver.currentIssuerUri());
+    }
 }

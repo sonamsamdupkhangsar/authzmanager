@@ -8,6 +8,7 @@ import me.sonam.authzmanager.controller.signup.UserSignup;
 
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -38,17 +39,20 @@ public class AddUserController {
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     private final String USER_ADD = "/admin/users/add";
 
     @Value("${maxUsersPerOrganization}")
     private int maxUsersPerOrganization;
 
     public AddUserController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                             TokenService tokenService, UserWebClient userWebClient) {
+                             TokenService tokenService, UserWebClient userWebClient,
+                             TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.tokenService = tokenService;
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     @GetMapping
@@ -57,8 +61,9 @@ public class AddUserController {
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
                         .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                         .flatMap(objects -> {
@@ -93,8 +98,9 @@ public class AddUserController {
         final String accessToken = tokenService.getAccessToken();
         userSignup.setAuthenticationId(userSignup.getEmail());
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
@@ -106,7 +112,7 @@ public class AddUserController {
                 })
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                         .flatMap(organization -> userSignupByAdmin(accessToken, userSignup,
-                                bindingResult, model, USER_ADD, request.getServerName()));
+                                bindingResult, model, USER_ADD, organizationHost));
     }
 
     private Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult,

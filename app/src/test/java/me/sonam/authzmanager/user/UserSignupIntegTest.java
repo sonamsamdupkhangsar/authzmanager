@@ -137,6 +137,7 @@ public class UserSignupIntegTest {
             "localhost"
     })
     public void adminSignupChecksEachRequestSubdomain(String subdomain) throws Exception {
+        String organizationHost = organizationHostFor(subdomain);
         String email = "tenantuser@sonam.cloud";
         String authenticationId = "tenant-user";
         Jwt jwt = JwtUtil.jwt(authenticationId);
@@ -176,7 +177,7 @@ public class UserSignupIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + orgId + "/can-add-user");
+                .startsWith("/organizations/subdomain/" + organizationHost + "/organizations/" + orgId + "/can-add-user");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -194,7 +195,7 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
         Assertions.assertThat(recordedRequest.getBody().readUtf8())
-                .contains("\"subdomain\":\"" + subdomain + "\"")
+                .contains("\"subdomain\":\"" + organizationHost + "\"")
                 .contains("\"restrictToSubdomain\":true");
 
         recordedRequest = mockWebServer.takeRequest();
@@ -207,6 +208,7 @@ public class UserSignupIntegTest {
     @Test
     public void adminSignupChecksExistingUserAgainstSubdomainBeforeSignup() throws Exception {
         String subdomain = "business1.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
         String authenticationId = "existing-user";
         Jwt jwt = JwtUtil.jwt(authenticationId);
 
@@ -242,13 +244,13 @@ public class UserSignupIntegTest {
                         .contains("Their account is now active"));
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
-        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
         assertUserLookup(authenticationId + "@sonam.cloud");
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + subdomain + "/users/" + existingUser.getId()
+                .startsWith("/organizations/subdomain/" + organizationHost + "/users/" + existingUser.getId()
                         + "/organizations/" + orgId + "/can-add");
 
         recordedRequest = mockWebServer.takeRequest();
@@ -261,7 +263,7 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
         Assertions.assertThat(recordedRequest.getBody().readUtf8())
-                .contains("\"subdomain\":\"" + subdomain + "\"")
+                .contains("\"subdomain\":\"" + organizationHost + "\"")
                 .contains("\"restrictToSubdomain\":true");
 
         recordedRequest = mockWebServer.takeRequest();
@@ -274,6 +276,7 @@ public class UserSignupIntegTest {
     @Test
     public void adminSignupShowsErrorWhenOrganizationRejectsSubdomain() throws Exception {
         String subdomain = "blocked.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
         UUID orgId = UUID.randomUUID();
         UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
         Organization organization = new Organization(orgId, "blocked company", UUID.randomUUID());
@@ -291,7 +294,7 @@ public class UserSignupIntegTest {
                 .expectBody(String.class).value(body -> Assertions.assertThat(body).contains("subdomain is not allowed"));
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
-        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
         Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -299,6 +302,7 @@ public class UserSignupIntegTest {
     @Test
     public void adminSignupShowsErrorWhenExistingUserCannotJoinSubdomainOrganization() throws Exception {
         String subdomain = "business2.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
         String authenticationId = "cross-tenant-user";
         UUID orgId = UUID.randomUUID();
         UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
@@ -322,13 +326,13 @@ public class UserSignupIntegTest {
                 .expectBody(String.class).value(body -> Assertions.assertThat(body).contains("user belongs to another subdomain"));
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
-        assertOrganizationSubdomainPreflight(subdomain, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
         assertUserLookup(authenticationId + "@sonam.cloud");
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + subdomain + "/users/" + existingUser.getId()
+                .startsWith("/organizations/subdomain/" + organizationHost + "/users/" + existingUser.getId()
                         + "/organizations/" + orgId + "/can-add");
         Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
@@ -502,6 +506,13 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
                 .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + organizationId + "/can-add-user");
+    }
+
+    private String organizationHostFor(String requestHost) {
+        if (requestHost.contains(".admin.")) {
+            return requestHost.replace(".admin.", ".");
+        }
+        return "openissuer.test";
     }
 
     private void assertUserLookup(String authenticationId) throws InterruptedException {

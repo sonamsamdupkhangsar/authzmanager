@@ -6,6 +6,7 @@ import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.service.UserSearchPolicyService;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -33,15 +34,18 @@ public class SettingsController {
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
     private final UserSearchPolicyService userSearchPolicyService;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
 
     public SettingsController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                               UserWebClient userWebClient, TokenService tokenService,
-                              UserSearchPolicyService userSearchPolicyService) {
+                              UserSearchPolicyService userSearchPolicyService,
+                              TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.tokenService = tokenService;
         this.userSearchPolicyService = userSearchPolicyService;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     /*
@@ -61,6 +65,7 @@ public class SettingsController {
             LOG.info("taking page size from pageable: {}", pageSize);
         }
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         final String noDefaultOrgFound = "No Default organization found";
 
@@ -73,7 +78,7 @@ public class SettingsController {
                 })
                 .switchIfEmpty(Mono.error(new AuthzManagerException("No SuperAdmin authzManagerRole found")))
                 .flatMap(stringStringMap -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
-                        userId, request.getServerName()))
+                        userId, organizationHost))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organizationId", organization.getId()))
@@ -210,7 +215,7 @@ public class SettingsController {
                     }
                 })
                 .flatMap(objects -> showUserForDefaultOrganization(accessToken, loggedInUserId, objects.getT2(),
-                        model, userPageable, request.getServerName()))
+                        model, userPageable, tenantAuthorizationUrlResolver.currentAuthorizationHost()))
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
@@ -33,15 +34,18 @@ public class RoleController {
     private RoleWebClient roleWebClient;
     private OrganizationWebClient organizationWebClient;
     private TokenService tokenService;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
 
     @Value("${maxRoles}")
     private int maxRoles;
 
     public RoleController(RoleWebClient roleWebClient, OrganizationWebClient organizationWebClient,
-                          TokenService tokenService) {
+                          TokenService tokenService,
+                          TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.roleWebClient = roleWebClient;
         this.organizationWebClient = organizationWebClient;
         this.tokenService = tokenService;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     @GetMapping
@@ -64,10 +68,11 @@ public class RoleController {
         UUID userId = UUID.fromString(userIdAttribute);
 
         final String accessToken = tokenService.getAccessToken();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         Pageable finalPageable = pageable;
 
-        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
@@ -129,9 +134,10 @@ public class RoleController {
         UUID userId = UUID.fromString(userIdAttribute);
 
         final String accessToken = tokenService.getAccessToken();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
 
-        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .flatMap(defaultOrgId -> {
                     LOG.info("orgId: {}, role.orgId: {}", defaultOrgId, role.getOrganizationId());
                     if (role.getOrganizationId() == null) {
@@ -184,8 +190,9 @@ public class RoleController {
         LOG.info("userId: {}", userId);
 
         final String accessToken = tokenService.getAccessToken();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {

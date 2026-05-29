@@ -10,6 +10,8 @@ import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Optional environment:
  * AUTHZMGR_E2E_USERS_PER_SUBDOMAIN=1
  * AUTHZMGR_E2E_CLIENTS_PER_SUBDOMAIN=1
- * AUTHZMGR_E2E_USER_EMAIL_DOMAIN=example.com
+ * AUTHZMGR_E2E_USER_EMAIL_TEMPLATE=sonamhava+{auth_id}@gmail.com
+ * AUTHZMGR_E2E_WAIT_FOR_ACTIVATION=false
+ * AUTHZMGR_E2E_ACTIVATION_WAIT_SECONDS=300
+ * AUTHZMGR_E2E_ARTIFACT_DIR=build/live-e2e-artifacts
  * AUTHZMGR_E2E_CLIENT_SECRET=live-e2e-secret-123
  * AUTHZMGR_E2E_REDIRECT_URI=https://example.com/callback
  */
@@ -38,7 +43,11 @@ class LiveSignupAndClientE2ETest {
     private static final String PASSWORD = requireEnv("AUTHZMGR_E2E_PASSWORD");
     private static final int USERS_PER_SUBDOMAIN = intEnv("AUTHZMGR_E2E_USERS_PER_SUBDOMAIN", 1);
     private static final int CLIENTS_PER_SUBDOMAIN = intEnv("AUTHZMGR_E2E_CLIENTS_PER_SUBDOMAIN", 1);
-    private static final String USER_EMAIL_DOMAIN = env("AUTHZMGR_E2E_USER_EMAIL_DOMAIN", "example.com");
+    private static final String USER_EMAIL_TEMPLATE = env("AUTHZMGR_E2E_USER_EMAIL_TEMPLATE",
+            "live-e2e+{auth_id}@example.com");
+    private static final boolean WAIT_FOR_ACTIVATION = boolEnv("AUTHZMGR_E2E_WAIT_FOR_ACTIVATION", false);
+    private static final int ACTIVATION_WAIT_SECONDS = intEnv("AUTHZMGR_E2E_ACTIVATION_WAIT_SECONDS", 300);
+    private static final Path ARTIFACT_DIR = Path.of(env("AUTHZMGR_E2E_ARTIFACT_DIR", "build/live-e2e-artifacts"));
     private static final String CLIENT_SECRET = env("AUTHZMGR_E2E_CLIENT_SECRET", "live-e2e-secret-123");
     private static final String REDIRECT_URI = env("AUTHZMGR_E2E_REDIRECT_URI", "https://example.com/callback");
 
@@ -52,6 +61,9 @@ class LiveSignupAndClientE2ETest {
         assertFalse(baseUrls.isEmpty(), "AUTHZMGR_E2E_BASE_URLS must contain at least one URL");
 
         String runId = Long.toString(Instant.now().toEpochMilli());
+        Path runDir = ARTIFACT_DIR.resolve("htmlunit-" + runId);
+        Files.createDirectories(runDir);
+        Path pendingActivations = runDir.resolve("pending-activations.txt");
 
         try (WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
             webClient.getOptions().setJavaScriptEnabled(true);
@@ -62,17 +74,21 @@ class LiveSignupAndClientE2ETest {
 
             for (String baseUrl : baseUrls) {
                 String normalizedBaseUrl = trimTrailingSlash(baseUrl);
+                String subdomainSlug = slug(normalizedBaseUrl);
                 ensureLoggedIn(webClient, normalizedBaseUrl);
 
                 for (int i = 1; i <= USERS_PER_SUBDOMAIN; i++) {
-                    String email = "live-e2e-" + slug(normalizedBaseUrl) + "-" + runId + "-u" + i
-                            + "@" + USER_EMAIL_DOMAIN;
-                    HtmlPage signupResult = signUpUser(webClient, normalizedBaseUrl, email);
+                    String authId = "live-e2e-" + subdomainSlug + "-" + runId + "-u" + i;
+                    String email = emailForAuthId(authId);
+                    HtmlPage signupResult = signUpUser(webClient, normalizedBaseUrl, authId, email);
                     assertContains(signupResult, "User Signup Success", "signup result for " + email);
+                    appendPendingActivation(pendingActivations, normalizedBaseUrl, authId, email);
                 }
 
+                waitForActivationIfEnabled(pendingActivations);
+
                 for (int i = 1; i <= CLIENTS_PER_SUBDOMAIN; i++) {
-                    String clientId = "live-e2e-" + slug(normalizedBaseUrl) + "-" + runId + "-c" + i;
+                    String clientId = "live-e2e-" + subdomainSlug + "-" + runId + "-c" + i;
                     HtmlPage clientResult = createClient(webClient, normalizedBaseUrl, clientId);
                     assertContains(clientResult, "Client created successfully", "client create result for " + clientId);
                 }
@@ -80,14 +96,14 @@ class LiveSignupAndClientE2ETest {
         }
     }
 
-    private HtmlPage signUpUser(WebClient webClient, String baseUrl, String email) throws IOException {
+    private HtmlPage signUpUser(WebClient webClient, String baseUrl, String authId, String email) throws IOException {
         HtmlPage page = openAuthenticated(webClient, baseUrl + "/admin/organizations/users");
         HtmlForm form = firstForm(page);
 
         setInput(form, "firstName", "Live");
         setInput(form, "lastName", "E2E");
         setInput(form, "email", email);
-        setInput(form, "authenticationId", email);
+        setInput(form, "authenticationId", authId);
 
         HtmlInput setPassword = optionalInputById(page, "setPassword");
         if (setPassword != null && !setPassword.isChecked()) {
@@ -242,6 +258,31 @@ class LiveSignupAndClientE2ETest {
     private static int intEnv(String name, int defaultValue) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? defaultValue : Integer.parseInt(value);
+    }
+
+    private static boolean boolEnv(String name, boolean defaultValue) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? defaultValue : Boolean.parseBoolean(value);
+    }
+
+    private static String emailForAuthId(String authId) {
+        return USER_EMAIL_TEMPLATE.replace("{auth_id}", authId);
+    }
+
+    private static void appendPendingActivation(Path file, String baseUrl, String authId, String email)
+            throws IOException {
+        String line = "baseUrl=" + baseUrl + ", authId=" + authId + ", email=" + email + System.lineSeparator();
+        Files.writeString(file, line, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+    }
+
+    private static void waitForActivationIfEnabled(Path pendingActivations) throws InterruptedException {
+        if (!WAIT_FOR_ACTIVATION) {
+            return;
+        }
+
+        System.out.println("Waiting " + ACTIVATION_WAIT_SECONDS + " seconds for manual user activation.");
+        System.out.println("Pending activations: " + pendingActivations.toAbsolutePath());
+        Thread.sleep(ACTIVATION_WAIT_SECONDS * 1000L);
     }
 
     private static String trimTrailingSlash(String value) {
