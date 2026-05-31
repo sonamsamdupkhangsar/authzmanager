@@ -134,11 +134,11 @@
                     </div>
                 </div>
 
-                <div class="mb-5 row" id="currentSecretDiv">
-                    <label for="clientSecret" class="col-sm-4 col-form-label">Client secret <span th:if="*{not #strings.isEmpty(id)}">(encrypted)</span></label>
+                <div class="mb-5 row" id="currentSecretDiv" th:if="*{#strings.isEmpty(id)}">
+                    <label for="clientSecret" class="col-sm-4 col-form-label">Client secret</label>
                     <div class="col-sm-4">
                         <p th:if="${#fields.hasErrors('clientSecret')}" class="text-danger">Please enter client secret</p>
-                        <input type="text" class="form-control" id="clientSecret" th:field="*{clientSecret}" th:readonly="*{clientSecret}"/>
+                        <input type="password" class="form-control" id="clientSecret" th:field="*{clientSecret}" autocomplete="new-password"/>
                     </div>
                 </div>
 
@@ -146,7 +146,7 @@
                     <label for="newClientSecret" class="col-sm-4 col-form-label">Enter New Client secret</label>
                     <div class="col-sm-3">
                         <p th:if="${#fields.hasErrors('newClientSecret')}" class="text-danger">Please enter new client secret</p>
-                        <input type="password" class="form-control" id="newClientSecret" th:field="*{newClientSecret}"/>
+                        <input type="password" class="form-control" id="newClientSecret" th:field="*{newClientSecret}" autocomplete="new-password"/>
                     </div>
                     <p class="text-danger">(Warning: this will overwrite your existing secret)</p>
                 </div>

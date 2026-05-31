@@ -459,7 +459,7 @@ public class OauthClient {
                 "id='" + id + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", clientIdIssuedAt='" + clientIdIssuedAt + '\'' +
-                ", clientSecret='" + clientSecret + '\'' +
+                ", clientSecret='****'" +
                 ", clientSecretExpiresAt='" + clientSecretExpiresAt + '\'' +
                 ", clientName='" + clientName + '\'' +
                 ", clientAuthenticationMethods=" + clientAuthenticationMethods +

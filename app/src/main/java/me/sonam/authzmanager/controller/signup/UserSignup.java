@@ -2,7 +2,6 @@ package me.sonam.authzmanager.controller.signup;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 public class UserSignup {
@@ -104,7 +103,7 @@ public class UserSignup {
                 ", lastName='" + lastName + '\'' +
                 ", email='" + email + '\'' +
                 ", authenticationId='" + authenticationId + '\'' +
-                ", password=" + Arrays.toString(password) +
+                ", password=" + (password == null ? null : "****") +
                 ", active='" +active + '\'' +
                 ", organizationId='" + organizationId +'\'' +
                 '}';

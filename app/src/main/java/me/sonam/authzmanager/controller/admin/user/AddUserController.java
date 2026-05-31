@@ -97,6 +97,7 @@ public class AddUserController {
 
         final String accessToken = tokenService.getAccessToken();
         userSignup.setAuthenticationId(userSignup.getEmail());
+        normalizeBlankPassword(userSignup);
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
@@ -168,6 +169,26 @@ public class AddUserController {
                         })
                         .flatMap(user -> organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
                                 userSignup.getOrganizationId(), subdomain)));
+    }
+
+    // Prevent an unchecked or blank password field from being treated as a real password during add-user signup.
+    private void normalizeBlankPassword(UserSignup userSignup) {
+        char[] password = userSignup.getPassword();
+        if (password == null || password.length == 0) {
+            LOG.info("admin signup password is absent or empty; leaving password unset");
+            userSignup.setPassword(null);
+            return;
+        }
+
+        LOG.info("admin signup password was submitted with length {}", password.length);
+        for (char c : password) {
+            if (!Character.isWhitespace(c)) {
+                LOG.info("admin signup password contains non-whitespace characters; keeping submitted password");
+                return;
+            }
+        }
+        LOG.info("admin signup password contains only whitespace; clearing password");
+        userSignup.setPassword(null);
     }
 
     private void setErrorInModel(Throwable throwable, Model model, String defaultErrMessage) {

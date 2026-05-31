@@ -28,6 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -104,7 +105,7 @@ public class ClientController implements ClientUserPage {
         LOG.info("set client in model with accesssToken: {}", accessToken);
 
         return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
-            LOG.info("got client {}", registeredClient);
+            LOG.info("got client {}", registeredClient.getClientId());
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
                 oauthClient.setPrependUuidToClientId(prependUuidToCreatedClientId(request));
@@ -142,7 +143,7 @@ public class ClientController implements ClientUserPage {
                                      BindingResult bindingResult, Model model, HttpServletRequest request) {
 
         LOG.info("update client");
-        LOG.info("newClientSecret: {}", client.getNewClientSecret());
+        LOG.info("newClientSecret supplied: {}", StringUtils.hasText(client.getNewClientSecret()));
         final String PATH = "admin/clients/form";
 
         String accessToken = tokenService.getAccessToken();
@@ -166,7 +167,7 @@ public class ClientController implements ClientUserPage {
                         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
                         map.put("userId", userIdString);
 
-                        LOG.info("map is {}", map);
+                        LOG.info("updating client map for clientId: {}", map.get("clientId"));
                         LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
 
                         return Mono.just(map);
@@ -179,7 +180,6 @@ public class ClientController implements ClientUserPage {
                     LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
 
                     OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
-                    LOG.info("oauthClient {}", oauthClient);
 
                     model.addAttribute("client", oauthClient);
                     LOG.info("returning to path: {}", PATH);
@@ -212,9 +212,8 @@ public class ClientController implements ClientUserPage {
                 client.setClientSettings(null);
                 LOG.info("it's a create client");
             }
-            else {
-                LOG.info("client.id is not null and not empty, it's an update");
-            }
+
+            LOG.info("client.id is not null and not empty, it's an update");
             return Mono.just(client.getRegisteredClient());
     }
 

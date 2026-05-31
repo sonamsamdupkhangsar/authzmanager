@@ -105,10 +105,11 @@
 
                             <div class="col-sm-5">
                                 <div class="form-check">
-                                    <input class="form-check-input" th:checked="*{not #strings.isEmpty(password)}" type="checkbox" value="" id="setPassword" onclick="enablePassword()">Set initial password
+                                    <input class="form-check-input" th:checked="*{password != null and password.length > 0}" type="checkbox" value="" id="setPassword" onclick="enablePassword()">Set initial password
                                 </div>
-                                <div id="passwordDiv" th:classappend="*{#strings.isEmpty(password)} ? 'd-none'">
-                                    <input type="password" minlength="8" maxlength="25" class="form-control" autocomplete="new-password" name="password" id="password">
+                                <div id="passwordDiv" th:classappend="*{password == null or password.length == 0} ? 'd-none'">
+                                    <input type="password" minlength="8" maxlength="25" class="form-control" autocomplete="new-password" name="password" id="password"
+                                           th:disabled="*{password == null or password.length == 0}">
                                     <input type="checkbox" onclick="togglePassword()" id="toggleIcon"> Show Password
                                 </div>
                             </div>
@@ -153,6 +154,7 @@
     console.log('myform and submit button referenced')
 
     if (myForm != null) { //myForm can be null if the signup was success we don't show the form from the div tag
+        setPasswordFieldEnabled();
         myForm.addEventListener('submit', function() {
             console.log('disable submit button after submit button clicked')
             submitButton.disabled = true;
@@ -179,15 +181,26 @@
        }
 
        function enablePassword() {
+           setPasswordFieldEnabled();
+       }
+
+       function setPasswordFieldEnabled() {
            var checkbox = document.getElementById('setPassword');
+           var password = document.getElementById('password');
            const passwordDiv = document.getElementById('passwordDiv');
 
+           if (checkbox == null || password == null || passwordDiv == null) {
+               return;
+           }
            if(checkbox.checked){
                passwordDiv.classList.remove("d-none");
                passwordDiv.style.display = "block"
+               password.disabled = false;
            }
            else{
                passwordDiv.style.display = "none";
+               password.value = "";
+               password.disabled = true;
            }
        }
 </script>

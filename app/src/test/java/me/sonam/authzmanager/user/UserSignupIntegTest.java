@@ -274,6 +274,65 @@ public class UserSignupIntegTest {
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
+    public void adminSignupWithoutInitialPasswordDoesNotSubmitBlankPassword() throws Exception {
+        String subdomain = "business1.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
+        String email = "nopassword-user@sonam.cloud";
+        Jwt jwt = JwtUtil.jwt(email);
+
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+        User signedUpUser = new User();
+        signedUpUser.setId(UUID.randomUUID());
+        signedUpUser.setAuthenticationId(email);
+        signedUpUser.setFirstName("Noah");
+        signedUpUser.setLastName("Password");
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(Map.of("error", "user not found")).setResponseCode(404));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
+        mockWebServer.enqueue(jsonResponse(signedUpUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "added user to organization")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "default organization updated")));
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormDataWithoutPassword(orgId, "Noah", "Password", email, false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("Noah Password has been added successfully")
+                        .doesNotContain("Failed to add user"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertUserLookup(email);
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8()).doesNotContain("\"password\":\"\"");
+
+        assertUserLookup(email);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath())
+                .startsWith("/organizations/" + orgId + "/users/" + signedUpUser.getId() + "/default");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
     public void adminSignupShowsErrorWhenOrganizationRejectsSubdomain() throws Exception {
         String subdomain = "blocked.admin.openissuer.test";
         String organizationHost = organizationHostFor(subdomain);
@@ -529,6 +588,19 @@ public class UserSignupIntegTest {
         formData.add("email", email);
         formData.add("authenticationId", email);
         formData.add("password", "1234567890");
+        formData.add("organizationId", organizationId.toString());
+        formData.add("active", Boolean.toString(active));
+        return formData;
+    }
+
+    private MultiValueMap<String, String> signupFormDataWithoutPassword(UUID organizationId, String firstName,
+                                                                        String lastName, String email,
+                                                                        boolean active) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("firstName", firstName);
+        formData.add("lastName", lastName);
+        formData.add("email", email);
+        formData.add("authenticationId", email);
         formData.add("organizationId", organizationId.toString());
         formData.add("active", Boolean.toString(active));
         return formData;

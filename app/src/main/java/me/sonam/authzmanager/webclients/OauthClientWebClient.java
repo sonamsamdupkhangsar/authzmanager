@@ -43,7 +43,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
-            LOG.info("got back response from auth-server update client call: {}", responseMap);
+            LOG.info("got back response from auth-server update client call for clientId: {}", responseMap.get("clientId"));
             LOG.info("clientIdIssuedAt from authorization: {}", responseMap.get("clientIdIssuedAt"));
 
             return registeredClientUtil.build(responseMap);
@@ -130,7 +130,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).flatMap(map-> {
-            LOG.info("got back response from auth-server get clientId by clientId  call: {}", map);
+            LOG.info("got back response from auth-server get clientId by clientId call for clientId: {}", map.get("clientId"));
 
             return toRegisteredClient(map);
         }).onErrorResume(throwable -> {
@@ -150,7 +150,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).flatMap(map-> {
-            LOG.info("got back response from auth-server get clientId by clientId  call: {}", map);
+            LOG.info("got back response from auth-server get clientId by id call for clientId: {}", map.get("clientId"));
 
             return toRegisteredClient(map);
         }).onErrorResume(throwable -> {
