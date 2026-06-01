@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class UserSignup {
     @NotEmpty(message="firstName cannot be empty")
-    @Size(min = 3, max = 50)
+    @Size(min = 1, max = 50)
     private String firstName;
     @Size(min = 0, max = 50)
     private String lastName;
