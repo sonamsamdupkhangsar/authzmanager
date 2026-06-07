@@ -65,7 +65,7 @@ public class SettingsControllerIntegTest {
 
     @Autowired
     private ClientController clientController;
-    private String userId = UUID.randomUUID().toString();
+    private String userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -120,7 +120,6 @@ public class SettingsControllerIntegTest {
         r.add("oauth2-token-mediator.root", () -> "http://localhost:"+mockWebServer.getPort());
         r.add("organization-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("role-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
-        r.add("setting-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
@@ -136,7 +135,7 @@ public class SettingsControllerIntegTest {
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                    .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", defaultOrgId)))));
+                    .setResponseCode(200).setBody(getJson(Map.of("message", defaultOrgId))));
 
 
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -239,7 +238,8 @@ public class SettingsControllerIntegTest {
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
 
         if (defaultOrgId != null) {
             recordedRequest = mockWebServer.takeRequest();
@@ -339,7 +339,7 @@ public class SettingsControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", Map.of("defaultOrganizationId", defaultOrgId)))));
+                .setResponseCode(200).setBody(getJson(Map.of("message", defaultOrgId))));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(new Organization(defaultOrgId, "myorg", UUID.fromString(userId)))));
@@ -384,7 +384,8 @@ public class SettingsControllerIntegTest {
         //getDefaultOrganization for logged-in user-id
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/settings/users");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
 
         //getOrganizationById
         recordedRequest = mockWebServer.takeRequest();

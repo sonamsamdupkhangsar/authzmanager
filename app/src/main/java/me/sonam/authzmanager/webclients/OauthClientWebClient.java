@@ -43,7 +43,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
-            LOG.info("got back response from auth-server update client call: {}", responseMap);
+            LOG.info("got back response from auth-server update client call for clientId: {}", responseMap.get("clientId"));
             LOG.info("clientIdIssuedAt from authorization: {}", responseMap.get("clientIdIssuedAt"));
 
             return registeredClientUtil.build(responseMap);
@@ -129,10 +129,10 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).map(map-> {
-            LOG.info("got back response from auth-server get clientId by clientId  call: {}", map);
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).flatMap(map-> {
+            LOG.info("got back response from auth-server get clientId by clientId call for clientId: {}", map.get("clientId"));
 
-            return registeredClientUtil.build(map);
+            return toRegisteredClient(map);
         }).onErrorResume(throwable -> {
             String errorMessage = "auth-server get clientId by clientId failed: " +
                     throwable.getMessage();
@@ -149,17 +149,30 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();
-        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).map(map-> {
-            LOG.info("got back response from auth-server get clientId by clientId  call: {}", map);
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {}).flatMap(map-> {
+            LOG.info("got back response from auth-server get clientId by id call for clientId: {}", map.get("clientId"));
 
-            return registeredClientUtil.build(map);
+            return toRegisteredClient(map);
         }).onErrorResume(throwable -> {
-            LOG.debug("exception ig getting oauth client by id", throwable);
+            LOG.debug("exception in getting oauth client by id", throwable);
             String errorMessage = "auth-server get clientId by clientId failed: " +
                     throwable.getMessage();
             LOG.error(errorMessage);
             return Mono.error(throwable);
         });
+    }
+
+    private Mono<RegisteredClient> toRegisteredClient(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
+            return Mono.error(new NoSuchElementException("registeredClient response is empty"));
+        }
+        if (map.get("error") != null) {
+            return Mono.error(new NoSuchElementException(map.get("error").toString()));
+        }
+        if (map.get("clientId") == null) {
+            return Mono.error(new NoSuchElementException("registeredClient response is missing clientId"));
+        }
+        return Mono.just(registeredClientUtil.build(map));
     }
 
     public Mono<String> deleteClient(String accessToken) {

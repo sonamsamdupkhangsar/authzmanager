@@ -11,6 +11,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * Wires outbound clients and directs authorization-server calls through tenant-aware routing.
+ */
 @Configuration
 public class BeanConfig {
     @Value("${user-rest-service.root}${user-rest-service.context}")
@@ -36,12 +39,6 @@ public class BeanConfig {
     @Value("${account-rest-service.accountDelete}")
     private String deleteMyAccountEndpoint;
 
-    @Value("${setting-rest-service.users}")
-    private String userSettingEndpoint;
-
-    @Value("${setting-rest-service.defaultOrganization}")
-    private String defaultOrganizationSettingEndpoint;
-
     @Autowired
     @Qualifier("regular")
     private WebClient.Builder webClientBuilder;
@@ -50,49 +47,72 @@ public class BeanConfig {
     @Qualifier("webClientWithTokenFilter")
     private WebClient.Builder webClientWithTokenFilter;
 
+    @Autowired
+    @Qualifier("authServerWebClient")
+    private WebClient.Builder authServerWebClient;
+
+    /**
+     * Creates the route used for user signup and authentication-related calls.
+     */
     @Bean
     public UserRoute userRoute() {
         return new UserRouteAuthServer(webClientWithTokenFilter, userSignupEndpoint, authenticateEndpoint);
     }
 
+    /**
+     * Creates the OAuth client management client against the tenant-selected authorization server.
+     */
     @Bean
     public OauthClientWebClient oauthClientWebClient() {
-        return new OauthClientWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
+        return new OauthClientWebClient(authServerWebClient, authServerClientsEndpoint);
     }
 
 
+    /**
+     * Creates the username/password authentication callout against the tenant-selected authorization server.
+     */
     @Bean
     public AuthenticationCallout authenticationCallout() {
-        return new AuthenticationCallout(webClientWithTokenFilter, springAuthorizationServerAuthenticationEp);
+        return new AuthenticationCallout(authServerWebClient, springAuthorizationServerAuthenticationEp);
     }
 
+    /**
+     * Creates the organization service client.
+     */
     @Bean
     public OrganizationWebClient organizationWebClient() {
         return new OrganizationWebClient(webClientWithTokenFilter, organizationEndpoint);
     }
 
+    /**
+     * Creates the role service client.
+     */
     @Bean
     public RoleWebClient roleWebClient() {
         return new RoleWebClient(webClientWithTokenFilter, rolesEndpoint);
     }
 
+    /**
+     * Creates the user service client.
+     */
     @Bean
     public UserWebClient userWebClient() {
         return new UserWebClient(webClientWithTokenFilter, userSignupEndpoint, userProfilePhoto);
     }
 
+    /**
+     * Creates the client-organization association client against the tenant-selected authorization server.
+     */
     @Bean
     public ClientOrganizationWebClient clientOrganizationWebClient() {
-        return new ClientOrganizationWebClient(webClientWithTokenFilter, authServerClientsEndpoint);
+        return new ClientOrganizationWebClient(authServerWebClient, authServerClientsEndpoint);
     }
 
+    /**
+     * Creates the account service client for delete-my-account flows.
+     */
     @Bean
     public AccountWebClient accountWebClient() {
         return new AccountWebClient(webClientWithTokenFilter, deleteMyAccountEndpoint);
-    }
-
-    @Bean
-    public SettingWebClient settingWebClient() {
-        return new SettingWebClient(webClientWithTokenFilter, userSettingEndpoint, defaultOrganizationSettingEndpoint);
     }
 }

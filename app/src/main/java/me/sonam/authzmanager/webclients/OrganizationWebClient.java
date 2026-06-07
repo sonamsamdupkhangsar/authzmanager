@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.webclients;
 
 
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
@@ -148,7 +149,79 @@ public class OrganizationWebClient {
                 });
     }
 
+    public Mono<List<UUID>> getOrganizationIdsForUser(String accessToken, UUID userId) {
+        LOG.info("get organization ids for user {}", userId);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/users/").append(userId).append("/ids");
+
+        LOG.info("get organization ids for user endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<List<UUID>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get organization ids for user {}", userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<UUID> getDefaultOrganizationIdForUser(String accessToken, UUID userId, String subdomain) {
+        LOG.info("get default organization id for user {} in subdomain {}", userId, subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain)
+                .append("/users/").append(userId).append("/default-organization-id");
+
+        LOG.info("get default organization id endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .flatMap(map -> {
+                    Object message = map.get("message");
+                    if (message == null) {
+                        return Mono.empty();
+                    }
+                    return Mono.just(UUID.fromString(message.toString()));
+                })
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get default organization id for user {}", userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<String> setDefaultOrganization(String accessToken, UUID organizationId, UUID userId) {
+        LOG.info("set default organization {} for user {}", organizationId, userId);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/").append(organizationId)
+                .append("/users/").append(userId).append("/default");
+
+        LOG.info("set default organization endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+                .map(map -> map.get("message"))
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to set default organization {} for user {}", organizationId, userId, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
     public Mono<Map<String, String>> addUserToOrganization(String accessToken, UUID userId, UUID organizationId) {
+        return addUserToOrganization(accessToken, userId, organizationId, null, false);
+    }
+
+    public Mono<Map<String, String>> addUserToOrganization(String accessToken, UUID userId, UUID organizationId,
+                                                           String subdomain, boolean restrictToSubdomain) {
         LOG.info("add user {} to organization {}", userId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
@@ -156,11 +229,48 @@ public class OrganizationWebClient {
 
         LOG.info("add user to organization endpoint: {}", stringBuilder);
 
+        Map<String, Object> body = subdomain == null
+                ? Map.of("userId", userId, "organizationId", organizationId)
+                : Map.of("userId", userId, "organizationId", organizationId,
+                "subdomain", subdomain, "restrictToSubdomain", restrictToSubdomain);
+
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
-                .bodyValue(Map.of("userId", userId, "organizationId", organizationId)).retrieve();
+                .bodyValue(body).retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
+    }
+
+    public Mono<Void> canAddUserToOrganization(String accessToken, UUID organizationId, String subdomain) {
+        String endpoint = organizationEndpoint + "/subdomain/" + subdomain
+                + "/organizations/" + organizationId + "/can-add-user";
+        LOG.info("check organization can accept user endpoint: {}", endpoint);
+
+        return canAddUserToOrganization(accessToken, endpoint);
+    }
+
+    public Mono<Void> canAddUserToOrganization(String accessToken, UUID userId, UUID organizationId, String subdomain) {
+        String endpoint = organizationEndpoint + "/subdomain/" + subdomain
+                + "/users/" + userId + "/organizations/" + organizationId + "/can-add";
+        LOG.info("check user can be added to organization endpoint: {}", endpoint);
+
+        return canAddUserToOrganization(accessToken, endpoint);
+    }
+
+    private Mono<Void> canAddUserToOrganization(String accessToken, String endpoint) {
+        return webClientBuilder.build().get().uri(endpoint)
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .flatMap(response -> {
+                    if (Boolean.TRUE.equals(response.get("message"))) {
+                        return Mono.empty();
+                    }
+                    Object reason = response.get("reason");
+                    return Mono.error(new AuthzManagerException(reason == null
+                            ? "user cannot be added to organization"
+                            : reason.toString()));
+                });
     }
 
     public Mono<Map<String, String>> removeUserFromOrganization(String accessToken, UUID userId, UUID organizationId) {

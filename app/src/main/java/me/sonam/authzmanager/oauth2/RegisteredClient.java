@@ -116,8 +116,8 @@ public class RegisteredClient implements Serializable {
                 "id='" + id + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", clientIdIssuedAt=" + clientIdIssuedAt +
-                ", clientSecret='" + clientSecret + '\'' +
-                ", newClientSecret='" + newClientSecret + '\'' +
+                ", clientSecret='****'" +
+                ", newClientSecret='****'" +
                 ", clientSecretExpiresAt=" + clientSecretExpiresAt +
                 ", clientName='" + clientName + '\'' +
                 ", clientAuthenticationMethods=" + clientAuthenticationMethods +

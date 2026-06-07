@@ -1,3 +1,4 @@
+# Base application configuration for tenant-aware authzmanager routing.
 server:
   port: ${SERVER_PORT}
 
@@ -22,32 +23,6 @@ spring:
         enabled: true
   thymeleaf: # to enable hot reload of Thymeleaf templates
     cache: false
-  security:
-    oauth2:
-#      resourceserver:
-#        jwt:
-#          issuer-uri: ${ISSUER_URI}
-
-      client:
-        registration:
-          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
-            client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
-            client-secret: ${AUTHZMANAGER_INITIAL_SECRET}
-            client-authentication-method: client_secret_basic
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            #client-name: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
-            #client-authentication-method: client_secret_basic
-            scope:
-              - openid
-              - profile
-        provider:
-          b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager:
-            authorization-uri: ${ISSUER_URI}/oauth2/authorize
-            token-uri: ${ISSUER_URI}/oauth2/token
-            user-info-uri: ${ISSUER_URI}/userinfo
-            jwk-set-uri: ${ISSUER_URI}/oauth2/jwks
-            userNameAttribute: sub
 
 
 permitpath:
@@ -64,7 +39,7 @@ requestFilters:
 # this is used for getting accesstoken by header filter in jwt-validator (ReactiveRequestContextHolder.class)
 auth-server:
   root: ${AUTH_SERVER}
-  contextPath: /issuer
+  contextPath:
   clients: /clients
 #  clientOrganizations: /clients
   authenticate: /authenticate
@@ -94,17 +69,32 @@ account-rest-service:
   context: ${account-rest-service.root}/accounts
   accountDelete: ${account-rest-service.context}/delete
 
-setting-rest-service:
-  root: ${SETTING_REST_SERVICE}
-  context: ${setting-rest-service.root}/settings
-  users: ${setting-rest-service.context}/users
-  defaultOrganization: ${setting-rest-service.users}/{userId}
-
 allowedOrigins: ${allowedOrigins}
 
 oauthClientId: authzmanager-client
 
 issuerUri: ${ISSUER_URI}
+
+authzmanager:
+  oauth2:
+    registration-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+    client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+    client-secret: ${AUTHZMANAGER_INITIAL_SECRET}
+    prepend-uuid-to-created-client-id: true
+    prepend-uuid-to-created-client-id-hosts: ${AUTHZMANAGER_OAUTH2_PREPEND_UUID_TO_CREATED_CLIENT_ID_HOSTS:}
+  tenancy:
+    host-label: admin
+  user-search:
+    hosts:
+      free.openissuer.com:
+        allowed-email-domains:
+          - "*"
+      business1.openissuer.com:
+        allowed-email-domains:
+          - business1.com
+      business2.openissuer.com:
+        allowed-email-domains:
+          - business2.com
 
 aws:
   s3:

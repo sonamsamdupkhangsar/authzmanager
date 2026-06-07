@@ -1,11 +1,11 @@
 package me.sonam.authzmanager.controller;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +38,6 @@ public class UserSignupController {
     @Autowired
     private OrganizationWebClient organizationWebClient;
 
-    @Autowired
-    private SettingWebClient settingWebClient;
-
     public UserSignupController(UserWebClient userWebClient) {
         this.userWebClient = userWebClient;
     }
@@ -53,7 +50,8 @@ public class UserSignupController {
         return Mono.just(PATH);
     }
 
-    public Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult, Model model, final String PATH) {
+    public Mono<String> userSignupByAdmin(String accessToken, UserSignup userSignup, BindingResult bindingResult,
+                                          Model model, final String PATH, HttpServletRequest request) {
         LOG.info("User signup initiated by admin for user: {}", userSignup);
 
         if (bindingResult.hasErrors()) {
@@ -61,7 +59,13 @@ public class UserSignupController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
-        return userWebClient.signupUser(accessToken, userSignup)
+        String subdomain = request.getServerName();
+        return organizationWebClient.canAddUserToOrganization(accessToken, userSignup.getOrganizationId(), subdomain)
+                .then(userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId())
+                        .onErrorResume(throwable -> Mono.empty())
+                        .flatMap(user -> organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
+                                userSignup.getOrganizationId(), subdomain)))
+                .then(userWebClient.signupUser(accessToken, userSignup))
                 .flatMap(s -> {
                     LOG.info("user has been added successfully with message: {}", s);
                     StringBuilder stringBuilder = new StringBuilder(userSignup.getFirstName())
@@ -80,7 +84,8 @@ public class UserSignupController {
                     return Mono.just(PATH);
                 })
                 .flatMap(s -> userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId()))
-                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(), userSignup.getOrganizationId()))
+                .flatMap(user -> organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                        userSignup.getOrganizationId(), subdomain, true))
                 .thenReturn(PATH)
                 .onErrorResume(throwable -> {
                     LOG.info("exception occured in signing up user by admin {}", throwable.getMessage());

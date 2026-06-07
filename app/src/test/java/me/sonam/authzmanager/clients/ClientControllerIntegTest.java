@@ -64,6 +64,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -198,6 +199,9 @@ public class ClientControllerIntegTest {
                 .uri("/admin/clients/"+oauthClient.getId())//.headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("name=\"clientSecret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("value=\"secret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("name=\"newClientSecret\"");
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -259,6 +263,33 @@ public class ClientControllerIntegTest {
 
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients/"+clientsId);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void updateClientWithoutSubmittedClientSecretDoesNotFetchOrSubmitCurrentSecret() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+        oauthClient.setId(UUID.randomUUID().toString());
+        RegisteredClient registeredClient = oauthClient.getRegisteredClient();
+        OauthClient formClient = OauthClient.getFromRegisteredClient(registeredClient);
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(registeredClientUtil.getMapObject(registeredClient))));
+
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.post().uri("/admin/clients")
+                .body(getFormInserterWithoutClientSecret(formClient)).headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
+
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("name=\"clientSecret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("value=\"secret\"");
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions.assertThat(recordedRequest).isNotNull();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8()).doesNotContain("\"clientSecret\":\"secret\"");
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
     /**
@@ -470,6 +501,37 @@ public class ClientControllerIntegTest {
             formInserter.with("clientSettings.requireAuthorizationConsent", String.valueOf(oauthClient.getClientSettings().isRequireAuthorizationConsent()));
             formInserter.with("clientSettings.requireProofKey", String.valueOf(oauthClient.getClientSettings().isRequireProofKey()));
             formInserter.with("clientSettings.jwkSetUrl", oauthClient.getClientSettings().getJwkSetUrl());
+        }
+
+        return formInserter;
+    }
+
+    private BodyInserters.FormInserter<String> getFormInserterWithoutClientSecret(OauthClient oauthClient) {
+        BodyInserters.FormInserter<String> formInserter =
+                BodyInserters.fromFormData("id", oauthClient.getId()==null ? "": oauthClient.getId())
+                        .with("clientId", oauthClient.getClientId())
+                        .with("customScopes", oauthClient.getCustomScopes())
+                        .with("redirectUris", oauthClient.getRedirectUris())
+                        .with("postLogoutRedirecUris", oauthClient.getPostLogoutRedirectUris());
+
+        if (!oauthClient.getClientAuthenticationMethods().isEmpty()) {
+            oauthClient.getClientAuthenticationMethods().forEach(s -> formInserter.with("clientAuthenticationMethods", s.toUpperCase()));
+        }
+        if (!oauthClient.getAuthorizationGrantTypes().isEmpty()) {
+            oauthClient.getAuthorizationGrantTypes().forEach(s -> formInserter.with("authorizationGrantTypes", s.toUpperCase()));
+        }
+        if (!oauthClient.getScopes().isEmpty()) {
+            oauthClient.getScopes().forEach(s -> formInserter.with("scopes", s.toUpperCase()));
+        }
+
+        if (oauthClient.getTokenSettings() != null) {
+            formInserter.with("tokenSettings.reuseRefreshTokens", String.valueOf(oauthClient.getTokenSettings().isReuseRefreshTokens()));
+            formInserter.with("tokenSettings.authorizationCodeTimeToLive", String.valueOf(oauthClient.getTokenSettings().getAuthorizationCodeTimeToLive()));
+            formInserter.with("tokenSettings.accessTokenTimeToLive", String.valueOf(oauthClient.getTokenSettings().getAccessTokenTimeToLive()));
+            formInserter.with("tokenSettings.accessTokenFormat", oauthClient.getTokenSettings().getAccessTokenFormat().getValue());
+            formInserter.with("tokenSettings.deviceCodeTimeToLive", String.valueOf(oauthClient.getTokenSettings().getDeviceCodeTimeToLive()));
+            formInserter.with("tokenSettings.refreshTokenTimeToLive", String.valueOf(oauthClient.getTokenSettings().getRefreshTokenTimeToLive()));
+            formInserter.with("tokenSettings.idTokenSignatureAlgorithm", oauthClient.getTokenSettings().getIdTokenSignatureAlgorithm().getName());
         }
 
         return formInserter;

@@ -1,16 +1,19 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.service.UserSearchPolicyService;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.clients.user.User;
 
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.apache.tomcat.websocket.AuthenticationException;
 import org.slf4j.Logger;
@@ -33,20 +36,25 @@ import java.util.*;
 @RequestMapping("/admin/organizations")
 public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
+    private static final String USER_IN_ANOTHER_ORG_MESSAGE = "user is already in another organization";
 
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
-    private final SettingWebClient settingWebClient;
+    private final UserSearchPolicyService userSearchPolicyService;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
-                                  UserWebClient userWebClient, SettingWebClient settingWebClient, TokenService tokenService) {
+                                  UserWebClient userWebClient, TokenService tokenService,
+                                  UserSearchPolicyService userSearchPolicyService,
+                                  TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
-        this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
+        this.userSearchPolicyService = userSearchPolicyService;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     /**
@@ -56,7 +64,7 @@ public class OrganizationController {
      * @return
      */
     @GetMapping
-    public Mono<String> getOrganizations(Model model, Pageable pageable1) {
+    public Mono<String> getOrganizations(Model model, Pageable pageable1, HttpServletRequest request) {
         LOG.info("get organization");
         final String PATH = "/admin/organizations/list";
         int pageSize = 5;
@@ -74,11 +82,13 @@ public class OrganizationController {
         }
 
         final Pageable pageable = PageRequest.of(pageable1.getPageNumber(), pageSize, Sort.by("name"));
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
                 .flatMap(uuidPage ->
                     organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.content()).zipWith(Mono.just(uuidPage)))
-                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        userId, organizationHost).zipWith(Mono.just(objects)))
                         .doOnNext(objects -> {
                     RestPage<UUID> uuidPage = objects.getT2().getT2();
                     List<Organization> list = objects.getT2().getT1();
@@ -98,7 +108,8 @@ public class OrganizationController {
     }
 
     @PostMapping
-    public Mono<String> updateOrganization(@Valid @ModelAttribute("organization") Organization organization, BindingResult bindingResult, Model model) {
+    public Mono<String> updateOrganization(@Valid @ModelAttribute("organization") Organization organization,
+                                           BindingResult bindingResult, Model model) {
         final String PATH = "admin/organizations/form";
         HttpMethod httpMethod;
 
@@ -139,8 +150,9 @@ public class OrganizationController {
                             // user set the org as default
                             organization1.setPreviousDefaultOrganization(true);
                             organization1.setDefaultOrganization(true);
-                            LOG.info("call setting service to set this org as default org");
-                            return settingWebClient.addDefaultOrganization(accessToken, userId, org.getId()).thenReturn(PATH);
+                            LOG.info("call organization service to set this org as default org");
+                            return organizationWebClient.setDefaultOrganization(accessToken, org.getId(), userId)
+                                    .thenReturn(PATH);
                         }
                         else if(!organization.getDefaultOrganization()) {
                             LOG.info("default checkbox is shown but not selected");
@@ -165,12 +177,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/{id}")
-    public Mono<String> getOrganizationById(@PathVariable("id") UUID id, Model model) {
+    public Mono<String> getOrganizationById(@PathVariable("id") UUID id, Model model, HttpServletRequest request) {
         final String PATH = "admin/organizations/form";
         LOG.info("get organization by id: {}", id);
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
@@ -181,7 +194,8 @@ public class OrganizationController {
                     }
                     return Mono.just(objects);
                 })
-                .flatMap(objects -> settingWebClient.getDefaultOrganization(accessToken, userId).zipWith(Mono.just(objects)))
+                .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                        userId, organizationHost).zipWith(Mono.just(objects)))
                 .flatMap(objects -> {
                     Organization organization = objects.getT2().getT2();
 
@@ -198,7 +212,8 @@ public class OrganizationController {
 
 
     @GetMapping("/{id}/roles")
-    public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+    public Mono<String> getRolesForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable,
+                                                  HttpServletRequest request) {
         final String PATH = "admin/organizations/roles";
         LOG.info("get roles for organization by id: {}", id);
 
@@ -212,7 +227,8 @@ public class OrganizationController {
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         String accessToken = tokenService.getAccessToken();
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .doOnNext(uuid -> {
                     LOG.info("add defaultOrganizationId to model: {}", uuid);
                     model.addAttribute("defaultOrganizationId", uuid);
@@ -323,7 +339,19 @@ public class OrganizationController {
                                 model.addAttribute("users", users);
                             }).thenReturn(organization);
                 })
-                .flatMap(organization -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId))
+                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId))
+                .flatMap(user -> organizationWebClient.getOrganizationIdsForUser(accessToken, user.getId())
+                        .flatMap(organizationIds -> {
+                            boolean belongsToDifferentOrganization = organizationIds.stream()
+                                    .anyMatch(existingOrganizationId -> !existingOrganizationId.equals(organizationId));
+
+                            if (belongsToDifferentOrganization) {
+                                LOG.warn("user {} with id {} belongs to another organization, existing organizationIds: {}, requested organizationId: {}",
+                                        user.getAuthenticationId(), user.getId(), organizationIds, organizationId);
+                                return Mono.error(new AuthenticationException(USER_IN_ANOTHER_ORG_MESSAGE));
+                            }
+                            return Mono.just(user);
+                        }))
                 .doOnNext(user -> {
                     LOG.info("found user: {}", user);
                     model.addAttribute("message", "Found user with username '" + authenticationId + "'");
@@ -345,11 +373,22 @@ public class OrganizationController {
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 
-                    model.addAttribute("message", "failed to find user, "+ throwable.getMessage());
+                    if (USER_IN_ANOTHER_ORG_MESSAGE.equals(throwable.getMessage())) {
+                        model.addAttribute("message", USER_IN_ANOTHER_ORG_MESSAGE);
+                    }
+                    else {
+                        model.addAttribute("message", "failed to find user, " + throwable.getMessage());
+                    }
                     return Mono.just(false);
                 })
                 .thenReturn(PATH);
 
+    }
+
+    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId) {
+        return userSearchPolicyService.validateSearch(authenticationId)
+                .<Mono<User>>map(error -> Mono.error(new AuthzManagerException(error)))
+                .orElseGet(() -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId));
     }
 
 
@@ -364,7 +403,8 @@ public class OrganizationController {
      */
 
     @PostMapping("/{id}/users/add")  //remove as this is not used anymore
-    public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user, Model model, Pageable pageable) {
+    public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user,
+                                               Model model, Pageable pageable, HttpServletRequest request) {
         final String PATH = "admin/organizations/user";
         LOG.info("update user in organization");
 
@@ -382,7 +422,9 @@ public class OrganizationController {
                     if (user.getOrganizationChoice().getSelected()) {
                         LOG.info("choice is selected to add user to organization");
 
-                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
+                        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken,
+                                model, pageable, organizationHost);
                     } else {
                         LOG.info("remove user from organization");
                         return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
@@ -407,12 +449,16 @@ public class OrganizationController {
                 .flatMap(organization -> removeUserFromOrganization(PATH, user, loggedUserId, organization, accessToken, model, pageable));
     }
 
-    private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable userPageable) {
+    private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization,
+                                               String accessToken, Model model, Pageable userPageable, String subdomain) {
         LOG.info("add user to organization: {}", user);
 
         model.addAttribute("organization", organization);
 
-        return organizationWebClient.addUserToOrganization(accessToken, user.getId(), user.getOrganizationChoice().getOrganizationId())
+        return organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
+                        user.getOrganizationChoice().getOrganizationId(), subdomain)
+                .then(organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                        user.getOrganizationChoice().getOrganizationId(), subdomain, true))
                 .doOnNext(stringStringMap -> {
                     model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
                     LOG.info("added to user to organization, nullify the user so the form does not show this user again");

@@ -1,3 +1,4 @@
+# Local profile values for tenant-aware authzmanager development.
 # This yaml file is for loading local database, server port, disable eureka and set jwt-rest-service endpoint
 SERVER_PORT: 9093
 
@@ -28,15 +29,14 @@ AUTH_SERVER: http://authorization-server
 ORGANIZATION_REST_SERVICE: http://organization-rest-service
 ROLE_REST_SERVICE: http://role-rest-service
 ACCOUNT_REST_SERVICE: http://account-rest-service
-SETTING_REST_SERVICE: http://setting-rest-service
 
-allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1
+allowedOrigins: http://api-gateway, 10.0.0.28, localhost, 127.0.0.1, api-gateway, 10.0.0.28:8080, 127.0.0.1, platform.admin.openissuer.test, business1.admin.openissuer.test, business2.admin.openissuer.test, free.admin.openissuer.test
 
-ISSUER_ADDRESS: http://api-gateway:9001
+ISSUER_ADDRESS: http://platform.openissuer.test:9001
 
-ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+ISSUER_URI: ${ISSUER_ADDRESS}
 OAUTH_AUDIENCES: oauth-client
-JWT_SET_URI: ${ISSUER_ADDRESS}/issuer/.well-known/jwks.json
+JWT_SET_URI: ${ISSUER_ADDRESS}/oauth2/jwks
 
 REQUEST_SCOPES: message.read message.write
 BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
@@ -55,4 +55,3 @@ AUTHZMANAGER_INITIAL_SECRET: hello
 #      option: request
 #      scopes: message.read message.write
 #      base64EncodedClientIdSecret: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
-

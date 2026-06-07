@@ -1,10 +1,10 @@
 package me.sonam.authzmanager.controller.admin.user;
 
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,14 +28,12 @@ public class UsersController {
     private final OrganizationWebClient organizationWebClient;
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
-    private final SettingWebClient settingWebClient;
 
     public UsersController(OrganizationWebClient organizationWebClient,
                                   UserWebClient userWebClient,
-                           SettingWebClient settingWebClient, TokenService tokenService) {
+                           TokenService tokenService) {
         this.organizationWebClient = organizationWebClient;
         this.userWebClient = userWebClient;
-        this.settingWebClient = settingWebClient;
         this.tokenService = tokenService;
     }
 
@@ -44,7 +42,7 @@ public class UsersController {
     get users in the organization id
      */
     @GetMapping
-    public Mono<String> getUserForOrganizationId(Model model, Pageable userPageable) {
+    public Mono<String> getUserForOrganizationId(Model model, Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
 
@@ -61,7 +59,7 @@ public class UsersController {
         final String noDefaultOrgFound = "No Default organization found";
 
         String PATH = "/admin/users/list";
-        return settingWebClient.getDefaultOrganization(accessToken, userId)
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
                 .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId))
                 .doOnNext(organization -> model.addAttribute("organization", organization))

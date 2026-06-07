@@ -58,4 +58,15 @@ public class WebClientDevConfig {
 
         return webClientBuilder;
     }
+
+    @Bean("authServerWebClient")
+    public WebClient.Builder authServerWebClientBuilder() {
+        LOG.info("creating auth-server WebClient.Builder for localdevtest");
+        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), tokenRequestFilter,
+                oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
+        WebClient.Builder webClientBuilder = WebClient.builder();
+        webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
+
+        return webClientBuilder;
+    }
 }

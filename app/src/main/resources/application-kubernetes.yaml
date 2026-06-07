@@ -1,3 +1,4 @@
+# Kubernetes profile values for tenant-aware authzmanager deployment.
 # this profile is activated by kubernetes dependencies
 spring:
   cloud:
@@ -5,7 +6,7 @@ spring:
       enabled: true
       discovery:
         namespaces:
-           - backend
+           - main
         include-not-ready-addresses: true
 eureka:
   client:
@@ -19,11 +20,10 @@ AUTH_SERVER: http://authorization-server
 ORGANIZATION_REST_SERVICE: http://organization-rest-service
 ROLE_REST_SERVICE: http://role-rest-service
 ACCOUNT_REST_SERVICE: http://account-rest-service
-SETTING_REST_SERVICE: http://setting-rest-service
 
-allowedOrigins: https://api-gateway.sonam.cloud
+allowedOrigins: https://platform.admin.openissuer.com, https://business1.admin.openissuer.com, https://business2.admin.openissuer.com
 
-ISSUER_ADDRESS: http://authorization.sonam.cloud
+ISSUER_ADDRESS: https://platform.openissuer.com
 
-ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+ISSUER_URI: ${ISSUER_ADDRESS}
 OAUTH_AUDIENCES: oauth-client

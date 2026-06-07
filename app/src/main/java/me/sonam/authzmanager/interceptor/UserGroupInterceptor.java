@@ -3,9 +3,8 @@ package me.sonam.authzmanager.interceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import me.sonam.authzmanager.tokenfilter.TokenService;
+import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
-import me.sonam.authzmanager.webclients.SettingWebClient;
-import me.sonam.authzmanager.webclients.UserWebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,13 +20,13 @@ public class UserGroupInterceptor implements HandlerInterceptor {
     private final TokenService tokenService;
     private final RoleWebClient roleWebClient;
 
-    private final SettingWebClient settingWebClient;
+    private final OrganizationWebClient organizationWebClient;
 
     public UserGroupInterceptor(TokenService tokenService, RoleWebClient roleWebClient,
-                                SettingWebClient settingWebClient) {
+                                OrganizationWebClient organizationWebClient) {
         this.tokenService = tokenService;
         this.roleWebClient = roleWebClient;
-        this.settingWebClient = settingWebClient;
+        this.organizationWebClient = organizationWebClient;
     }
 
     @Override
@@ -59,7 +58,7 @@ public class UserGroupInterceptor implements HandlerInterceptor {
                         LOG.info("userId: {}, token {}", userId, accessToken);
 
 /*
-                        settingWebClient.getDefaultOrganization(accessToken, userId)
+                        organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
                                         .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                                 .doOnNext(objects -> request.setAttribute("organizationId", objects.getT2()))
                                                 .subscribe(objects -> {

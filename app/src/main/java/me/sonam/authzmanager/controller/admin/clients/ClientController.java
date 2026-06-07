@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.controller.admin.clients;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
@@ -27,6 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -50,6 +52,10 @@ public class ClientController implements ClientUserPage {
     private TokenService tokenService;
     @Value("${maxClients}")
     private int maxClients;
+    @Value("${authzmanager.oauth2.prepend-uuid-to-created-client-id:true}")
+    private boolean prependUuidToCreatedClientId;
+    @Value("${authzmanager.oauth2.prepend-uuid-to-created-client-id-hosts:}")
+    private List<String> prependUuidToCreatedClientIdHosts = new ArrayList<>();
 
     public ClientController(OauthClientWebClient oauthClientWebClient,
                             OrganizationWebClient organizationWebClient,
@@ -65,34 +71,44 @@ public class ClientController implements ClientUserPage {
     }
 
     @GetMapping("/createForm")
-    public String getCreateForm(Model model) {
+    public String getCreateForm(Model model, HttpServletRequest request) {
         LOG.info("return createForm");
         final String PATH = "admin/clients/form";
 
+        boolean prependUuidToClientId = prependUuidToCreatedClientId(request);
         OauthClient oauthClient = new OauthClient();
-        oauthClient.setClientIdUuid(UUID.randomUUID());
+        oauthClient.setPrependUuidToClientId(prependUuidToClientId);
+        if (prependUuidToClientId) {
+            oauthClient.setClientIdUuid(UUID.randomUUID());
+        }
 
         model.addAttribute("client", oauthClient);
         return PATH;
     }
 
+    public String getCreateForm(Model model) {
+        return getCreateForm(model, null);
+    }
+
     //id is a UUID
     @GetMapping("/{id}")
-    public Mono<String> getClientByClientId(@PathVariable("id") UUID id, Model model) {
+    public Mono<String> getClientByClientId(@PathVariable("id") UUID id, Model model, HttpServletRequest request) {
         LOG.info("get client by id {}", id);
         final String PATH = "admin/clients/form";
         String accessToken = tokenService.getAccessToken();
 
-        return setClientInModel(accessToken, id, model, PATH).thenReturn(PATH);
+        return setClientInModel(accessToken, id, model, PATH, request).thenReturn(PATH);
     }
 
-    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
+    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH,
+                                          HttpServletRequest request) {
         LOG.info("set client in model with accesssToken: {}", accessToken);
 
         return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
-            LOG.info("got client {}", registeredClient);
+            LOG.info("got client {}", registeredClient.getClientId());
             try {
                 OauthClient oauthClient = OauthClient.getFromRegisteredClient(registeredClient);
+                oauthClient.setPrependUuidToClientId(prependUuidToCreatedClientId(request));
                 LOG.info("grantTypes {}", oauthClient.getAuthorizationGrantTypes());
                 model.addAttribute("client", oauthClient);
 
@@ -106,8 +122,12 @@ public class ClientController implements ClientUserPage {
             LOG.error("Failed to get client by clientId", throwable);
             model.addAttribute("client", new OauthClient());
 
-            return null;
+            return Mono.just(PATH);
         });
+    }
+
+    private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH) {
+        return setClientInModel(accessToken, id, model, PATH, null);
     }
 
     /**
@@ -119,16 +139,18 @@ public class ClientController implements ClientUserPage {
      * @return
      */
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute("client") OauthClient client, BindingResult bindingResult, Model model) {
+    public Mono<String> updateClient(@RequestBody @Valid @ModelAttribute("client") OauthClient client,
+                                     BindingResult bindingResult, Model model, HttpServletRequest request) {
 
         LOG.info("update client");
-        LOG.info("newClientSecret: {}", client.getNewClientSecret());
+        LOG.info("newClientSecret supplied: {}", StringUtils.hasText(client.getNewClientSecret()));
         final String PATH = "admin/clients/form";
 
         String accessToken = tokenService.getAccessToken();
 
         DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = defaultOidcUser.getAttribute("userId");
+        client.setPrependUuidToClientId(prependUuidToCreatedClientId(request));
 
         return hasDataValidationError(client, PATH, bindingResult, model)
             .flatMap(aBoolean -> getRegisteredClient(client))
@@ -145,7 +167,7 @@ public class ClientController implements ClientUserPage {
                         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
                         map.put("userId", userIdString);
 
-                        LOG.info("map is {}", map);
+                        LOG.info("updating client map for clientId: {}", map.get("clientId"));
                         LOG.info("clientIdIssuedAt: {}", map.get("clientIdIssuedAt"));
 
                         return Mono.just(map);
@@ -158,7 +180,6 @@ public class ClientController implements ClientUserPage {
                     LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
 
                     OauthClient oauthClient = OauthClient.getFromRegisteredClient(updatedRegisteredClient);
-                    LOG.info("oauthClient {}", oauthClient);
 
                     model.addAttribute("client", oauthClient);
                     LOG.info("returning to path: {}", PATH);
@@ -191,10 +212,27 @@ public class ClientController implements ClientUserPage {
                 client.setClientSettings(null);
                 LOG.info("it's a create client");
             }
-            else {
-                LOG.info("client.id is not null and not empty, it's an update");
-            }
+
+            LOG.info("client.id is not null and not empty, it's an update");
             return Mono.just(client.getRegisteredClient());
+    }
+
+    private boolean prependUuidToCreatedClientId(HttpServletRequest request) {
+        List<String> configuredHosts = prependUuidToCreatedClientIdHosts.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(host -> !host.isEmpty())
+                .map(String::toLowerCase)
+                .toList();
+
+        if (configuredHosts.isEmpty()) {
+            return prependUuidToCreatedClientId;
+        }
+
+        String requestHost = request == null ? null : request.getServerName();
+        boolean prependUuid = requestHost != null && configuredHosts.contains(requestHost.toLowerCase());
+        LOG.info("prepend uuid to created client id? {} for host {}", prependUuid, requestHost);
+        return prependUuid;
     }
 
     private Mono<Boolean> hasDataValidationError(OauthClient client, String PATH, BindingResult bindingResult, Model model) {

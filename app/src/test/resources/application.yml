@@ -1,3 +1,4 @@
+# Test configuration for tenant-aware authzmanager behavior.
 logging:
   level:
     root: info
@@ -45,6 +46,16 @@ auth-server:
     path: /oauth2/token
     grantType: client_credentials
 
+issuerUri: http://openissuer.test:9001
+
+authzmanager:
+  oauth2:
+    registration-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+    client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+    client-secret: hello
+  tenancy:
+    host-prefix: authzmanager
+
 user-rest-service:
   root: http://localhost:{port}
   context: /users
@@ -66,11 +77,6 @@ account-rest-service:
   root: http://localhost:{port}
   context: /accounts
   accountDelete: /accounts/delete
-
-setting-rest-service:
-  root: http://localhost:{port}
-  context: ${setting-rest-service.root}/settings
-  defaultOrganizationId: ${setting-rest-service.context}/users/{userId}
 
 endpoint:
   user:

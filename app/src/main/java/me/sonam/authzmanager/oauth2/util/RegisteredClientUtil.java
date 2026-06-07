@@ -54,7 +54,7 @@ public class RegisteredClientUtil {
                 "clientSettings",writeMap(registeredClient.getClientSettings().getSettings()),
                 "tokenSettings", writeMap(registeredClient.getTokenSettings().getSettings()));
 
-        LOG.info("map contains: {}", map);
+        LOG.info("map contains: {}", maskedSecrets(map));
         return map;
     }
 
@@ -81,8 +81,19 @@ public class RegisteredClientUtil {
         map.put("scopes", StringUtils.collectionToCommaDelimitedString(registeredClient.getScopes()));
         map.put("clientSettings",writeMap(registeredClient.getClientSettings().getSettings()));
         map.put("tokenSettings", writeMap(registeredClient.getTokenSettings().getSettings()));
-        LOG.info("map contains: {}", map);
+        LOG.info("map contains: {}", maskedSecrets(map));
         return map;
+    }
+
+    private Map<String, Object> maskedSecrets(Map<String, Object> map) {
+        Map<String, Object> maskedMap = new HashMap<>(map);
+        if (maskedMap.containsKey("clientSecret")) {
+            maskedMap.put("clientSecret", "****");
+        }
+        if (maskedMap.containsKey("newClientSecret")) {
+            maskedMap.put("newClientSecret", "****");
+        }
+        return maskedMap;
     }
 
     public Map<String, Object> parseMap(String data) {

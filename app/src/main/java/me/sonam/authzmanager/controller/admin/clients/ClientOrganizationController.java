@@ -170,7 +170,7 @@ public class ClientOrganizationController {
             LOG.error("Failed to get client by clientId", throwable);
             model.addAttribute("client", new OauthClient());
 
-            return null;
+            return Mono.just(PATH);
         });
     }
 }

@@ -55,7 +55,37 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-oauth2-resource-server")
     testImplementation 'org.springframework.boot:spring-boot-webtestclient'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'com.microsoft.playwright:playwright:1.55.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+sourceSets {
+    liveE2e {
+        java.srcDir 'src/liveE2e/java'
+        resources.srcDir 'src/liveE2e/resources'
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    liveE2eImplementation.extendsFrom testImplementation
+    liveE2eRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register('liveE2eTest', Test) {
+    description = 'Runs opt-in browser-style E2E tests against live authzmanager URLs.'
+    group = 'verification'
+    testClassesDirs = sourceSets.liveE2e.output.classesDirs
+    classpath = sourceSets.liveE2e.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter test
+    systemProperties System.getProperties()
+    onlyIf {
+        System.getenv('AUTHZMGR_E2E_BASE_URLS') != null
+                && System.getenv('AUTHZMGR_E2E_USERNAME') != null
+                && System.getenv('AUTHZMGR_E2E_PASSWORD') != null
+    }
 }
 java {
     toolchain {
@@ -80,4 +110,3 @@ dependencyManagement {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
     }
 }
-

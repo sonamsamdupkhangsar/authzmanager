@@ -20,6 +20,7 @@ public class OauthClient {
     @Size(min = 3, max = 100)
     private String clientId;
     private UUID clientIdUuid;
+    private boolean prependUuidToClientId = true;
     private String fullClientId;
     private String clientIdIssuedAt;
     //@NotEmpty(message="secret cannot be empty")
@@ -315,11 +316,11 @@ public class OauthClient {
     }
 
     private void setFullClientId(){
-        if (this.clientIdUuid != null) {
+        if (this.prependUuidToClientId && this.clientIdUuid != null) {
             this.fullClientId = this.clientIdUuid + "." + clientId;
         }
         else {
-            this.fullClientId = "." + clientId;
+            this.fullClientId = clientId;
         }
     }
 
@@ -352,6 +353,14 @@ public class OauthClient {
 
     public void setClientIdUuid(UUID clientIdUuid) {
         this.clientIdUuid = clientIdUuid;
+    }
+
+    public boolean isPrependUuidToClientId() {
+        return prependUuidToClientId;
+    }
+
+    public void setPrependUuidToClientId(boolean prependUuidToClientId) {
+        this.prependUuidToClientId = prependUuidToClientId;
     }
 
  /*   private String toAuthorizationGrantTypes(List<String> list) {
@@ -450,7 +459,7 @@ public class OauthClient {
                 "id='" + id + '\'' +
                 ", clientId='" + clientId + '\'' +
                 ", clientIdIssuedAt='" + clientIdIssuedAt + '\'' +
-                ", clientSecret='" + clientSecret + '\'' +
+                ", clientSecret='****'" +
                 ", clientSecretExpiresAt='" + clientSecretExpiresAt + '\'' +
                 ", clientName='" + clientName + '\'' +
                 ", clientAuthenticationMethods=" + clientAuthenticationMethods +
@@ -621,9 +630,11 @@ public class OauthClient {
            // id = UUID.randomUUID().toString();
 
             LOG.info("this RegisteredClient has not been created yet");
-            LOG.info("copy clientIdUuid and append with .clientId");
-            clientId = clientIdUuid + "-" + clientId;
-            LOG.info("id is null, prepend clientIdUuid to clientIdString: {}", clientId);
+            if (prependUuidToClientId) {
+                LOG.info("copy clientIdUuid and prepend to clientId");
+                clientId = clientIdUuid + "-" + clientId;
+                LOG.info("id is null, prepend clientIdUuid to clientIdString: {}", clientId);
+            }
         }
         else {
             LOG.info("id is not empty: '{}'", id);
