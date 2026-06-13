@@ -100,6 +100,7 @@ public class AddUserController {
         normalizeBlankPassword(userSignup);
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        userSignup.setActivationHost(organizationHost);
 
         return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))

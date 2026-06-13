@@ -186,6 +186,8 @@ public class UserSignupIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8())
+                .contains("\"activationHost\":\"" + organizationHost + "\"");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");

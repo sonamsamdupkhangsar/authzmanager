@@ -21,7 +21,10 @@ public class UserSearchPolicyService {
     }
 
     public Optional<String> validateSearch(String authenticationId) {
-        String currentHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        return validateSearch(authenticationId, tenantAuthorizationUrlResolver.currentAuthorizationHost());
+    }
+
+    public Optional<String> validateSearch(String authenticationId, String currentHost) {
         UserSearchPolicyProperties.HostPolicy policy = userSearchPolicyProperties.getHosts().get(currentHost);
         if (policy == null || policy.getAllowedEmailDomains().isEmpty()) {
             return Optional.empty();

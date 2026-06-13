@@ -94,12 +94,30 @@
 
                                     <div class="form-check m-2">
                                         <input type="hidden" th:field="*{organizationChoice.organizationId}"/>
-                                        <input class="form-check-input" type="checkbox" th:field="*{organizationChoice.selected}"/>
-                                        <label  class="form-check-label" th:text="${'Add this user to this organization ' + organization.name}"></label>
+                                        <input type="hidden" th:field="*{organizationChoice.selected}"/>
+                                        <span class="badge bg-success" th:if="*{organizationChoice.selected}">In this organization</span>
+                                        <span class="badge bg-secondary" th:unless="*{organizationChoice.selected}">Not in this organization</span>
+                                        <span class="badge bg-info text-dark"
+                                              th:if="*{T(java.lang.Boolean).TRUE.equals(organizationChoice.defaultOrganization)}">
+                                            Default organization
+                                        </span>
+                                    </div>
+
+                                    <div class="form-check m-2" th:if="*{!T(java.lang.Boolean).TRUE.equals(organizationChoice.selected)}">
+                                        <input class="form-check-input" type="checkbox" id="defaultOrganization"
+                                               th:field="*{organizationChoice.defaultOrganization}"/>
+                                        <label class="form-check-label" for="defaultOrganization">
+                                            Make this organization the user's default after adding
+                                        </label>
                                     </div>
 
                                     <div class="form-check">
-                                        <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                                        <button type="submit" name="action" value="add" class="btn btn-primary mb-3"
+                                                th:disabled="*{T(java.lang.Boolean).TRUE.equals(organizationChoice.selected)}">Add user</button>
+                                        <button type="submit" name="action" value="default" class="btn btn-secondary mb-3"
+                                                th:disabled="*{!T(java.lang.Boolean).TRUE.equals(organizationChoice.selected) or T(java.lang.Boolean).TRUE.equals(organizationChoice.defaultOrganization)}">Make default</button>
+                                        <button type="submit" name="action" value="remove" class="btn btn-danger mb-3"
+                                                th:disabled="*{!T(java.lang.Boolean).TRUE.equals(organizationChoice.selected)}">Remove user</button>
                                     </div>
                                 </form>
 
