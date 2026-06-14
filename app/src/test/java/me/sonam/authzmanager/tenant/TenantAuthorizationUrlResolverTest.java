@@ -64,4 +64,32 @@ class TenantAuthorizationUrlResolverTest {
         assertEquals("free.openissuer.test", resolver.currentAuthorizationHost());
         assertEquals("http://free.openissuer.test:9001", resolver.currentIssuerUri());
     }
+
+    @Test
+    void resolvesAuthorizationHostFromForwardedHostBeforeServerName() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServerName("10.0.0.244");
+        request.addHeader("X-Forwarded-Host", "free.admin.openissuer.test:9093");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        TenantAuthorizationUrlResolver resolver =
+                new TenantAuthorizationUrlResolver("admin", "http://platform.openissuer.test:9001");
+
+        assertEquals("free.openissuer.test", resolver.currentAuthorizationHost());
+        assertEquals("http://free.openissuer.test:9001", resolver.currentIssuerUri());
+    }
+
+    @Test
+    void resolvesAuthorizationHostFromForwardedHeader() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServerName("localhost");
+        request.addHeader("Forwarded", "proto=http;host=business2.admin.openissuer.test:9093");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        TenantAuthorizationUrlResolver resolver =
+                new TenantAuthorizationUrlResolver("admin", "http://platform.openissuer.test:9001");
+
+        assertEquals("business2.openissuer.test", resolver.currentAuthorizationHost());
+        assertEquals("http://business2.openissuer.test:9001", resolver.currentIssuerUri());
+    }
 }

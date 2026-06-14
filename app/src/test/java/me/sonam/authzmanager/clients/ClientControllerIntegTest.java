@@ -199,8 +199,9 @@ public class ClientControllerIntegTest {
                 .uri("/admin/clients/"+oauthClient.getId())//.headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
-        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("name=\"clientSecret\"");
-        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("value=\"secret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("name=\"clientSecret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("id=\"clientSecretDisplay\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("value=\"secret\"");
         Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("name=\"newClientSecret\"");
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
@@ -281,8 +282,9 @@ public class ClientControllerIntegTest {
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
 
-        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("name=\"clientSecret\"");
-        Assertions.assertThat(entityExchangeResult.getResponseBody()).doesNotContain("value=\"secret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("name=\"clientSecret\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("id=\"clientSecretDisplay\"");
+        Assertions.assertThat(entityExchangeResult.getResponseBody()).contains("value=\"secret\"");
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         Assertions.assertThat(recordedRequest).isNotNull();

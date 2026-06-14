@@ -190,10 +190,11 @@ public class SettingsController {
         LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, organizationId)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId))
+                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId, organizationHost))
                 .doOnNext(user -> {
                     LOG.info("found user: {}", user);
                     model.addAttribute("message", "Found user with username '" + authenticationId + "'");
@@ -215,7 +216,7 @@ public class SettingsController {
                     }
                 })
                 .flatMap(objects -> showUserForDefaultOrganization(accessToken, loggedInUserId, objects.getT2(),
-                        model, userPageable, tenantAuthorizationUrlResolver.currentAuthorizationHost()))
+                        model, userPageable, organizationHost))
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 
@@ -226,8 +227,8 @@ public class SettingsController {
 
     }
 
-    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId) {
-        return userSearchPolicyService.validateSearch(authenticationId)
+    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId, String organizationHost) {
+        return userSearchPolicyService.validateSearch(authenticationId, organizationHost)
                 .<Mono<User>>map(error -> Mono.error(new AuthzManagerException(error)))
                 .orElseGet(() -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId));
     }

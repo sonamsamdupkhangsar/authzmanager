@@ -1,6 +1,8 @@
 package me.sonam.authzmanager.tenant;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -8,12 +10,15 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.net.URI;
+import java.util.Optional;
 
 /**
  * Resolves the tenant authorization host and issuer URL from the current authzmanager request host.
  */
 @Component("tenantAuthorizationUrlResolver")
 public class TenantAuthorizationUrlResolver {
+    private static final Logger LOG = LoggerFactory.getLogger(TenantAuthorizationUrlResolver.class);
+
     private final String hostLabel;
     private final URI fallbackIssuerUri;
 
@@ -30,22 +35,31 @@ public class TenantAuthorizationUrlResolver {
     public String currentAuthorizationHost() {
         HttpServletRequest request = currentRequest();
         if (request == null) {
+            LOG.info("no current request found; using fallback issuer host {}", fallbackIssuerUri.getHost());
             return fallbackIssuerUri.getHost();
         }
-        String requestHost = request.getServerName();
+        String requestHost = currentRequestHost(request);
+        LOG.info("resolve tenant authorization host from request host '{}'", requestHost);
         String expectedSegment = "." + hostLabel + ".";
 
         if (requestHost != null && requestHost.contains(expectedSegment)) {
             int index = requestHost.indexOf(expectedSegment);
             String tenantPrefix = requestHost.substring(0, index);
             String suffix = requestHost.substring(index + expectedSegment.length());
-            return tenantPrefix + "." + suffix;
+            String authorizationHost = tenantPrefix + "." + suffix;
+            LOG.info("resolved tenant authorization host '{}' from admin host '{}'",
+                    authorizationHost, requestHost);
+            return authorizationHost;
         }
 
         if (requestHost != null && requestHost.equals(hostLabel)) {
+            LOG.info("request host equals host label '{}'; using fallback issuer host {}",
+                    hostLabel, fallbackIssuerUri.getHost());
             return fallbackIssuerUri.getHost();
         }
 
+        LOG.info("request host '{}' did not match admin host label '{}'; using fallback issuer host {}",
+                requestHost, hostLabel, fallbackIssuerUri.getHost());
         return fallbackIssuerUri.getHost();
     }
 
@@ -105,5 +119,36 @@ public class TenantAuthorizationUrlResolver {
             return null;
         }
         return attributes.getRequest();
+    }
+
+    private String currentRequestHost(HttpServletRequest request) {
+        String requestHost = Optional.ofNullable(firstForwardedHost(request))
+                .or(() -> Optional.ofNullable(request.getHeader(HttpHeaders.HOST)))
+                .orElseGet(request::getServerName)
+                .split(",")[0]
+                .trim()
+                .replaceFirst(":\\d+$", "");
+        LOG.info("resolved raw request host '{}' from x-forwarded-host='{}', host='{}', serverName='{}'",
+                requestHost, request.getHeader("X-Forwarded-Host"),
+                request.getHeader(HttpHeaders.HOST), request.getServerName());
+        return requestHost;
+    }
+
+    private String firstForwardedHost(HttpServletRequest request) {
+        String forwardedHost = request.getHeader("X-Forwarded-Host");
+        if (forwardedHost != null && !forwardedHost.isBlank()) {
+            return forwardedHost;
+        }
+        String forwarded = request.getHeader("Forwarded");
+        if (forwarded == null || forwarded.isBlank()) {
+            return null;
+        }
+        for (String segment : forwarded.split(";")) {
+            String trimmed = segment.trim();
+            if (trimmed.regionMatches(true, 0, "host=", 0, 5)) {
+                return trimmed.substring(5).replace("\"", "");
+            }
+        }
+        return null;
     }
 }

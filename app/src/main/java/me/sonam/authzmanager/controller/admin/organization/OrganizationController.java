@@ -310,6 +310,7 @@ public class OrganizationController {
         LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organizationId)
                 .flatMap(aBoolean -> {
@@ -339,19 +340,7 @@ public class OrganizationController {
                                 model.addAttribute("users", users);
                             }).thenReturn(organization);
                 })
-                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId))
-                .flatMap(user -> organizationWebClient.getOrganizationIdsForUser(accessToken, user.getId())
-                        .flatMap(organizationIds -> {
-                            boolean belongsToDifferentOrganization = organizationIds.stream()
-                                    .anyMatch(existingOrganizationId -> !existingOrganizationId.equals(organizationId));
-
-                            if (belongsToDifferentOrganization) {
-                                LOG.warn("user {} with id {} belongs to another organization, existing organizationIds: {}, requested organizationId: {}",
-                                        user.getAuthenticationId(), user.getId(), organizationIds, organizationId);
-                                return Mono.error(new AuthenticationException(USER_IN_ANOTHER_ORG_MESSAGE));
-                            }
-                            return Mono.just(user);
-                        }))
+                .flatMap(organization -> findUserWithinSearchPolicy(accessToken, authenticationId, organizationHost))
                 .doOnNext(user -> {
                     LOG.info("found user: {}", user);
                     model.addAttribute("message", "Found user with username '" + authenticationId + "'");
@@ -360,16 +349,26 @@ public class OrganizationController {
                 }).flatMap(user -> {
                     LOG.info("checking user.id {} exists in organization, user {}", user.getId(), user);
                     return organizationWebClient.userExistsInOrganization(accessToken, user.getId(), organizationId)
-                            .doOnNext(aBoolean -> {
+                            .flatMap(aBoolean -> {
                                 LOG.info("user exists? : {}", aBoolean);
                                 user.getOrganizationChoice().setOrganizationId(organizationId);
                                 user.getOrganizationChoice().setSelected(aBoolean);
-                                //update the user in model
+                                if (aBoolean) {
+                                    return organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
+                                                    user.getId(), organizationHost)
+                                            .map(organizationId::equals)
+                                            .defaultIfEmpty(false)
+                                            .doOnNext(user.getOrganizationChoice()::setDefaultOrganization)
+                                            .doOnNext(defaultOrganization -> model.addAttribute("user", user));
+                                }
+                                user.getOrganizationChoice().setDefaultOrganization(false);
                                 model.addAttribute("user", user);
+                                return organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
+                                                organizationId, organizationHost)
+                                        .thenReturn(false);
                             });
                 }
                 )
-                .doOnNext(aBoolean -> LOG.info("looks like it executed"))
                 .onErrorResume(throwable -> {
                     LOG.error("failed to find user: {}", throwable.getMessage());
 
@@ -385,8 +384,8 @@ public class OrganizationController {
 
     }
 
-    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId) {
-        return userSearchPolicyService.validateSearch(authenticationId)
+    private Mono<User> findUserWithinSearchPolicy(String accessToken, String authenticationId, String organizationHost) {
+        return userSearchPolicyService.validateSearch(authenticationId, organizationHost)
                 .<Mono<User>>map(error -> Mono.error(new AuthzManagerException(error)))
                 .orElseGet(() -> userWebClient.findByAuthenticationProfileSearch(accessToken, authenticationId));
     }
@@ -394,22 +393,25 @@ public class OrganizationController {
 
     /**
      * this method will handle the form's POST method to associate user to organization:
-     * Checked box: add the user to organization
-     * Unchecked box: remove the user from organization
+     * Add action: add the user to organization.
+     * Remove action: remove the user from organization.
      * @param user
      * @param model
      * @param pageable
      * @return
      */
 
-    @PostMapping("/{id}/users/add")  //remove as this is not used anymore
+    @PostMapping("/{id}/users/add")
     public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user,
-                                               Model model, Pageable pageable, HttpServletRequest request) {
+                                               @RequestParam("action") String action,
+                                               Model model, Pageable pageable) {
         final String PATH = "admin/organizations/user";
-        LOG.info("update user in organization");
+        LOG.info("update user in organization with action: {}", action);
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        LOG.info("organizationHost: {}", organizationHost);
 
         return organizationWebClient.getOrganizationById(accessToken, orgId)
                 .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
@@ -419,17 +421,34 @@ public class OrganizationController {
                         return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
                     }
 
-                    if (user.getOrganizationChoice().getSelected()) {
-                        LOG.info("choice is selected to add user to organization");
+                    if ("add".equals(action)) {
+                        LOG.info("add user to organization action selected");
 
-                        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
                         return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken,
                                 model, pageable, organizationHost);
-                    } else {
-                        LOG.info("remove user from organization");
+                    }
+                    else if ("remove".equals(action)) {
+                        LOG.info("remove user from organization action selected");
                         return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
 
                     }
+                    else if ("default".equals(action)) {
+                        LOG.info("set default organization action selected");
+                        model.addAttribute("organization", objects.getT2());
+                        return organizationWebClient.setDefaultOrganization(accessToken,
+                                        user.getOrganizationChoice().getOrganizationId(), user.getId())
+                                .doOnNext(message -> {
+                                    user.getOrganizationChoice().setSelected(true);
+                                    user.getOrganizationChoice().setDefaultOrganization(true);
+                                    model.addAttribute("user", user);
+                                    model.addAttribute("message",
+                                            "default organization updated for username: " + user.getAuthenticationId());
+                                })
+                                .then(getUsersInOrganization(PATH, userId, objects.getT2(), accessToken, model, pageable));
+                    }
+
+                    model.addAttribute("message", "invalid user organization action: " + action);
+                    return Mono.just(PATH);
                 }).thenReturn(PATH);
     }
 
@@ -459,6 +478,8 @@ public class OrganizationController {
                         user.getOrganizationChoice().getOrganizationId(), subdomain)
                 .then(organizationWebClient.addUserToOrganization(accessToken, user.getId(),
                         user.getOrganizationChoice().getOrganizationId(), subdomain, true))
+                .flatMap(stringStringMap -> setDefaultOrganizationIfRequested(accessToken, user)
+                        .thenReturn(stringStringMap))
                 .doOnNext(stringStringMap -> {
                     model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
                     LOG.info("added to user to organization, nullify the user so the form does not show this user again");
@@ -478,6 +499,17 @@ public class OrganizationController {
                     model.addAttribute("message", "error occured during adding user to organization: " + throwable.getMessage());
                   return  Mono.just(PATH);
                 });
+    }
+
+    private Mono<String> setDefaultOrganizationIfRequested(String accessToken, User user) {
+        if (!Boolean.TRUE.equals(user.getOrganizationChoice().getDefaultOrganization())) {
+            return Mono.empty();
+        }
+
+        LOG.info("set organization {} as default for user {}",
+                user.getOrganizationChoice().getOrganizationId(), user.getId());
+        return organizationWebClient.setDefaultOrganization(accessToken,
+                user.getOrganizationChoice().getOrganizationId(), user.getId());
     }
 
     private Mono<String> removeUserFromOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable userPageable) {

@@ -541,7 +541,10 @@ public class OrganizationControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(user)));
         //6 user exists in organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody("{\"message\": \"true\"}"));
+                .setResponseCode(200).setBody("{\"message\": \"false\"}"));
+        //7 user can be added to organization preflight
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
         BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("username", "johnbadmash");
 
@@ -573,7 +576,82 @@ public class OrganizationControllerIntegTest {
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users/"+userId1+"/ids");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users/"+userId1);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId1 + "/organizations/"
+                + organization.getId() + "/can-add");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void findUserByAuthenticationIdShowsDefaultOrganization() throws InterruptedException {
+        LOG.info("find user by authentication id and show default organization status");
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+
+        Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(organization)));
+
+        UUID searchedUserId = UUID.randomUUID();
+        RestPage<UUID> userIdPage = new RestPage<>(List.of(searchedUserId), 0,1,1);
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(userIdPage)));
+
+        User searchedUser = new User(searchedUserId, "hello@sonam.cloud");
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(List.of(searchedUser))));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(searchedUser)));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("{\"message\": \"true\"}"));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", organization.getId().toString()))));
+
+        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("username", "hello@sonam.cloud");
+
+        webTestClient.post()
+                .uri("/admin/organizations/"+ organization.getId()+"/users")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(formInserter)
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("Default organization"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+loggedInUserId+"/organizations/"+ organization.getId());
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/"+searchedUserId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/profile/authentication-id/hello@sonam.cloud");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users/"+searchedUserId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/subdomain/");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + searchedUserId + "/default-organization-id");
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -627,7 +705,8 @@ public class OrganizationControllerIntegTest {
 
         BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("id", user.getId().toString())
                 .with("organizationChoice.organizationId", user.getOrganizationChoice().getOrganizationId().toString())
-                .with("organizationChoice.selected", "true");
+                .with("organizationChoice.selected", "false")
+                .with("action", "add");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
                 .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add")
@@ -719,7 +798,8 @@ public class OrganizationControllerIntegTest {
 
         BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("id", user.getId().toString())
                 .with("organizationChoice.organizationId", user.getOrganizationChoice().getOrganizationId().toString())
-                .with("organizationChoice.selected", "false");
+                .with("organizationChoice.selected", "true")
+                .with("action", "remove");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
                 .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add")
@@ -743,6 +823,77 @@ public class OrganizationControllerIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+user.getOrganizationChoice().getOrganizationId()+"/users");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/"+userId1+","+userId2);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void setDefaultOrganizationForSearchedUser() throws InterruptedException {
+        LOG.info("set default organization for searched user");
+
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        User user = new User(UUID.randomUUID(), "user1@sonam.cloud");
+        OrganizationChoice organizationChoice = new OrganizationChoice();
+        organizationChoice.setOrganizationId(orgId);
+        user.setOrganizationChoice(organizationChoice);
+
+        Organization organization = new Organization(user.getOrganizationChoice().getOrganizationId(), "my company",
+                loggedInUserId);
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(organization)));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", "default organization updated"))));
+
+        UUID userId1 = UUID.randomUUID();
+        UUID userId2 = UUID.randomUUID();
+        List<UUID> userIdList =  List.of(userId1, userId2);
+        RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(userIdPage)));
+
+        User user1 = new User(userId1, "hello@sonam.cloud");
+        User user2 = new User(userId2, "bye@sonam.cloud");
+        List<User> userList = List.of(user1, user2);
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(userList)));
+
+        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("id", user.getId().toString())
+                .with("authenticationId", user.getAuthenticationId())
+                .with("organizationChoice.organizationId", user.getOrganizationChoice().getOrganizationId().toString())
+                .with("organizationChoice.selected", "true")
+                .with("action", "default");
+
+        webTestClient.post()
+                .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .body(formInserter)
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("Default organization"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+loggedInUserId+"/organizations/"+organization.getId());
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users/"+user.getId()+"/default");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");

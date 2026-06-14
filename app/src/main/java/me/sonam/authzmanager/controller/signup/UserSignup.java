@@ -25,6 +25,8 @@ public class UserSignup {
 
     private boolean active; //this field is used to activate a user using the admin
 
+    private String activationHost;
+
     public UserSignup() {
 
     }
@@ -89,6 +91,14 @@ public class UserSignup {
         this.active = active;
     }
 
+    public String getActivationHost() {
+        return activationHost;
+    }
+
+    public void setActivationHost(String activationHost) {
+        this.activationHost = activationHost;
+    }
+
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }
@@ -105,6 +115,7 @@ public class UserSignup {
                 ", authenticationId='" + authenticationId + '\'' +
                 ", password=" + (password == null ? null : "****") +
                 ", active='" +active + '\'' +
+                ", activationHost='" + activationHost + '\'' +
                 ", organizationId='" + organizationId +'\'' +
                 '}';
     }

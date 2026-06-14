@@ -5,7 +5,8 @@ import java.util.UUID;
 
 public
 class OrganizationChoice {
-    private Boolean selected;
+    private Boolean selected = false;
+    private Boolean defaultOrganization = false;
     private UUID organizationId;
 
     public Boolean getSelected() {
@@ -14,6 +15,14 @@ class OrganizationChoice {
 
     public void setSelected(Boolean selected) {
         this.selected = selected;
+    }
+
+    public Boolean getDefaultOrganization() {
+        return defaultOrganization;
+    }
+
+    public void setDefaultOrganization(Boolean defaultOrganization) {
+        this.defaultOrganization = defaultOrganization;
     }
 
     public UUID getOrganizationId() {
@@ -36,18 +45,21 @@ class OrganizationChoice {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OrganizationChoice that = (OrganizationChoice) o;
-        return Objects.equals(selected, that.selected) && Objects.equals(organizationId, that.organizationId);
+        return Objects.equals(selected, that.selected)
+                && Objects.equals(defaultOrganization, that.defaultOrganization)
+                && Objects.equals(organizationId, that.organizationId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(selected, organizationId);
+        return Objects.hash(selected, defaultOrganization, organizationId);
     }
 
     @Override
     public String toString() {
         return "OrganizationChoice{" +
                 "selected=" + selected +
+                ", defaultOrganization=" + defaultOrganization +
                 ", organizationId=" + organizationId +
                 '}';
     }
