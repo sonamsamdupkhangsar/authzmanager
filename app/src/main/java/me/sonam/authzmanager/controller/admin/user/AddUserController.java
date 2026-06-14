@@ -8,6 +8,7 @@ import me.sonam.authzmanager.controller.signup.UserSignup;
 
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
+import me.sonam.authzmanager.service.UserSearchPolicyService;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -40,6 +41,7 @@ public class AddUserController {
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
     private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
+    private final UserSearchPolicyService userSearchPolicyService;
     private final String USER_ADD = "/admin/users/add";
 
     @Value("${maxUsersPerOrganization}")
@@ -47,12 +49,14 @@ public class AddUserController {
 
     public AddUserController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                              TokenService tokenService, UserWebClient userWebClient,
-                             TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
+                             TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver,
+                             UserSearchPolicyService userSearchPolicyService) {
         this.tokenService = tokenService;
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
+        this.userSearchPolicyService = userSearchPolicyService;
     }
 
     @GetMapping
@@ -126,6 +130,16 @@ public class AddUserController {
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
+
+        Optional<String> emailPolicyError = userSearchPolicyService.validateSignupEmail(userSignup.getEmail(), subdomain);
+        if (emailPolicyError.isPresent()) {
+            LOG.info("admin add user email {} failed tenant policy for host {}: {}",
+                    userSignup.getEmail(), subdomain, emailPolicyError.get());
+            model.addAttribute("error", emailPolicyError.get());
+            model.addAttribute("userSignup", userSignup);
+            return Mono.just(PATH);
+        }
+
         return preflightCanAddUserToOrganization(accessToken, userSignup, subdomain)
                 .then(userWebClient.signupUser(accessToken, userSignup))
                 .flatMap(s -> {

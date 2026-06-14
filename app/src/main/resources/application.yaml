@@ -86,13 +86,13 @@ authzmanager:
     host-label: admin
   user-search:
     hosts:
-      free.openissuer.com:
+      "[free.openissuer.com]":
         allowed-email-domains:
           - "*"
-      business1.openissuer.com:
+      "[business1.openissuer.com]":
         allowed-email-domains:
           - business1.com
-      business2.openissuer.com:
+      "[business2.openissuer.com]":
         allowed-email-domains:
           - business2.com
 

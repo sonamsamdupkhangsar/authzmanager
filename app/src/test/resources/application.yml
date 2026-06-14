@@ -55,6 +55,17 @@ authzmanager:
     client-secret: hello
   tenancy:
     host-prefix: authzmanager
+  user-search:
+    hosts:
+      "[free.openissuer.test]":
+        allowed-email-domains:
+          - "*"
+      "[business1.openissuer.test]":
+        allowed-email-domains:
+          - business1.com
+      "[business2.openissuer.test]":
+        allowed-email-domains:
+          - business2.com
 
 user-rest-service:
   root: http://localhost:{port}

@@ -42,6 +42,19 @@ REQUEST_SCOPES: message.read message.write
 BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
 
 AUTHZMANAGER_INITIAL_SECRET: hello
+
+authzmanager:
+  user-search:
+    hosts:
+      "[free.openissuer.test]":
+        allowed-email-domains:
+          - "*"
+      "[business1.openissuer.test]":
+        allowed-email-domains:
+          - business1.com
+      "[business2.openissuer.test]":
+        allowed-email-domains:
+          - business2.com
 #jwtrequest:
 #  - in:  /*
 #    out: /authenticate

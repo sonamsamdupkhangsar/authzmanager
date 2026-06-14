@@ -138,7 +138,7 @@ public class UserSignupIntegTest {
     })
     public void adminSignupChecksEachRequestSubdomain(String subdomain) throws Exception {
         String organizationHost = organizationHostFor(subdomain);
-        String email = "tenantuser@sonam.cloud";
+        String email = allowedEmailFor(subdomain, "tenantuser");
         String authenticationId = "tenant-user";
         Jwt jwt = JwtUtil.jwt(authenticationId);
 
@@ -211,7 +211,7 @@ public class UserSignupIntegTest {
     public void adminSignupChecksExistingUserAgainstSubdomainBeforeSignup() throws Exception {
         String subdomain = "business1.admin.openissuer.test";
         String organizationHost = organizationHostFor(subdomain);
-        String authenticationId = "existing-user";
+        String authenticationId = "existing-user@business1.com";
         Jwt jwt = JwtUtil.jwt(authenticationId);
 
         when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
@@ -221,7 +221,7 @@ public class UserSignupIntegTest {
         Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
         User existingUser = new User();
         existingUser.setId(UUID.randomUUID());
-        existingUser.setAuthenticationId(authenticationId + "@sonam.cloud");
+        existingUser.setAuthenticationId(authenticationId);
         existingUser.setFirstName("Existing");
         existingUser.setLastName("User");
 
@@ -238,7 +238,7 @@ public class UserSignupIntegTest {
                 .uri("/admin/organizations/users")
                 .header(HttpHeaders.HOST, subdomain)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .bodyValue(signupFormData(orgId, "Existing", "User", authenticationId + "@sonam.cloud", true))
+                .bodyValue(signupFormData(orgId, "Existing", "User", authenticationId, true))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class).value(body -> Assertions.assertThat(body)
@@ -247,7 +247,7 @@ public class UserSignupIntegTest {
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
-        assertUserLookup(authenticationId + "@sonam.cloud");
+        assertUserLookup(authenticationId);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -259,7 +259,7 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
 
-        assertUserLookup(authenticationId + "@sonam.cloud");
+        assertUserLookup(authenticationId);
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
@@ -279,7 +279,7 @@ public class UserSignupIntegTest {
     public void adminSignupWithoutInitialPasswordDoesNotSubmitBlankPassword() throws Exception {
         String subdomain = "business1.admin.openissuer.test";
         String organizationHost = organizationHostFor(subdomain);
-        String email = "nopassword-user@sonam.cloud";
+        String email = "nopassword-user@business1.com";
         Jwt jwt = JwtUtil.jwt(email);
 
         when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
@@ -364,13 +364,13 @@ public class UserSignupIntegTest {
     public void adminSignupShowsErrorWhenExistingUserCannotJoinSubdomainOrganization() throws Exception {
         String subdomain = "business2.admin.openissuer.test";
         String organizationHost = organizationHostFor(subdomain);
-        String authenticationId = "cross-tenant-user";
+        String authenticationId = "cross-tenant-user@business2.com";
         UUID orgId = UUID.randomUUID();
         UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
         Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
         User existingUser = new User();
         existingUser.setId(UUID.randomUUID());
-        existingUser.setAuthenticationId(authenticationId + "@sonam.cloud");
+        existingUser.setAuthenticationId(authenticationId);
 
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
@@ -381,20 +381,44 @@ public class UserSignupIntegTest {
                 .uri("/admin/organizations/users")
                 .header(HttpHeaders.HOST, subdomain)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .bodyValue(signupFormData(orgId, "Cross", "Tenant", authenticationId + "@sonam.cloud", false))
+                .bodyValue(signupFormData(orgId, "Cross", "Tenant", authenticationId, false))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class).value(body -> Assertions.assertThat(body).contains("user belongs to another subdomain"));
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
-        assertUserLookup(authenticationId + "@sonam.cloud");
+        assertUserLookup(authenticationId);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
                 .startsWith("/organizations/subdomain/" + organizationHost + "/users/" + existingUser.getId()
                         + "/organizations/" + orgId + "/can-add");
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupRejectsEmailOutsideTenantDomain() throws Exception {
+        String subdomain = "business1.admin.openissuer.test";
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Wrong", "Domain", "wrong-domain@example.com", false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("user email domain is not allowed for this business"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
         Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -574,6 +598,16 @@ public class UserSignupIntegTest {
             return requestHost.replace(".admin.", ".");
         }
         return "openissuer.test";
+    }
+
+    private String allowedEmailFor(String requestHost, String username) {
+        if (requestHost.startsWith("business1.")) {
+            return username + "@business1.com";
+        }
+        if (requestHost.startsWith("business2.")) {
+            return username + "@business2.com";
+        }
+        return username + "@sonam.cloud";
     }
 
     private void assertUserLookup(String authenticationId) throws InterruptedException {
