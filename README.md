@@ -13,6 +13,53 @@ Use local profile `application-local.yml` to run locally.
 mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
 ```
 
+## Run locally with HTTPS
+
+Passkey/WebAuthn login testing should use HTTPS for both authorization and authzmanager. The `local-https`
+profile uses the mkcert certificate shared with authorization.
+
+Create the local certificate if it does not already exist:
+
+```
+mkdir -p ~/openissuer-local-certs
+mkcert \
+  -cert-file ~/openissuer-local-certs/openissuer.test.pem \
+  -key-file ~/openissuer-local-certs/openissuer.test-key.pem \
+  platform.openissuer.test \
+  free.openissuer.test \
+  business1.openissuer.test \
+  business2.openissuer.test \
+  platform.admin.openissuer.test \
+  free.admin.openissuer.test \
+  business1.admin.openissuer.test \
+  business2.admin.openissuer.test \
+  authorization-server \
+  localhost \
+  127.0.0.1
+```
+
+Start authzmanager with:
+
+```
+ISSUER_ADDRESS=https://platform.openissuer.test:9001 \
+ISSUER_URI=https://platform.openissuer.test:9001 \
+SPRING_PROFILES_ACTIVE=local,local-https ./gradlew bootRun
+```
+
+Use the tenant admin URL, for example:
+
+```
+https://free.admin.openissuer.test:9093
+```
+
+The authzmanager OAuth client in authorization must have an HTTPS redirect URI for the same tenant:
+
+```
+https://free.admin.openissuer.test:9093/login/oauth2/code/b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
+```
+
+When authorization is started with `local,local-https`, its authzmanager client seed uses HTTPS redirect URIs.
+
 ## Build Docker image
 
 Build docker image using included Dockerfile.
