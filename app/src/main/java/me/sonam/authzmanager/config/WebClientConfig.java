@@ -13,8 +13,11 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Arrays;
 
 /**
  * Configures shared WebClient builders, including the tenant-aware authorization-server client.
@@ -37,6 +40,9 @@ public class WebClientConfig {
 
     @Autowired
     private TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
+
+    @Autowired
+    private Environment environment;
 
     @Value("${tokenExpireSeconds}")
     private int tokenExpireSeconds;
@@ -83,7 +89,8 @@ public class WebClientConfig {
     @Bean("authServerWebClient")
     public WebClient.Builder authServerWebClientBuilder() {
         LOG.info("creating a WebClient.Builder with tokenFilter and tenant auth-server headers");
-        WebClient.Builder tokenRequestBuilder = webClientBuilderForTokenFilter().clone()
+        boolean localHttps = Arrays.asList(environment.getActiveProfiles()).contains("local-https");
+        WebClient.Builder tokenRequestBuilder = authServerTokenRequestBuilder(localHttps)
                 .filter((request, next) -> next.exchange(ClientRequest.from(request)
                         .headers(tenantAuthorizationUrlResolver::applyTenantForwardHeaders)
                         .build()));
@@ -91,10 +98,26 @@ public class WebClientConfig {
         TokenFilter tokenFilter = new TokenFilter(tokenRequestBuilder, tokenRequestFilter,
                 oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
 
-        return webClientBuilder().clone()
+        return authServerBaseBuilder(localHttps)
                 .filter(tokenFilter.renewTokenFilter())
                 .filter((request, next) -> next.exchange(ClientRequest.from(request)
                         .headers(tenantAuthorizationUrlResolver::applyTenantForwardHeaders)
                         .build()));
+    }
+
+    private WebClient.Builder authServerTokenRequestBuilder(boolean localHttps) {
+        if (localHttps) {
+            LOG.info("using non-load-balanced authorization-server token WebClient for local HTTPS");
+            return WebClient.builder();
+        }
+        return webClientBuilderForTokenFilter().clone();
+    }
+
+    private WebClient.Builder authServerBaseBuilder(boolean localHttps) {
+        if (localHttps) {
+            LOG.info("using non-load-balanced authorization-server WebClient for local HTTPS");
+            return WebClient.builder();
+        }
+        return webClientBuilder().clone();
     }
 }
