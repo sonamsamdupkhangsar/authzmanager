@@ -1,0 +1,18 @@
+# Local HTTPS profile for passkey/WebAuthn testing.
+server:
+  ssl:
+    enabled: true
+    certificate: ${OPENISSUER_LOCAL_CERT:/Users/sonamsamdupkhangsar/openissuer-local-certs/openissuer.test.pem}
+    certificate-private-key: ${OPENISSUER_LOCAL_CERT_KEY:/Users/sonamsamdupkhangsar/openissuer-local-certs/openissuer.test-key.pem}
+
+ISSUER_ADDRESS: https://platform.openissuer.test:9001
+ISSUER_URI: ${ISSUER_ADDRESS}
+JWT_SET_URI: ${ISSUER_ADDRESS}/oauth2/jwks
+AUTH_SERVER: https://platform.openissuer.test:9001
+
+issuerUri: https://platform.openissuer.test:9001
+
+auth-server:
+  root: https://platform.openissuer.test:9001
+
+allowedOrigins: https://platform.admin.openissuer.test:9093, https://business1.admin.openissuer.test:9093, https://business2.admin.openissuer.test:9093, https://free.admin.openissuer.test:9093
