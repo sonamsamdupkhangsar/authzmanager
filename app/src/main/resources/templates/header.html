@@ -3,9 +3,26 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <body>
-<div th:fragment="jumbotron" class="p-5 m-4 bg-secondary-subtle rounded-3">
-    <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-    <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
+<div th:fragment="jumbotron">
+    <style th:if="${testEnvironment}">
+        body {
+            background-color: #fff7e6;
+        }
+
+        .test-environment-banner {
+            background-color: #8a4b00;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0;
+            padding: .4rem .75rem;
+            text-align: center;
+        }
+    </style>
+    <div th:if="${environmentBanner}" class="test-environment-banner" th:text="${environmentBanner}"></div>
+    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
+        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
+        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
+    </div>
 </div>
 
 </body>
