@@ -116,6 +116,20 @@ envs:
     value: "8080"
   - name: SPRING_PROFILES_ACTIVE
     value: "kubernetes"
+  - name: SPRING_CLOUD_KUBERNETES_DISCOVERY_NAMESPACES_0
+    value: "{{ .Release.Namespace }}"
+  - name: USER_REST_SERVICE
+    value: "http://user-rest-service.{{ .Release.Namespace }}.svc.cluster.local"
+  - name: AUTHENTICATION_REST_SERVICE
+    value: "http://authentication-rest-service.{{ .Release.Namespace }}.svc.cluster.local"
+  - name: AUTH_SERVER
+    value: "http://authorization-server.{{ .Release.Namespace }}.svc.cluster.local"
+  - name: ORGANIZATION_REST_SERVICE
+    value: "http://organization-rest-service.{{ .Release.Namespace }}.svc.cluster.local"
+  - name: ROLE_REST_SERVICE
+    value: "http://role-rest-service.{{ .Release.Namespace }}.svc.cluster.local"
+  - name: ACCOUNT_REST_SERVICE
+    value: "http://account-rest-service.{{ .Release.Namespace }}.svc.cluster.local"
   - name: AUTHZMANAGER_OAUTH2_PREPEND_UUID_TO_CREATED_CLIENT_ID_HOSTS
     value: "free.admin.openissuer.com"
 
