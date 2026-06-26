@@ -2,15 +2,15 @@
 This Authzmanager is used for managing OAuth2 client, role, organization and user profile.
 
 ```
-mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=eureka"
 ```
 
 ## Run locally using profile
-Use local profile `application-local.yml` to run locally.
+Use the Eureka profile `application-eureka.yaml` to run locally.
 
 
 ```
-mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=eureka"
 ```
 
 ## Run locally with HTTPS
@@ -43,7 +43,7 @@ Start authzmanager with:
 ```
 ISSUER_ADDRESS=https://platform.openissuer.test:9001 \
 ISSUER_URI=https://platform.openissuer.test:9001 \
-SPRING_PROFILES_ACTIVE=local,local-https ./gradlew bootRun
+SPRING_PROFILES_ACTIVE=eureka,local-https ./gradlew bootRun
 ```
 
 Use the tenant admin URL, for example:
@@ -58,7 +58,7 @@ The authzmanager OAuth client in authorization must have an HTTPS redirect URI f
 https://free.admin.openissuer.test:9093/login/oauth2/code/b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
 ```
 
-When authorization is started with `local,local-https`, its authzmanager client seed uses HTTPS redirect URIs.
+When authorization is started with `eureka,local-https`, its authzmanager client seed uses HTTPS redirect URIs.
 
 ## Build Docker image
 
