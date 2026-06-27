@@ -1,16 +1,12 @@
 # Authzmanager
 This Authzmanager is used for managing OAuth2 client, role, organization and user profile.
 
-```
-mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=eureka"
-```
-
 ## Run locally using profile
 Use the Eureka profile `application-eureka.yaml` to run locally.
 
 
 ```
-mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=eureka"
+SPRING_PROFILES_ACTIVE=eureka ./gradlew bootRun
 ```
 
 ## Run locally with HTTPS

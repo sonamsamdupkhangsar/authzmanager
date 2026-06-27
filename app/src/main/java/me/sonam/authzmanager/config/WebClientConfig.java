@@ -43,12 +43,12 @@ public class WebClientConfig {
     private Environment environment;
 
     @Autowired
-    @Qualifier("regular")
-    private WebClient.Builder regularWebClientBuilder;
+    @Qualifier("serviceWebClientBuilder")
+    private WebClient.Builder serviceWebClientBuilder;
 
     @Autowired
-    @Qualifier("tokenFilter")
-    private WebClient.Builder tokenFilterWebClientBuilder;
+    @Qualifier("tokenWebClientBuilder")
+    private WebClient.Builder tokenWebClientBuilder;
 
     @Value("${tokenExpireSeconds}")
     private int tokenExpireSeconds;
@@ -59,9 +59,9 @@ public class WebClientConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(tokenFilterWebClientBuilder, tokenRequestFilter,
+        TokenFilter tokenFilter = new TokenFilter(tokenWebClientBuilder, tokenRequestFilter,
                 oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
-        WebClient.Builder webClientBuilder = regularWebClientBuilder.clone();
+        WebClient.Builder webClientBuilder = serviceWebClientBuilder.clone();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 
         return webClientBuilder;
@@ -94,7 +94,7 @@ public class WebClientConfig {
             LOG.info("using non-load-balanced authorization-server token WebClient for local HTTPS");
             return WebClient.builder();
         }
-        return tokenFilterWebClientBuilder.clone();
+        return tokenWebClientBuilder.clone();
     }
 
     private WebClient.Builder authServerBaseBuilder(boolean localHttps) {
@@ -102,6 +102,6 @@ public class WebClientConfig {
             LOG.info("using non-load-balanced authorization-server WebClient for local HTTPS");
             return WebClient.builder();
         }
-        return regularWebClientBuilder.clone();
+        return serviceWebClientBuilder.clone();
     }
 }

@@ -14,23 +14,23 @@ public class EurekaWebClientBuilderConfig {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaWebClientBuilderConfig.class);
 
     @LoadBalanced
-    @Bean("regular")
-    public WebClient.Builder webClientBuilder() {
+    @Bean("serviceWebClientBuilder")
+    public WebClient.Builder serviceWebClientBuilder() {
         LOG.info("creating load-balanced service WebClient for Eureka service discovery");
         return WebClient.builder();
     }
 
     @LoadBalanced
-    @Bean("tokenFilter")
+    @Bean("tokenWebClientBuilder")
     @Profile("!local-https")
-    public WebClient.Builder webClientBuilderForTokenFilter() {
+    public WebClient.Builder tokenWebClientBuilder() {
         LOG.info("creating load-balanced token WebClient for Eureka service discovery");
         return WebClient.builder();
     }
 
-    @Bean("tokenFilter")
+    @Bean("tokenWebClientBuilder")
     @Profile("local-https")
-    public WebClient.Builder directWebClientBuilderForTokenFilter() {
+    public WebClient.Builder directTokenWebClientBuilder() {
         LOG.info("creating direct token WebClient for local HTTPS");
         return WebClient.builder();
     }
