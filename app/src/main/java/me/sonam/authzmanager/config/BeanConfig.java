@@ -40,7 +40,7 @@ public class BeanConfig {
     private String deleteMyAccountEndpoint;
 
     @Autowired
-    @Qualifier("regular")
+    @Qualifier("serviceWebClientBuilder")
     private WebClient.Builder webClientBuilder;
 
     @Autowired

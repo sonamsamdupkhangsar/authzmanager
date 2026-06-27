@@ -8,11 +8,10 @@ import me.sonam.authzmanager.tokenfilter.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,7 +21,6 @@ import java.util.Arrays;
 /**
  * Configures shared WebClient builders, including the tenant-aware authorization-server client.
  */
-@Profile("!localdevtest")
 @Configuration
 public class WebClientConfig {
     private static final Logger LOG = LoggerFactory.getLogger(WebClientConfig.class);
@@ -44,40 +42,26 @@ public class WebClientConfig {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    @Qualifier("serviceWebClientBuilder")
+    private WebClient.Builder serviceWebClientBuilder;
+
+    @Autowired
+    @Qualifier("tokenWebClientBuilder")
+    private WebClient.Builder tokenWebClientBuilder;
+
     @Value("${tokenExpireSeconds}")
     private int tokenExpireSeconds;
-
-
-    /**
-     * Creates the plain load-balanced builder for non-auth-server service calls.
-     */
-    @LoadBalanced
-    @Bean("regular")
-    public WebClient.Builder webClientBuilder() {
-        LOG.info("returning load balanced webclient part");
-        return WebClient.builder();
-    }
-
-    /**
-     * Creates the load-balanced builder used internally by the token filter for token acquisition.
-     */
-    @LoadBalanced
-    @Bean("tokenFilter")
-    public WebClient.Builder webClientBuilderForTokenFilter() {
-        LOG.info("returning load balanced webclient part");
-        return WebClient.builder();
-    }
 
     /**
      * Creates the generic WebClient builder that attaches client-credentials tokens.
      */
-    @LoadBalanced
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(webClientBuilderForTokenFilter(), tokenRequestFilter,
+        TokenFilter tokenFilter = new TokenFilter(tokenWebClientBuilder, tokenRequestFilter,
                 oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
-        WebClient.Builder webClientBuilder = WebClient.builder();
+        WebClient.Builder webClientBuilder = serviceWebClientBuilder.clone();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();
 
         return webClientBuilder;
@@ -110,7 +94,7 @@ public class WebClientConfig {
             LOG.info("using non-load-balanced authorization-server token WebClient for local HTTPS");
             return WebClient.builder();
         }
-        return webClientBuilderForTokenFilter().clone();
+        return tokenWebClientBuilder.clone();
     }
 
     private WebClient.Builder authServerBaseBuilder(boolean localHttps) {
@@ -118,6 +102,6 @@ public class WebClientConfig {
             LOG.info("using non-load-balanced authorization-server WebClient for local HTTPS");
             return WebClient.builder();
         }
-        return webClientBuilder().clone();
+        return serviceWebClientBuilder.clone();
     }
 }

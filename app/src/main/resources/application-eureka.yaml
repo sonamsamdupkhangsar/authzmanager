@@ -1,5 +1,5 @@
-# Local profile values for tenant-aware authzmanager development.
-# This yaml file is for loading local database, server port, disable eureka and set jwt-rest-service endpoint
+# Local Eureka profile values for tenant-aware authzmanager development.
+# Loads local database, server port, Eureka registry, and service-id endpoints.
 SERVER_PORT: 9093
 
 POSTGRES_USERNAME: test
