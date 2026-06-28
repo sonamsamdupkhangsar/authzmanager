@@ -84,7 +84,7 @@ public class OrganizationController {
         final Pageable pageable = PageRequest.of(pageable1.getPageNumber(), pageSize, Sort.by("name"));
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return  roleWebClient.getOrgIdsOfSuperAdminOrganizationForUser(accessToken, pageable)
+        return  roleWebClient.getOrgAdminOrganizationIdsForUser(accessToken, pageable)
                 .flatMap(uuidPage ->
                     organizationWebClient.getOrganizationByIdsIn(accessToken, uuidPage.content()).zipWith(Mono.just(uuidPage)))
                 .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
@@ -131,11 +131,11 @@ public class OrganizationController {
 
         final String accessToken = tokenService.getAccessToken();
 
-        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId())
-                .flatMap(isSuperAdmin -> {
-                    if (!isSuperAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organization.getId());
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId())
+                .flatMap(isOrgAdmin -> {
+                    if (!isOrgAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organization.getId());
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
                     return organizationWebClient.updateOrganization(accessToken, org, HttpMethod.PUT);
                 })
@@ -186,11 +186,11 @@ public class OrganizationController {
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, id)
-                .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
+                .flatMap(organization -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) { //not supeadmin for orgId
-                        model.addAttribute("error", "You are not a superadmin for this orgId "+objects.getT2().getName());
-                        return Mono.error(new AuthenticationException("You are not a superadmin for orgId: "+objects.getT2().getName()));
+                        model.addAttribute("error", "You are not a orgadmin for this orgId "+objects.getT2().getName());
+                        return Mono.error(new AuthenticationException("You are not a orgadmin for orgId: "+objects.getT2().getName()));
                     }
                     return Mono.just(objects);
                 })
@@ -233,11 +233,11 @@ public class OrganizationController {
                     LOG.info("add defaultOrganizationId to model: {}", uuid);
                     model.addAttribute("defaultOrganizationId", uuid);
                 })
-                .flatMap(orgId ->roleWebClient.isSuperAdminInOrgId(accessToken, userId, id))
-                .flatMap(isSuperAdmin -> {
-                    if (!isSuperAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + id);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                .flatMap(orgId ->roleWebClient.isOrgAdminInOrgId(accessToken, userId, id))
+                .flatMap(isOrgAdmin -> {
+                    if (!isOrgAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + id);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
                     return organizationWebClient.getOrganizationById(accessToken, id);
                 })
@@ -269,11 +269,11 @@ public class OrganizationController {
         }
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
 
-        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organizationId)
-                .flatMap(isSuperAdmin -> {
-                    if (!isSuperAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organizationId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organizationId)
+                .flatMap(isOrgAdmin -> {
+                    if (!isOrgAdmin) {
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organizationId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
                     return organizationWebClient.getOrganizationById(accessToken, organizationId);
                 })
@@ -312,11 +312,11 @@ public class OrganizationController {
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return roleWebClient.isSuperAdminInOrgId(accessToken, userId, organizationId)
+        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organizationId)
                 .flatMap(aBoolean -> {
                     if (!aBoolean)  {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + organizationId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organizationId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
                     return Mono.just(aBoolean);
                 }).flatMap(aBoolean -> organizationWebClient.getOrganizationById(accessToken, organizationId))
@@ -414,11 +414,11 @@ public class OrganizationController {
         LOG.info("organizationHost: {}", organizationHost);
 
         return organizationWebClient.getOrganizationById(accessToken, orgId)
-                .flatMap(organization -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
+                .flatMap(organization -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + orgId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + orgId);
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
 
                     if ("add".equals(action)) {

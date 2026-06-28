@@ -69,11 +69,11 @@ public class AddUserController {
 
         return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
-                        .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+                        .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                         .flatMap(objects -> {
                                 if (!objects.getT1()) {
-                                    model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + objects.getT2());
-                                    return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                                    model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + objects.getT2());
+                                    return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                                 }
                             return organizationWebClient.getOrganizationById(accessToken, objects.getT2());
                         })
@@ -108,11 +108,11 @@ public class AddUserController {
 
         return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .switchIfEmpty(Mono.error(new AuthzManagerException("no default organization found")))
-                .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+                .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN + " " + objects.getT2());
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_SUPERADMIN));
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + objects.getT2());
+                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
                     }
                     return organizationWebClient.getOrganizationById(accessToken, userSignup.getOrganizationId());
                 })

@@ -143,7 +143,7 @@ public class OrganizationControllerIntegTest {
         List<UUID> userIdList =  List.of(userId1, userId2);
         RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
 
-        //1 get orgIds of super admin roles
+        //1 get orgIds of org admin roles
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
         User user1 = new User(userId1, "hello@sonam.cloud");
@@ -163,7 +163,7 @@ public class OrganizationControllerIntegTest {
 
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        //get superadmin org ids
+        //get orgadmin org ids
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations");
 
@@ -342,7 +342,7 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
 
-        //is superAdmin check response
+        //is orgAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
@@ -719,7 +719,7 @@ public class OrganizationControllerIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId);
 
-        // is user a superadmin in org-id
+        // is user a orgadmin in org-id
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+user.getId()+"/organizations/"+orgId);
@@ -772,7 +772,7 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
 
-        //2 is superAdmin
+        //2 is orgAdmin
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 

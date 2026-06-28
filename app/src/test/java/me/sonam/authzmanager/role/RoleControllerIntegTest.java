@@ -140,7 +140,7 @@ public class RoleControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", organizationId))));
 
-        //2 is superAdmin check response
+        //2 is orgAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
@@ -198,7 +198,7 @@ public class RoleControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", organizationId))));
 
-        //2 is superAdmin check response
+        //2 is orgAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
@@ -262,7 +262,7 @@ public class RoleControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", organizationId))));
 
-        //2 is superAdmin check response
+        //2 is orgAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 

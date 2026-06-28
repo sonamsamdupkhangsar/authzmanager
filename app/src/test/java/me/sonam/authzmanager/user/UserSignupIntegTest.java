@@ -450,7 +450,7 @@ public class UserSignupIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", organization.getId()))));
 
-        //2 superAdmin check response
+        //2 orgAdmin check response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
@@ -511,7 +511,7 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
         Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
 
-        //is user superadmin in org take
+        //is user orgadmin in org take
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+organization.getId());
@@ -563,10 +563,10 @@ public class UserSignupIntegTest {
         return objectMapper.writeValueAsString(o);
     }
 
-    private void enqueueAdminSignupSetup(Organization organization, UUID loggedInUserId, boolean superAdmin)
+    private void enqueueAdminSignupSetup(Organization organization, UUID loggedInUserId, boolean orgAdmin)
             throws JsonProcessingException {
         mockWebServer.enqueue(jsonResponse(Map.of("message", organization.getId())));
-        mockWebServer.enqueue(jsonResponse(Map.of("message", superAdmin)));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", orgAdmin)));
         mockWebServer.enqueue(jsonResponse(organization));
     }
 

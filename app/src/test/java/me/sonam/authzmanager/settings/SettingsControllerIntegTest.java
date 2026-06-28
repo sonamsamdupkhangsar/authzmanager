@@ -123,17 +123,17 @@ public class SettingsControllerIntegTest {
         r.add("user-rest-service.root", () -> "http://localhost:" + mockWebServer.getPort());
     }
 
-    private void setMockResponsesGetUsersForDefaultOrganization(UUID defaultOrgId, UUID superAdminAuthzManagerRoleId) {
+    private void setMockResponsesGetUsersForDefaultOrganization(UUID defaultOrgId, UUID orgAdminAuthzManagerRoleId) {
         if (defaultOrgId == null){
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                    .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
+                    .setResponseCode(200).setBody(getJson(Map.of("message", orgAdminAuthzManagerRoleId))));
 
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(400).setBody(getJson(Map.of("error", "No Default organization found"))));
         }
         else {
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                    .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
+                    .setResponseCode(200).setBody(getJson(Map.of("message", orgAdminAuthzManagerRoleId))));
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(200).setBody(getJson(Map.of("message", defaultOrgId))));
 
@@ -168,12 +168,12 @@ public class SettingsControllerIntegTest {
 
             UUID userId4 = UUID.randomUUID();
 
-            UUID authzManagerRoleOrganizationId1 = UUID.randomUUID();
-            UUID authzManagerRoleOrganizationId2 = UUID.randomUUID();
+            UUID authzManagerRoleAssignmentId1 = UUID.randomUUID();
+            UUID authzManagerRoleAssignmentId2 = UUID.randomUUID();
 
-            Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleOrganizationId1,
-                    userId2, authzManagerRoleOrganizationId2);
-            LOG.info("set json for superAdmin map");
+            Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleAssignmentId1,
+                    userId2, authzManagerRoleAssignmentId2);
+            LOG.info("set json for orgAdmin map");
             mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                     .setResponseCode(200).setBody(getJson(uuidBooleanMap)));
         }
@@ -187,9 +187,9 @@ public class SettingsControllerIntegTest {
 
         UUID defaultOrgId = UUID.randomUUID();
 
-        UUID superAdminAuthzManagerRoleId = UUID.randomUUID();
+        UUID orgAdminAuthzManagerRoleId = UUID.randomUUID();
 
-        setMockResponsesGetUsersForDefaultOrganization(null, superAdminAuthzManagerRoleId);
+        setMockResponsesGetUsersForDefaultOrganization(null, orgAdminAuthzManagerRoleId);
 
         String authenticationId = "dave";
         Jwt jwt = JwtUtil.jwt(authenticationId);
@@ -212,9 +212,9 @@ public class SettingsControllerIntegTest {
 
         UUID defaultOrgId = UUID.randomUUID();
 
-        UUID superAdminAuthzManagerRoleId = UUID.randomUUID();
+        UUID orgAdminAuthzManagerRoleId = UUID.randomUUID();
 
-        setMockResponsesGetUsersForDefaultOrganization(defaultOrgId, superAdminAuthzManagerRoleId);
+        setMockResponsesGetUsersForDefaultOrganization(defaultOrgId, orgAdminAuthzManagerRoleId);
 
         String authenticationId = "dave";
         Jwt jwt = JwtUtil.jwt(authenticationId);
@@ -262,11 +262,11 @@ public class SettingsControllerIntegTest {
 
     }
 
-    //set user as superadmin
+    //set user as orgadmin
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
-    public void setUserSuperAdmin() throws InterruptedException {
-        LOG.info("set user as superadmin");
+    public void setUserOrgAdmin() throws InterruptedException {
+        LOG.info("set user as orgadmin");
 
         UUID userId = UUID.randomUUID();
         UUID organizationId = UUID.randomUUID();
@@ -286,31 +286,33 @@ public class SettingsControllerIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations");
+
+        takeRequestForGetUsersForDefaultOrganization(organizationId);
     }
 
 
-    //set user as superadmin
+    //set user as orgadmin
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
-    public void deleteUserSuperAdmin() throws InterruptedException {
+    public void deleteUserOrgAdmin() throws InterruptedException {
         LOG.info("delete authzManagerRoleOrganization by id");
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", "User removed from AuthzManagerRoleOrganization"))));
+                .setResponseCode(200).setBody(getJson(Map.of("message", "User removed from AuthzManagerRoleAssignment"))));
 
-        UUID authzManagerRoleOrganizationId = UUID.randomUUID();
+        UUID authzManagerRoleAssignmentId = UUID.randomUUID();
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.delete()
-                .uri("/admin/settings?authzManagerRoleOrganizationId="+authzManagerRoleOrganizationId)
+                .uri("/admin/settings?authzManagerRoleAssignmentId="+authzManagerRoleAssignmentId)
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("response: {}", entityExchangeResult.getResponseBody());
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations/"+authzManagerRoleOrganizationId);
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/assignments/"+authzManagerRoleAssignmentId);
     }
 
-    //set user as superadmin
+    //set user as orgadmin
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
     public void findUserByAuthenticationId() throws InterruptedException {
@@ -332,11 +334,11 @@ public class SettingsControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
 
-        UUID superAdminAuthzManagerRoleId = UUID.randomUUID();
-        //setMockResponsesGetUsersForDefaultOrganization(defaultOrgId, superAdminAuthzManagerRoleId);
+        UUID orgAdminAuthzManagerRoleId = UUID.randomUUID();
+        //setMockResponsesGetUsersForDefaultOrganization(defaultOrgId, orgAdminAuthzManagerRoleId);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", superAdminAuthzManagerRoleId))));
+                .setResponseCode(200).setBody(getJson(Map.of("message", orgAdminAuthzManagerRoleId))));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", defaultOrgId))));
@@ -345,10 +347,10 @@ public class SettingsControllerIntegTest {
                 .setResponseCode(200).setBody(getJson(new Organization(defaultOrgId, "myorg", UUID.fromString(userId)))));
 
         UUID userId1 = UUID.randomUUID();
-        UUID authzManagerRoleOrganizationId1 = UUID.randomUUID();
-        UUID authzManagerRoleOrganizationId2 = UUID.randomUUID();
+        UUID authzManagerRoleAssignmentId1 = UUID.randomUUID();
+        UUID authzManagerRoleAssignmentId2 = UUID.randomUUID();
 
-        Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleOrganizationId1);
+        Map<UUID, UUID> uuidBooleanMap = Map.of(userId1, authzManagerRoleAssignmentId1);
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(uuidBooleanMap)));
 
@@ -392,13 +394,13 @@ public class SettingsControllerIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+defaultOrgId);
 
-        //areUsersSuperAdminInDefaultOrgId
+        //areUsersOrgAdminInDefaultOrgId
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/organizations/"+defaultOrgId);
 
         assertThat(entityExchangeResult.getResponseBody()).contains("Tashi");
-        assertThat(entityExchangeResult.getResponseBody()).contains("Make SuperAdmin");
+        assertThat(entityExchangeResult.getResponseBody()).contains("Make OrgAdmin");
     }
 
 

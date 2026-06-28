@@ -59,11 +59,11 @@ public class UserGroupInterceptor implements HandlerInterceptor {
 
 /*
                         organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
-                                        .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+                                        .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                                 .doOnNext(objects -> request.setAttribute("organizationId", objects.getT2()))
                                                 .subscribe(objects -> {
                                                     isUserAdmin[0] = objects.getT1();
-                                                    LOG.info("user is superadmin in the defaultOrg? {}", objects.getT1());
+                                                    LOG.info("user is orgadmin in the defaultOrg? {}", objects.getT1());
                                                 });*/
 
                     }

@@ -22,8 +22,8 @@
             xhttp.send();
         }
 
-       function removeUserAsSuperAdmin(url,  page, size) {
-           if(!confirm("Do you really want to remove this user as SuperAdmin role?")) {
+       function removeUserAsOrgAdmin(url,  page, size) {
+           if(!confirm("Do you really want to remove this user as OrgAdmin role?")) {
               console.log("cancel delete");
               return false;
            }
@@ -34,7 +34,7 @@
             xhttp.onload = function () {
             let responseUrl = xhttp.responseURL;
 
-            console.log('remove user as superadmin api completed')
+            console.log('remove user as orgadmin api completed')
             let url = '/admin/settings?page='+'&page=' + page+'&size='+size;
             console.log("redirecting to url: " + url);
             window.location.replace(url);
@@ -56,7 +56,7 @@
             <div>
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">SuperAdmin roles</a>
+                        <a class="nav-link active" aria-current="page" href="#">OrgAdmin roles</a>
                     </li>
                 </ul>
             </div>
@@ -128,19 +128,19 @@
                                 <td><span th:text="${user.email}"></span></td>
                                 <td><span th:text="${user.authenticationId}"></span></td>
                                 <td>
-                                    <div th:if="${user.authzManagerRoleOrganizationId == null}">
+                                    <div th:if="${user.authzManagerRoleAssignmentId == null}">
                                         <form action="#" method="post" th:action="@{/admin/settings?page={pageNumber}&size={pageSize}&authzManagerRoleId={authzManagerRoleId}&userId={userId}&organizationId={organizationId}
                                             (pageNumber=${page.number},pageSize=${page.size},authzManagerRoleId=${authzManagerRoleId},userId=${user.id},organizationId=${organizationId})}">
 
-                                            <button type="submit" class="btn btn-primary btn-secondary">Make SuperAdmin </button>
+                                            <button type="submit" class="btn btn-primary btn-secondary">Make OrgAdmin </button>
                                         </form>
                                     </div>
-                                   <div th:if="${user.authzManagerRoleOrganizationId}">
-                                       <button th:if="${user.enabled}" type="button" th:with="page=${page.number}, size=20, url=@{/admin/settings?authzManagerRoleOrganizationId={authzManagerRoleOrganizationId}
-                                         (authzManagerRoleOrganizationId=${user.authzManagerRoleOrganizationId})}"
-                                                 th:onclick="removeUserAsSuperAdmin([[${url}]], [[${page}]], [[${size}]])"
-                                                 class="btn btn-primary">Remove SuperAdmin </button>
-                                       <button th:if="${user.enabled == false}" type="submit" class="btn btn-secondary">Superadmin</button>
+                                   <div th:if="${user.authzManagerRoleAssignmentId}">
+                                       <button th:if="${user.enabled}" type="button" th:with="page=${page.number}, size=20, url=@{/admin/settings?authzManagerRoleAssignmentId={authzManagerRoleAssignmentId}
+                                         (authzManagerRoleAssignmentId=${user.authzManagerRoleAssignmentId})}"
+                                                 th:onclick="removeUserAsOrgAdmin([[${url}]], [[${page}]], [[${size}]])"
+                                                 class="btn btn-primary">Remove OrgAdmin </button>
+                                       <button th:if="${user.enabled == false}" type="submit" class="btn btn-secondary">OrgAdmin</button>
 
                                     </div>
                                 </td>
