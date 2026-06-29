@@ -3,6 +3,7 @@ package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,6 +128,44 @@ public class OrganizationWebClient {
                 .doOnNext(uuids -> LOG.info("got userIds: {}", uuids))
                 .onErrorResume(throwable -> {
                     LOG.error("error retrieving users in organization by id", throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<Subdomain> getSubdomainByHost(String accessToken, String subdomain) {
+        LOG.info("get subdomain by host {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomains/").append(subdomain);
+
+        LOG.info("get subdomain by host endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(Subdomain.class)
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get subdomain by host {}", subdomain, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<RestPage<Organization>> getOrganizationsBySubdomain(String accessToken, String subdomain, Pageable pageable) {
+        LOG.info("get organizations by subdomain {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain).append("/organizations")
+                .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize());
+
+        LOG.info("get organizations by subdomain endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get organizations by subdomain {}", subdomain, throwable);
                     return Mono.error(throwable);
                 });
     }

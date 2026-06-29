@@ -309,4 +309,32 @@ public class RoleWebClient {
                     return Mono.error(throwable);
                 });
     }
+
+    public Mono<Boolean> isSubdomainAdminInSubdomainId(String accessToken, UUID userId, UUID subdomainId) {
+        LOG.info("check if user {} is SubdomainAdmin in subdomain {}", userId, subdomainId);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/users/").append(userId)
+                .append("/subdomains/").append(subdomainId).append("/subdomain-admin");
+        LOG.info("is user SubdomainAdmin in subdomainId using endpoint: {}", stringBuilder);
+
+        WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec = webClientBuilder.build().get();
+
+        if (accessToken != null) {
+            requestHeadersUriSpec.headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken));
+        }
+
+        return requestHeadersUriSpec.uri(stringBuilder.toString())
+                .retrieve().bodyToMono(new ParameterizedTypeReference<Map<String, Boolean>>() {})
+                .flatMap(map -> {
+                    LOG.info("response for is user a SubdomainAdmin in subdomainId: {}", map);
+                    if (map.get("message") != null) {
+                        return Mono.just(map.get("message"));
+                    }
+                    return Mono.error(new BadRequestException("There is no message in the response"));
+                }).onErrorResume(throwable -> {
+                    LOG.error("error occurred when checking if user is SubdomainAdmin for subdomainId", throwable);
+                    return Mono.error(throwable);
+                });
+    }
 }
