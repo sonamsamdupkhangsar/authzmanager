@@ -186,18 +186,11 @@ public class OrganizationController {
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, id)
-                .flatMap(organization -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
-                .flatMap(objects -> {
-                    if (!objects.getT1()) { //not supeadmin for orgId
-                        model.addAttribute("error", "You are not a orgadmin for this orgId "+objects.getT2().getName());
-                        return Mono.error(new AuthenticationException("You are not a orgadmin for orgId: "+objects.getT2().getName()));
-                    }
-                    return Mono.just(objects);
-                })
+                .flatMap(organization -> requireOrgAdminOrSubdomainAdmin(accessToken, userId, organizationHost, organization, model))
                 .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
                         userId, organizationHost).zipWith(Mono.just(objects)))
                 .flatMap(objects -> {
-                    Organization organization = objects.getT2().getT2();
+                    Organization organization = objects.getT2();
 
                     if (objects.getT1().equals(organization.getId())) {
                         LOG.info("the selected orgId is default organization: {}", organization.getId());
@@ -207,6 +200,31 @@ public class OrganizationController {
                     model.addAttribute("organization", organization);
 
                     return Mono.just(PATH);
+                });
+    }
+
+    private Mono<Organization> requireOrgAdminOrSubdomainAdmin(String accessToken, UUID userId, String organizationHost,
+                                                               Organization organization, Model model) {
+        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId())
+                .flatMap(isOrgAdmin -> {
+                    if (isOrgAdmin) {
+                        return Mono.just(organization);
+                    }
+                    return organizationWebClient.getSubdomainByHost(accessToken, organizationHost)
+                            .flatMap(subdomain -> roleWebClient.isSubdomainAdminInSubdomainId(accessToken, userId,
+                                            subdomain.getId()))
+                            .flatMap(isSubdomainAdmin -> {
+                                if (!isSubdomainAdmin) {
+                                    model.addAttribute("error",
+                                            "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain");
+                                    return Mono.error(new AuthenticationException(
+                                            "You are not an OrgAdmin for orgId or SubdomainAdmin for subdomain: "
+                                                    + organization.getName()));
+                                }
+                                return organizationWebClient.organizationBelongsToSubdomain(accessToken,
+                                                organization.getId(), organizationHost)
+                                        .thenReturn(organization);
+                            });
                 });
     }
 
@@ -363,9 +381,7 @@ public class OrganizationController {
                                 }
                                 user.getOrganizationChoice().setDefaultOrganization(false);
                                 model.addAttribute("user", user);
-                                return organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
-                                                organizationId, organizationHost)
-                                        .thenReturn(false);
+                                return Mono.just(false);
                             });
                 }
                 )
@@ -474,10 +490,8 @@ public class OrganizationController {
 
         model.addAttribute("organization", organization);
 
-        return organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
-                        user.getOrganizationChoice().getOrganizationId(), subdomain)
-                .then(organizationWebClient.addUserToOrganization(accessToken, user.getId(),
-                        user.getOrganizationChoice().getOrganizationId(), subdomain, true))
+        return organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                        user.getOrganizationChoice().getOrganizationId(), subdomain, true)
                 .flatMap(stringStringMap -> setDefaultOrganizationIfRequested(accessToken, user)
                         .thenReturn(stringStringMap))
                 .doOnNext(stringStringMap -> {

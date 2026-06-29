@@ -175,15 +175,14 @@ public class AddUserController {
     }
 
     private Mono<Void> preflightCanAddUserToOrganization(String accessToken, UserSignup userSignup, String subdomain) {
-        return organizationWebClient.canAddUserToOrganization(accessToken, userSignup.getOrganizationId(), subdomain)
+        return organizationWebClient.organizationBelongsToSubdomain(accessToken, userSignup.getOrganizationId(), subdomain)
                 .then(userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId())
                         .onErrorResume(throwable -> {
-                            LOG.info("user {} does not exist yet, skipping user-specific organization preflight",
+                            LOG.info("user {} does not exist yet, continuing signup",
                                     userSignup.getAuthenticationId());
                             return Mono.empty();
-                        })
-                        .flatMap(user -> organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
-                                userSignup.getOrganizationId(), subdomain)));
+                        }))
+                .then();
     }
 
     // Prevent an unchecked or blank password field from being treated as a real password during add-user signup.

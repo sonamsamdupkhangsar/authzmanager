@@ -177,7 +177,7 @@ public class UserSignupIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + organizationHost + "/organizations/" + orgId + "/can-add-user");
+                .startsWith("/organizations/subdomain/" + organizationHost + "/organizations/" + orgId + "/exists");
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -228,7 +228,6 @@ public class UserSignupIntegTest {
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
         mockWebServer.enqueue(jsonResponse(existingUser));
-        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
         mockWebServer.enqueue(jsonResponse(existingUser));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "added user to organization")));
@@ -250,12 +249,6 @@ public class UserSignupIntegTest {
         assertUserLookup(authenticationId);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + organizationHost + "/users/" + existingUser.getId()
-                        + "/organizations/" + orgId + "/can-add");
-
-        recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
 
@@ -375,7 +368,9 @@ public class UserSignupIntegTest {
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
         mockWebServer.enqueue(jsonResponse(existingUser));
-        mockWebServer.enqueue(jsonResponse(Map.of("message", false, "reason", "user belongs to another subdomain")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
+        mockWebServer.enqueue(jsonResponse(existingUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("error", "user belongs to another subdomain")).setResponseCode(400));
 
         webTestClient.post()
                 .uri("/admin/organizations/users")
@@ -388,13 +383,18 @@ public class UserSignupIntegTest {
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
+
         assertUserLookup(authenticationId);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + organizationHost + "/users/" + existingUser.getId()
-                        + "/organizations/" + orgId + "/can-add");
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
+
+        assertUserLookup(authenticationId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/users");
         Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -525,7 +525,7 @@ public class UserSignupIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
-        Assertions.assertThat(recordedRequest.getPath()).contains("/organizations/" + orgId + "/can-add-user");
+        Assertions.assertThat(recordedRequest.getPath()).contains("/organizations/" + orgId + "/exists");
 
         //preflight existing user lookup
         recordedRequest = mockWebServer.takeRequest();
@@ -590,7 +590,7 @@ public class UserSignupIntegTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
-                .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + organizationId + "/can-add-user");
+                .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + organizationId + "/exists");
     }
 
     private String organizationHostFor(String requestHost) {

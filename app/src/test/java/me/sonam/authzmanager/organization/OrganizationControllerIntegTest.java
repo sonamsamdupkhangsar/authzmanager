@@ -542,10 +542,6 @@ public class OrganizationControllerIntegTest {
         //6 user exists in organization response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"false\"}"));
-        //7 user can be added to organization preflight
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
-
         BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("username", "johnbadmash");
 
         EntityExchangeResult<String> entityExchangeResult = webTestClient.post()
@@ -578,11 +574,6 @@ public class OrganizationControllerIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId()+"/users/"+userId1);
 
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
-        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId1 + "/organizations/"
-                + organization.getId() + "/can-add");
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -677,11 +668,7 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
-        //2 user can be added to organization preflight
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
-
-        //3
+        //2
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", "added user to organization"))));
 
@@ -690,7 +677,7 @@ public class OrganizationControllerIntegTest {
         List<UUID> userIdList =  List.of(userId1, userId2);
         RestPage<UUID> userIdPage = new RestPage<>(userIdList, 0,1,2);
 
-        //4
+        //3
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userIdPage)));
 
@@ -698,7 +685,7 @@ public class OrganizationControllerIntegTest {
         User user2 = new User(userId2, "bye@sonam.cloud");
         List<User> userList = List.of(user1, user2);
         //RestPage<User> userRestPage = new RestPage<>(userList, 0,1,1,1,1);
-        //5
+        //4
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(userList)));
 
@@ -723,12 +710,6 @@ public class OrganizationControllerIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+user.getId()+"/organizations/"+orgId);
-
-        // preflight user can be added to organization
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
-        Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + user.getId() + "/organizations/" + orgId + "/can-add");
 
         // add user to organization
         recordedRequest = mockWebServer.takeRequest();

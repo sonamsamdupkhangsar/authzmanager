@@ -280,35 +280,20 @@ public class OrganizationWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
     }
 
-    public Mono<Void> canAddUserToOrganization(String accessToken, UUID organizationId, String subdomain) {
+    public Mono<Void> organizationBelongsToSubdomain(String accessToken, UUID organizationId, String subdomain) {
         String endpoint = organizationEndpoint + "/subdomain/" + subdomain
-                + "/organizations/" + organizationId + "/can-add-user";
-        LOG.info("check organization can accept user endpoint: {}", endpoint);
+                + "/organizations/" + organizationId + "/exists";
+        LOG.info("check organization belongs to subdomain endpoint: {}", endpoint);
 
-        return canAddUserToOrganization(accessToken, endpoint);
-    }
-
-    public Mono<Void> canAddUserToOrganization(String accessToken, UUID userId, UUID organizationId, String subdomain) {
-        String endpoint = organizationEndpoint + "/subdomain/" + subdomain
-                + "/users/" + userId + "/organizations/" + organizationId + "/can-add";
-        LOG.info("check user can be added to organization endpoint: {}", endpoint);
-
-        return canAddUserToOrganization(accessToken, endpoint);
-    }
-
-    private Mono<Void> canAddUserToOrganization(String accessToken, String endpoint) {
         return webClientBuilder.build().get().uri(endpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Boolean>>() {})
                 .flatMap(response -> {
                     if (Boolean.TRUE.equals(response.get("message"))) {
                         return Mono.empty();
                     }
-                    Object reason = response.get("reason");
-                    return Mono.error(new AuthzManagerException(reason == null
-                            ? "user cannot be added to organization"
-                            : reason.toString()));
+                    return Mono.error(new AuthzManagerException("organization does not belong to subdomain"));
                 });
     }
 
