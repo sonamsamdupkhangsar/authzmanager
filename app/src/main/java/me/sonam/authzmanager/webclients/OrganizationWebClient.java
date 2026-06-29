@@ -4,6 +4,7 @@ package me.sonam.authzmanager.webclients;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,6 +167,26 @@ public class OrganizationWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {})
                 .onErrorResume(throwable -> {
                     LOG.error("failed to get organizations by subdomain {}", subdomain, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<RestPage<SubdomainOrganizationUser>> getUsersBySubdomain(String accessToken, String subdomain, Pageable pageable) {
+        LOG.info("get users by subdomain {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain).append("/users")
+                .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize());
+
+        LOG.info("get users by subdomain endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<SubdomainOrganizationUser>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get users by subdomain {}", subdomain, throwable);
                     return Mono.error(throwable);
                 });
     }

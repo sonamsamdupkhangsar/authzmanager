@@ -2,7 +2,6 @@ package me.sonam.authzmanager.controller.admin.subdomain;
 
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.User;
-import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
@@ -18,13 +17,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin/subdomain")
@@ -73,23 +73,18 @@ public class SubdomainAdminController {
     }
 
     @GetMapping("/users")
-    public Mono<String> getSubdomainUsers(Model model, Pageable userPageable,
-                                          @RequestParam(defaultValue = "0") int userPage,
-                                          @RequestParam(defaultValue = "5") int userSize) {
+    public Mono<String> getSubdomainUsers(Model model, Pageable userPageable) {
         String accessToken = tokenService.getAccessToken();
         String host = tenantAuthorizationUrlResolver.currentAuthorizationHost();
-        Pageable organizationPageable = pageRequest(userPageable);
-        Pageable usersPageable = PageRequest.of(Math.max(userPage, 0), boundedPageSize(userSize));
+        Pageable pageable = pageRequest(userPageable);
 
         return requireSubdomainAdmin(accessToken, host, model)
-                .flatMap(subdomain -> organizationWebClient.getOrganizationsBySubdomain(accessToken, host, organizationPageable)
-                        .flatMap(organizationPage -> getUsersByOrganization(accessToken, organizationPage.content(), usersPageable)
-                                .doOnNext(organizationUsers -> {
+                .flatMap(subdomain -> organizationWebClient.getUsersBySubdomain(accessToken, host, pageable)
+                        .flatMap(userMembershipPage -> getSubdomainUserRows(accessToken, userMembershipPage)
+                                .doOnNext(userRows -> {
                                     model.addAttribute("subdomain", subdomain);
-                                    model.addAttribute("page", organizationPage);
-                                    model.addAttribute("userPage", usersPageable.getPageNumber());
-                                    model.addAttribute("userSize", usersPageable.getPageSize());
-                                    model.addAttribute("organizationUsers", organizationUsers);
+                                    model.addAttribute("page", userMembershipPage);
+                                    model.addAttribute("userRows", userRows);
                                 })))
                 .thenReturn("admin/subdomain/users")
                 .onErrorResume(throwable -> renderAccessError(model, throwable, "admin/subdomain/users"));
@@ -110,23 +105,26 @@ public class SubdomainAdminController {
                         }));
     }
 
-    private Mono<List<SubdomainOrganizationUsers>> getUsersByOrganization(String accessToken,
-                                                                          List<Organization> organizations,
-                                                                          Pageable pageable) {
-        return Flux.fromIterable(organizations)
-                .flatMap(organization -> organizationWebClient
-                        .getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
-                        .flatMap(userIdPage -> getUsers(accessToken, userIdPage)
-                                .map(users -> new SubdomainOrganizationUsers(organization, userIdPage, users))))
-                .collectList();
-    }
-
-    private Mono<List<User>> getUsers(String accessToken, RestPage<UUID> userIdPage) {
-        if (userIdPage == null || userIdPage.content() == null || userIdPage.content().isEmpty()) {
+    private Mono<List<SubdomainUserRow>> getSubdomainUserRows(String accessToken,
+                                                              RestPage<SubdomainOrganizationUser> userMembershipPage) {
+        if (userMembershipPage == null || userMembershipPage.content() == null || userMembershipPage.content().isEmpty()) {
             return Mono.just(List.of());
         }
-        return userWebClient.getUserByBatchOfIds(accessToken, userIdPage.content())
-                .defaultIfEmpty(List.of());
+
+        List<UUID> userIds = userMembershipPage.content().stream()
+                .map(SubdomainOrganizationUser::userId)
+                .distinct()
+                .toList();
+
+        return userWebClient.getUserByBatchOfIds(accessToken, userIds)
+                .defaultIfEmpty(List.of())
+                .map(users -> {
+                    Map<UUID, User> usersById = users.stream()
+                            .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first));
+                    return userMembershipPage.content().stream()
+                            .map(membership -> new SubdomainUserRow(membership, usersById.get(membership.userId())))
+                            .toList();
+                });
     }
 
     private Pageable pageRequest(Pageable userPageable) {

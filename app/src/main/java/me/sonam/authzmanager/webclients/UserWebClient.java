@@ -187,7 +187,7 @@ public class UserWebClient {
         LOG.info("endpoint: {}", stringBuilder);
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
-                .bodyValue(user).accept(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("profilePhoto", user.getProfilePhoto())).accept(MediaType.APPLICATION_JSON)
                 .retrieve();
 
         return responseSpec.bodyToMono(String.class);

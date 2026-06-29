@@ -34,80 +34,58 @@
                 <div th:if="${page != null}">
                     <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
                         <li class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number-1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__,userPage=${userPage},userSize=${userSize})}" tabindex="-1">Previous Organizations</a>
+                            <a class="page-link" th:href="@{?(page=${page.number-1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}" tabindex="-1">Previous</a>
                         </li>
                         <li class="page-item" th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number+1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__,userPage=${userPage},userSize=${userSize})}">Next Organizations</a>
+                            <a class="page-link" th:href="@{?(page=${page.number+1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}">Next</a>
                         </li>
                     </ul>
 
-                    <div class="d-flex gap-2 mb-3">
+                    <div class="d-flex gap-2 mb-3 align-items-center">
                         <div class="dropdown">
-                            <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="organizationPageSizeButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Organization page size
+                            <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="pageSizeButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Page size
                             </button>
-                            <div class="dropdown-menu" aria-labelledby="organizationPageSizeButton">
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='2',userPage=${userPage},userSize=${userSize})}">2</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='5',userPage=${userPage},userSize=${userSize})}">5</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='20',userPage=${userPage},userSize=${userSize})}">20</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='50',userPage=${userPage},userSize=${userSize})}">50</a>
+                            <div class="dropdown-menu" aria-labelledby="pageSizeButton">
+                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='2')}">2</a>
+                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='5')}">5</a>
+                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='20')}">20</a>
+                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='50')}">50</a>
                             </div>
                         </div>
 
-                        <div class="dropdown">
-                            <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="userPageSizeButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                User page size
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="userPageSizeButton">
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size=${page.size},userPage=${userPage},userSize='2')}">2</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size=${page.size},userPage=${userPage},userSize='5')}">5</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size=${page.size},userPage=${userPage},userSize='20')}">20</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size=${page.size},userPage=${userPage},userSize='50')}">50</a>
-                            </div>
-                        </div>
+                        <span class="text-muted small"
+                              th:text="${page.totalElements + ' user organization memberships'}"></span>
                     </div>
                 </div>
 
-                <div th:each="organizationUsersRow : ${organizationUsers}" class="mb-5">
-                    <h2 class="h5">
-                        <a th:text="${organizationUsersRow.organization.name}"
-                           th:href="@{/admin/organizations/{id}(id=${organizationUsersRow.organization.id})}"></a>
-                    </h2>
+                <table class="table table-hover align-middle" th:if="${userRows != null and !userRows.isEmpty()}">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">First</th>
+                        <th scope="col">Last</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Handle</th>
+                        <th scope="col">Organization</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row, rowStat : ${userRows}">
+                        <td th:text="${(page.number * page.size) + rowStat.count}"></td>
+                        <td><span th:text="${row.user != null ? row.user.firstName : ''}"></span></td>
+                        <td><span th:text="${row.user != null ? row.user.lastName : ''}"></span></td>
+                        <td><span th:text="${row.user != null ? row.user.email : ''}"></span></td>
+                        <td><span th:text="${row.user != null ? row.user.authenticationId : row.membership.userId}"></span></td>
+                        <td>
+                            <a th:text="${row.membership.organizationName}"
+                               th:href="@{/admin/organizations/{id}(id=${row.membership.organizationId})}"></a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
 
-                    <ul class="pagination pagination-sm" th:if="${organizationUsersRow.userIdPage}">
-                        <li class="page-item" th:classappend="${organizationUsersRow.userIdPage.number <= 0} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number},size=${page.size},userPage=${organizationUsersRow.userIdPage.number-1},userSize=${organizationUsersRow.userIdPage.size})}" tabindex="-1">Previous Users</a>
-                        </li>
-                        <li class="page-item" th:classappend="${organizationUsersRow.userIdPage.totalPages <= (organizationUsersRow.userIdPage.number+1)} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number},size=${page.size},userPage=${organizationUsersRow.userIdPage.number+1},userSize=${organizationUsersRow.userIdPage.size})}">Next Users</a>
-                        </li>
-                    </ul>
-
-                    <table class="table table-hover" th:if="${organizationUsersRow.users}">
-                        <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">First</th>
-                            <th scope="col">Last</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Handle</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="user, rowStat : ${organizationUsersRow.users}">
-                            <td th:text="${rowStat.count}"></td>
-                            <td><span th:text="${user.firstName}"></span></td>
-                            <td><span th:text="${user.lastName}"></span></td>
-                            <td><span th:text="${user.email}"></span></td>
-                            <td><span th:text="${user.authenticationId}"></span></td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-                    <p th:if="${organizationUsersRow.users == null or organizationUsersRow.users.isEmpty()}">No users found.</p>
-                </div>
-
-                <p th:if="${organizationUsers != null and organizationUsers.isEmpty()}">No organizations found.</p>
+                <p th:if="${userRows != null and userRows.isEmpty()}">No users found.</p>
             </div>
         </div>
     </div>
