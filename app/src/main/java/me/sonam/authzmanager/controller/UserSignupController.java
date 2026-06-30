@@ -60,11 +60,9 @@ public class UserSignupController {
             return Mono.just(PATH);
         }
         String subdomain = request.getServerName();
-        return organizationWebClient.canAddUserToOrganization(accessToken, userSignup.getOrganizationId(), subdomain)
+        return organizationWebClient.organizationBelongsToSubdomain(accessToken, userSignup.getOrganizationId(), subdomain)
                 .then(userWebClient.findByAuthenticationId(accessToken, userSignup.getAuthenticationId())
-                        .onErrorResume(throwable -> Mono.empty())
-                        .flatMap(user -> organizationWebClient.canAddUserToOrganization(accessToken, user.getId(),
-                                userSignup.getOrganizationId(), subdomain)))
+                        .onErrorResume(throwable -> Mono.empty()))
                 .then(userWebClient.signupUser(accessToken, userSignup))
                 .flatMap(s -> {
                     LOG.info("user has been added successfully with message: {}", s);

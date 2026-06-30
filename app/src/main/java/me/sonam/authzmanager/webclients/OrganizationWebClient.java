@@ -3,6 +3,8 @@ package me.sonam.authzmanager.webclients;
 
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
 import me.sonam.authzmanager.rest.RestPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +133,64 @@ public class OrganizationWebClient {
                 });
     }
 
+    public Mono<Subdomain> getSubdomainByHost(String accessToken, String subdomain) {
+        LOG.info("get subdomain by host {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomains/").append(subdomain);
+
+        LOG.info("get subdomain by host endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(Subdomain.class)
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get subdomain by host {}", subdomain, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<RestPage<Organization>> getOrganizationsBySubdomain(String accessToken, String subdomain, Pageable pageable) {
+        LOG.info("get organizations by subdomain {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain).append("/organizations")
+                .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize());
+
+        LOG.info("get organizations by subdomain endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<Organization>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get organizations by subdomain {}", subdomain, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<RestPage<SubdomainOrganizationUser>> getUsersBySubdomain(String accessToken, String subdomain, Pageable pageable) {
+        LOG.info("get users by subdomain {}", subdomain);
+
+        final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
+        stringBuilder.append("/subdomain/").append(subdomain).append("/users")
+                .append("?page=").append(pageable.getPageNumber())
+                .append("&size=").append(pageable.getPageSize());
+
+        LOG.info("get users by subdomain endpoint: {}", stringBuilder);
+
+        WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
+
+        return responseSpec.bodyToMono(new ParameterizedTypeReference<RestPage<SubdomainOrganizationUser>>() {})
+                .onErrorResume(throwable -> {
+                    LOG.error("failed to get users by subdomain {}", subdomain, throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
     public Mono<Boolean> userExistsInOrganization(String accessToken, UUID userId, UUID organizationId) {
         LOG.info("check if user {} exists in organization {}", userId, organizationId);
         final StringBuilder stringBuilder = new StringBuilder(organizationEndpoint);
@@ -241,35 +301,20 @@ public class OrganizationWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {});
     }
 
-    public Mono<Void> canAddUserToOrganization(String accessToken, UUID organizationId, String subdomain) {
+    public Mono<Void> organizationBelongsToSubdomain(String accessToken, UUID organizationId, String subdomain) {
         String endpoint = organizationEndpoint + "/subdomain/" + subdomain
-                + "/organizations/" + organizationId + "/can-add-user";
-        LOG.info("check organization can accept user endpoint: {}", endpoint);
+                + "/organizations/" + organizationId + "/exists";
+        LOG.info("check organization belongs to subdomain endpoint: {}", endpoint);
 
-        return canAddUserToOrganization(accessToken, endpoint);
-    }
-
-    public Mono<Void> canAddUserToOrganization(String accessToken, UUID userId, UUID organizationId, String subdomain) {
-        String endpoint = organizationEndpoint + "/subdomain/" + subdomain
-                + "/users/" + userId + "/organizations/" + organizationId + "/can-add";
-        LOG.info("check user can be added to organization endpoint: {}", endpoint);
-
-        return canAddUserToOrganization(accessToken, endpoint);
-    }
-
-    private Mono<Void> canAddUserToOrganization(String accessToken, String endpoint) {
         return webClientBuilder.build().get().uri(endpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Boolean>>() {})
                 .flatMap(response -> {
                     if (Boolean.TRUE.equals(response.get("message"))) {
                         return Mono.empty();
                     }
-                    Object reason = response.get("reason");
-                    return Mono.error(new AuthzManagerException(reason == null
-                            ? "user cannot be added to organization"
-                            : reason.toString()));
+                    return Mono.error(new AuthzManagerException("organization does not belong to subdomain"));
                 });
     }
 

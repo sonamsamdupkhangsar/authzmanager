@@ -69,14 +69,14 @@ public class SettingsController {
 
         final String noDefaultOrgFound = "No Default organization found";
 
-        return  roleWebClient.getAuthzManagerRoleByName(accessToken, "SuperAdmin")
+        return  roleWebClient.getAuthzManagerRoleByName(accessToken, "OrgAdmin")
                 .doOnNext(stringStringMap -> {
-                    LOG.info("superAdmin role map: {}", stringStringMap);
+                    LOG.info("orgAdmin role map: {}", stringStringMap);
                     UUID uuid = UUID.fromString(stringStringMap.get("message"));
-                    LOG.info("superAdmin id: {}", uuid);
+                    LOG.info("orgAdmin id: {}", uuid);
                     model.addAttribute("authzManagerRoleId", uuid);
                 })
-                .switchIfEmpty(Mono.error(new AuthzManagerException("No SuperAdmin authzManagerRole found")))
+                .switchIfEmpty(Mono.error(new AuthzManagerException("No OrgAdmin authzManagerRole found")))
                 .flatMap(stringStringMap -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
                         userId, organizationHost))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
@@ -111,7 +111,7 @@ public class SettingsController {
                             }
                         })
                         .flatMap(usersWithOrgAndUserIdPage ->
-                             roleWebClient.areUsersSuperAdminInDefaultOrgId(accessToken,
+                             roleWebClient.areUsersOrgAdminInDefaultOrgId(accessToken,
                                     usersWithOrgAndUserIdPage.getT2().getT1().getId(),
                                     usersWithOrgAndUserIdPage.getT2().getT2().content()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
                         )
@@ -123,20 +123,20 @@ public class SettingsController {
                         if (user.getId().equals(userId)) {
                             user.setEnabled(false);
                         }
-                       UUID authzManagerRoleOrganizationId = uuidBooleanMapWithUserList.getT1().get(user.getId());
-                        if (authzManagerRoleOrganizationId != null) {
-                            user.setAuthzManagerRoleOrganizationId(authzManagerRoleOrganizationId);
+                       UUID authzManagerRoleAssignmentId = uuidBooleanMapWithUserList.getT1().get(user.getId());
+                        if (authzManagerRoleAssignmentId != null) {
+                            user.setAuthzManagerRoleAssignmentId(authzManagerRoleAssignmentId);
                         }
                     }
-                    //sort by showing authzManagerRoleOrganizationId not null on top of list
-                    Collections.sort(userList, Comparator.comparing(User::getAuthzManagerRoleOrganizationId, Comparator.nullsLast(Comparator.naturalOrder())));
+                    //sort by showing authzManagerRoleAssignmentId not null on top of list
+                    Collections.sort(userList, Comparator.comparing(User::getAuthzManagerRoleAssignmentId, Comparator.nullsLast(Comparator.naturalOrder())));
                 })
                 .thenReturn(settingsPage)
                 .onErrorResume(throwable -> {
                     LOG.debug("Exception occurred", throwable);
 
                     if (throwable.getMessage().equals(noDefaultOrgFound)) {
-                        model.addAttribute("error", "You need to set a default organization to enable user for SuperAdmin role");
+                        model.addAttribute("error", "You need to set a default organization to enable user for OrgAdmin role");
                         LOG.info("add error message when default org not found");
                     }
                     else {
@@ -159,27 +159,27 @@ public class SettingsController {
     }
 
     @PostMapping
-    public Mono<String> setUserSuperAdmin(@RequestParam("authzManagerRoleId")UUID authzManagerRoleId, @RequestParam("userId") UUID targetUserId,
+    public Mono<String> setUserOrgAdmin(@RequestParam("authzManagerRoleId")UUID authzManagerRoleId, @RequestParam("userId") UUID targetUserId,
                                           @RequestParam("organizationId")UUID organizationId, Model model,
                                           Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
 
-        return roleWebClient.addUserToSuperAdminRoleInOrganization(accessToken, authzManagerRoleId, organizationId, targetUserId, userPageable)
+        return roleWebClient.addUserToOrgAdminRoleInOrganization(accessToken, authzManagerRoleId, organizationId, targetUserId, userPageable)
                 .doOnNext(stringObjectMap -> {
-                    LOG.info("assigned user to superadmin role with a authzManagerRoleOrganiation id {}", stringObjectMap.get("id"));
+                    LOG.info("assigned user to OrgAdmin role with an authzManagerRoleAssignment id {}", stringObjectMap.get("id"));
                 })
                 .then(getUsersForDefaultOrganization(model, userPageable, request));
     }
 
     @DeleteMapping
-    public Mono<String> deleteUserSuperAdmin(@RequestParam("authzManagerRoleOrganizationId")UUID authzManagerRoleOrganizationId) {
-        LOG.info("delete user from SuperAdmin role by id {}", authzManagerRoleOrganizationId);
+    public Mono<String> deleteUserOrgAdmin(@RequestParam("authzManagerRoleAssignmentId")UUID authzManagerRoleAssignmentId) {
+        LOG.info("delete user from OrgAdmin role by id {}", authzManagerRoleAssignmentId);
 
         String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
 
-        return roleWebClient.deleteUserFromAuthzManagerRoleOrganization(accessToken, authzManagerRoleOrganizationId)
+        return roleWebClient.deleteUserFromAuthzManagerRoleAssignment(accessToken, authzManagerRoleAssignmentId)
                 .thenReturn("index");  //return index page that does not have any thymeleaf expressions
     }
 
@@ -248,14 +248,14 @@ public class SettingsController {
 
         final String noDefaultOrgFound = "No Default organization found";
 
-        return  roleWebClient.getAuthzManagerRoleByName(accessToken, "SuperAdmin")
+        return  roleWebClient.getAuthzManagerRoleByName(accessToken, "OrgAdmin")
                 .doOnNext(stringStringMap -> {
-                    LOG.info("superAdmin role map: {}", stringStringMap);
+                    LOG.info("orgAdmin role map: {}", stringStringMap);
                     UUID uuid = UUID.fromString(stringStringMap.get("message"));
-                    LOG.info("superAdmin id: {}", uuid);
+                    LOG.info("orgAdmin id: {}", uuid);
                     model.addAttribute("authzManagerRoleId", uuid);
                 })
-                .switchIfEmpty(Mono.error(new AuthzManagerException("No SuperAdmin authzManagerRole found")))
+                .switchIfEmpty(Mono.error(new AuthzManagerException("No OrgAdmin authzManagerRole found")))
                 .flatMap(stringStringMap -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
                         loggedInUserId, subdomain))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(noDefaultOrgFound)))
@@ -296,7 +296,7 @@ public class SettingsController {
                     }
                 })
                 .flatMap(usersWithOrgAndUserIdPage ->
-                        roleWebClient.areUsersSuperAdminInDefaultOrgId(accessToken,
+                        roleWebClient.areUsersOrgAdminInDefaultOrgId(accessToken,
                                 usersWithOrgAndUserIdPage.getT2().getT1().getId(),
                                 usersWithOrgAndUserIdPage.getT2().getT2().content()).zipWith(Mono.just(usersWithOrgAndUserIdPage.getT1()))
                 )
@@ -305,9 +305,9 @@ public class SettingsController {
                     List<User> userList = uuidBooleanMapWithUserList.getT2();
 
                     for(User userInList: userList) {
-                        UUID authzManagerRoleOrganizationId = uuidBooleanMapWithUserList.getT1().get(userInList.getId());
-                        if (authzManagerRoleOrganizationId != null) {
-                            userInList.setAuthzManagerRoleOrganizationId(authzManagerRoleOrganizationId);
+                        UUID authzManagerRoleAssignmentId = uuidBooleanMapWithUserList.getT1().get(userInList.getId());
+                        if (authzManagerRoleAssignmentId != null) {
+                            userInList.setAuthzManagerRoleAssignmentId(authzManagerRoleAssignmentId);
                         }
                     }
                 })

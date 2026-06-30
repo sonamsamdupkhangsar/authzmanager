@@ -73,11 +73,11 @@ public class RoleController {
         Pageable finalPageable = pageable;
 
         return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
-                .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+                .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
-                        LOG.error(MessageConstants.NOT_SUPERADMIN);
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN);
+                        LOG.error(MessageConstants.NOT_ORG_ADMIN);
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN);
                     }
                     return roleWebClient.getRolesByOrganizationId(accessToken, objects.getT2(), finalPageable);
                 })
@@ -152,11 +152,11 @@ public class RoleController {
                     LOG.info("return orgId");
                     return Mono.just(defaultOrgId);
                 })
-               .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+               .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                    if (!objects.getT1()) {
-                       LOG.error(MessageConstants.NOT_SUPERADMIN);
-                       model.addAttribute("error", MessageConstants.NOT_SUPERADMIN);
+                       LOG.error(MessageConstants.NOT_ORG_ADMIN);
+                       model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN);
                    }
                    var tempRole = new Role(role.getId(), role.getName(), objects.getT2());
                    return roleWebClient.updateRole(accessToken, tempRole, httpMethod);
@@ -193,11 +193,11 @@ public class RoleController {
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return  organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
-                .flatMap(orgId -> roleWebClient.isSuperAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
+                .flatMap(orgId -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, orgId).zipWith(Mono.just(orgId)))
                 .flatMap(objects -> {
                     if (!objects.getT1()) {
-                        LOG.error(MessageConstants.NOT_SUPERADMIN);
-                        model.addAttribute("error", MessageConstants.NOT_SUPERADMIN);
+                        LOG.error(MessageConstants.NOT_ORG_ADMIN);
+                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN);
                     }
                     return roleWebClient.getRoleById(accessToken, id);
                 })

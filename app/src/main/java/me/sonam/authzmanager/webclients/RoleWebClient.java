@@ -228,11 +228,11 @@ public class RoleWebClient {
 
     //   return responseSpec.bodyToMono(new ParameterizedTypeReference<CustomRestPage<Role>>() {});
 
-    public Mono<RestPage<UUID>> getOrgIdsOfSuperAdminOrganizationForUser(String accessToken, Pageable pageable) {
+    public Mono<RestPage<UUID>> getOrgAdminOrganizationIdsForUser(String accessToken, Pageable pageable) {
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/authzmanagerroles/users/organizations")
              .append("?page=").append(pageable.getPageNumber()).append("&size=").append(pageable.getPageSize());
-        LOG.info("get orgIds for super-admin organizations for logged-in userId using endpoint: {}", stringBuilder);
+        LOG.info("get orgIds for org-admin organizations for logged-in userId using endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
@@ -240,12 +240,12 @@ public class RoleWebClient {
                 .doOnNext(uuidPage -> LOG.info("got response: {}", uuidPage));
     }
 
-    public Mono<Map<UUID, UUID>> areUsersSuperAdminInDefaultOrgId(String accessToken, UUID organizationId, List<UUID> userIdList) {
-        LOG.info("check if user {} is superAdmin in the default organizationId {}", userIdList, organizationId);
+    public Mono<Map<UUID, UUID>> areUsersOrgAdminInDefaultOrgId(String accessToken, UUID organizationId, List<UUID> userIdList) {
+        LOG.info("check if user {} is orgAdmin in the default organizationId {}", userIdList, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/authzmanagerroles/users/organizations/").append(organizationId);
-        LOG.info("get a list back to find if they are superAdmin using endpoint: {}", stringBuilder);
+        LOG.info("get a list back to find if they are orgAdmin using endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().put().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
@@ -253,8 +253,8 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<UUID, UUID>>() {});
     }
 
-    public Mono<Map<String, Object>> addUserToSuperAdminRoleInOrganization(String accessToken, UUID authzManagerRoleId, UUID organizationId, UUID targetUserId, Pageable pageable) {
-        LOG.info("add user {} to superAdmin role to organization id {}", targetUserId, organizationId);
+    public Mono<Map<String, Object>> addUserToOrgAdminRoleInOrganization(String accessToken, UUID authzManagerRoleId, UUID organizationId, UUID targetUserId, Pageable pageable) {
+        LOG.info("add user {} to orgAdmin role to organization id {}", targetUserId, organizationId);
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
         stringBuilder.append("/authzmanagerroles/users/organizations").append("?page=").append(pageable.getPageNumber())
@@ -267,25 +267,26 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
 
-    public Mono<String> deleteUserFromAuthzManagerRoleOrganization(String accessToken, UUID authzManagerRoleOrganizationId) {
-        LOG.info("deleteUserFromAuthzManagerRoleOrganization by id {}", authzManagerRoleOrganizationId);
+    public Mono<String> deleteUserFromAuthzManagerRoleAssignment(String accessToken, UUID authzManagerRoleAssignmentId) {
+        LOG.info("deleteUserFromAuthzManagerRoleAssignment by id {}", authzManagerRoleAssignmentId);
 
-        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint).append("/");
-        stringBuilder.append("/authzmanagerroles/users/organizations/").append(authzManagerRoleOrganizationId);
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/users/assignments/").append(authzManagerRoleAssignmentId);
 
-        LOG.info("deleteUserFromAuthzManagerRoleOrganization endpoint: {}", stringBuilder);
+        LOG.info("deleteUserFromAuthzManagerRoleAssignment endpoint: {}", stringBuilder);
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
         return responseSpec.bodyToMono(String.class);
     }
 
-    public Mono<Boolean> isSuperAdminInOrgId(String accessToken, UUID userId, UUID organizationId) {
-        LOG.info("get superAdmin organizations count for this user in accessToken");
+    public Mono<Boolean> isOrgAdminInOrgId(String accessToken, UUID userId, UUID organizationId) {
+        LOG.info("get orgAdmin organizations count for this user in accessToken");
 
         final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/authzmanagerroles/users/").append(userId).append("/organizations/").append(organizationId);
-        LOG.info("is user superAdmin in orgId using endpoint: {}", stringBuilder);
+        stringBuilder.append("/authzmanagerroles/users/").append(userId)
+                .append("/organizations/").append(organizationId).append("/org-admin");
+        LOG.info("is user orgAdmin in orgId using endpoint: {}", stringBuilder);
 
         WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec = webClientBuilder.build().get();
 
@@ -296,7 +297,7 @@ public class RoleWebClient {
         return requestHeadersUriSpec.uri(stringBuilder.toString())
                 .retrieve().bodyToMono(new ParameterizedTypeReference<Map<String, Boolean>>() {})
                 .flatMap(map -> {
-                    LOG.info("response for is user a super admin in orgId: {}", map);
+                    LOG.info("response for is user a org admin in orgId: {}", map);
                     if (map.get("message") != null) {
                         return Mono.just(map.get("message"));
                     }
@@ -304,7 +305,35 @@ public class RoleWebClient {
                         return Mono.error(new BadRequestException("There is no message in the response"));
                     }
                 }).onErrorResume(throwable -> {
-                    LOG.error("error occurred when checking if user is super admin for orgId", throwable);
+                    LOG.error("error occurred when checking if user is org admin for orgId", throwable);
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<Boolean> isSubdomainAdminInSubdomainId(String accessToken, UUID userId, UUID subdomainId) {
+        LOG.info("check if user {} is SubdomainAdmin in subdomain {}", userId, subdomainId);
+
+        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
+        stringBuilder.append("/authzmanagerroles/users/").append(userId)
+                .append("/subdomains/").append(subdomainId).append("/subdomain-admin");
+        LOG.info("is user SubdomainAdmin in subdomainId using endpoint: {}", stringBuilder);
+
+        WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec = webClientBuilder.build().get();
+
+        if (accessToken != null) {
+            requestHeadersUriSpec.headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken));
+        }
+
+        return requestHeadersUriSpec.uri(stringBuilder.toString())
+                .retrieve().bodyToMono(new ParameterizedTypeReference<Map<String, Boolean>>() {})
+                .flatMap(map -> {
+                    LOG.info("response for is user a SubdomainAdmin in subdomainId: {}", map);
+                    if (map.get("message") != null) {
+                        return Mono.just(map.get("message"));
+                    }
+                    return Mono.error(new BadRequestException("There is no message in the response"));
+                }).onErrorResume(throwable -> {
+                    LOG.error("error occurred when checking if user is SubdomainAdmin for subdomainId", throwable);
                     return Mono.error(throwable);
                 });
     }
