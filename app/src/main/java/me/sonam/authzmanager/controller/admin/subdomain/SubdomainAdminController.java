@@ -1,5 +1,7 @@
 package me.sonam.authzmanager.controller.admin.subdomain;
 
+import jakarta.servlet.http.HttpServletRequest;
+import me.sonam.authzmanager.advice.SubdomainMenuAdvice;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.util.Util;
@@ -52,17 +54,18 @@ public class SubdomainAdminController {
     }
 
     @GetMapping
-    public Mono<String> getSubdomainHome(Model model) {
-        return getSubdomainOrganizations(model, PageRequest.of(0, DEFAULT_PAGE_SIZE));
+    public Mono<String> getSubdomainHome(Model model, HttpServletRequest request) {
+        return getSubdomainOrganizations(model, PageRequest.of(0, DEFAULT_PAGE_SIZE), request);
     }
 
     @GetMapping("/organizations")
-    public Mono<String> getSubdomainOrganizations(Model model, Pageable userPageable) {
+    public Mono<String> getSubdomainOrganizations(Model model, Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         String host = tenantAuthorizationUrlResolver.currentAuthorizationHost();
         Pageable pageable = pageRequest(userPageable);
 
         return requireSubdomainAdmin(accessToken, host, model)
+                .doOnNext(subdomain -> showSubdomainMenu(request, model))
                 .flatMap(subdomain -> organizationWebClient.getOrganizationsBySubdomain(accessToken, host, pageable)
                         .doOnNext(organizationPage -> {
                             model.addAttribute("subdomain", subdomain);
@@ -73,12 +76,13 @@ public class SubdomainAdminController {
     }
 
     @GetMapping("/users")
-    public Mono<String> getSubdomainUsers(Model model, Pageable userPageable) {
+    public Mono<String> getSubdomainUsers(Model model, Pageable userPageable, HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         String host = tenantAuthorizationUrlResolver.currentAuthorizationHost();
         Pageable pageable = pageRequest(userPageable);
 
         return requireSubdomainAdmin(accessToken, host, model)
+                .doOnNext(subdomain -> showSubdomainMenu(request, model))
                 .flatMap(subdomain -> organizationWebClient.getUsersBySubdomain(accessToken, host, pageable)
                         .flatMap(userMembershipPage -> getSubdomainUserRows(accessToken, userMembershipPage)
                                 .doOnNext(userRows -> {
@@ -88,6 +92,11 @@ public class SubdomainAdminController {
                                 })))
                 .thenReturn("admin/subdomain/users")
                 .onErrorResume(throwable -> renderAccessError(model, throwable, "admin/subdomain/users"));
+    }
+
+    private void showSubdomainMenu(HttpServletRequest request, Model model) {
+        request.getSession().setAttribute(SubdomainMenuAdvice.SHOW_SUBDOMAIN_MENU_SESSION_ATTRIBUTE, true);
+        model.addAttribute(SubdomainMenuAdvice.SHOW_SUBDOMAIN_MENU_SESSION_ATTRIBUTE, true);
     }
 
     private Mono<Subdomain> requireSubdomainAdmin(String accessToken, String host, Model model) {
