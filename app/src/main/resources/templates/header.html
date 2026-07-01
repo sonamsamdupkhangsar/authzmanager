@@ -4,6 +4,282 @@
 
 <body>
 <div th:fragment="jumbotron">
+    <style>
+        body {
+            background: #f7f9f6;
+            color: #111817;
+        }
+
+        body > .container {
+            max-width: 1220px;
+        }
+
+        .admin-header {
+            margin: 1.5rem 0;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #fffef9;
+            box-shadow: 0 14px 48px rgba(35, 48, 44, .08);
+        }
+
+        .admin-brand {
+            margin: 0;
+            color: #111817;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .admin-kicker {
+            margin: .2rem 0 0;
+            color: #66736e;
+            font-size: .9rem;
+        }
+
+        .admin-logout {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #b8c2bd;
+            border-radius: .35rem;
+            padding: 0 1rem;
+            color: #1b2723;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .admin-logout:hover {
+            color: #1b2723;
+            text-decoration: none;
+        }
+
+        .admin-sidebar {
+            padding-top: .5rem;
+        }
+
+        .admin-nav {
+            gap: .25rem;
+            padding: .5rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #fffef9;
+        }
+
+        .admin-nav .nav-link {
+            border-radius: .35rem;
+            color: #26312d;
+            font-weight: 650;
+        }
+
+        .admin-nav .nav-link:hover {
+            background: #eef5ef;
+            color: #13211d;
+        }
+
+        .admin-nav .nav-link.active {
+            background: #13211d;
+            color: #fff;
+        }
+
+        .admin-content-panel {
+            min-height: 420px;
+            padding: 1.5rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #fffef9;
+        }
+
+        .admin-main-panel {
+            min-height: 420px;
+            padding: 1.5rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #fffef9;
+        }
+
+        .admin-main-panel > .col,
+        .admin-main-panel > .col-sm,
+        .admin-main-panel > .col-sm-6,
+        .admin-main-panel > .col-8,
+        .admin-main-panel > .col.m-2,
+        .admin-main-panel > .col.mt-2,
+        .admin-main-panel > .col.p-1.m-1 {
+            width: 100%;
+            max-width: none;
+            margin-right: 0 !important;
+            margin-left: 0 !important;
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        .admin-main-panel h1 {
+            margin: 0 0 1rem;
+            color: #111817;
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: 0;
+        }
+
+        .admin-main-panel .nav-tabs {
+            margin-bottom: 1.25rem;
+            border-bottom-color: #d8ded8;
+        }
+
+        .admin-main-panel .nav-tabs .nav-link {
+            color: #43514c;
+            font-weight: 700;
+        }
+
+        .admin-main-panel .nav-tabs .nav-link.active {
+            border-color: #d8ded8 #d8ded8 #fffef9;
+            color: #13211d;
+            background: #fffef9;
+        }
+
+        .admin-main-panel .list-group-item {
+            border-color: #d8ded8;
+        }
+
+        .admin-main-panel .pagination {
+            margin-bottom: 1rem;
+        }
+
+        .admin-main-panel .page-link {
+            color: #143a2a;
+        }
+
+        .admin-main-panel .page-item.active .page-link {
+            border-color: #13211d;
+            background: #13211d;
+        }
+
+        .admin-main-panel .dropdown {
+            margin-bottom: 1rem;
+        }
+
+        .admin-main-panel .btn-info {
+            border-color: #d8ded8;
+            background: #eef5ef;
+            color: #13211d;
+            font-weight: 700;
+        }
+
+        .admin-main-panel .table {
+            margin-bottom: 0;
+        }
+
+        .table {
+            color: #26312d;
+        }
+
+        .table thead th {
+            border-bottom-color: #d8ded8;
+            color: #66736e;
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .table td,
+        .table th {
+            vertical-align: middle;
+        }
+
+        .form-control,
+        .form-select {
+            border-color: #cfd8d2;
+            border-radius: .35rem;
+        }
+
+        .form-label,
+        label {
+            color: #26312d;
+            font-weight: 650;
+        }
+
+        .btn-primary {
+            border-color: #13211d;
+            background: #13211d;
+        }
+
+        .btn-primary:hover {
+            border-color: #263a33;
+            background: #263a33;
+        }
+
+        .admin-page-title {
+            margin: 0;
+            color: #111817;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: 0;
+        }
+
+        .admin-page-text {
+            max-width: 720px;
+            margin-top: 1rem;
+            color: #43514c;
+            font-size: 1.05rem;
+            line-height: 1.65;
+        }
+
+        .admin-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .admin-card {
+            min-height: 126px;
+            padding: 1.25rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #f9fcf8;
+        }
+
+        .admin-card h2 {
+            margin: 0 0 .55rem;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .admin-card p {
+            margin: 0;
+            color: #43514c;
+            line-height: 1.55;
+        }
+
+        .admin-footer {
+            margin: 1.5rem 0;
+            padding: 1rem 1.25rem;
+            border: 1px solid #d8ded8;
+            border-radius: .5rem;
+            background: #fffef9;
+            color: #66736e;
+            font-size: .95rem;
+        }
+
+        @media (max-width: 900px) {
+            .admin-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .admin-card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
     <style th:if="${testEnvironment}">
         body {
             background-color: #fff7e6;
@@ -19,9 +295,12 @@
         }
     </style>
     <div th:if="${environmentBanner}" class="test-environment-banner" th:text="${environmentBanner}"></div>
-    <div class="p-5 m-4 bg-secondary-subtle rounded-3">
-        <div class="col"><h1 class="display-4">Authorization manager</h1></div>
-        <button class="btn btn-light btn-large"><a th:href="@{/logout}">Logout</a></button>
+    <div class="admin-header">
+        <div>
+            <h1 class="admin-brand">OpenIssuer Admin</h1>
+            <p class="admin-kicker">Manage OAuth clients, users, roles, organizations, and tenant access.</p>
+        </div>
+        <a class="admin-logout" th:href="@{/logout}">Logout</a>
     </div>
 </div>
 
