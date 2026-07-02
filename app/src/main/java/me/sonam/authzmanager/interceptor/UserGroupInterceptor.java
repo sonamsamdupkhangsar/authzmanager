@@ -55,7 +55,7 @@ public class UserGroupInterceptor implements HandlerInterceptor {
                         UUID userId = UUID.fromString(userIdString);
 
                         final String accessToken = tokenService.getAccessToken();
-                        LOG.info("userId: {}, token {}", userId, accessToken);
+                        LOG.info("load administrative scope for userId {}", userId);
 
 /*
                         organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())

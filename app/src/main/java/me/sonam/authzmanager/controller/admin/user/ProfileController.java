@@ -69,7 +69,7 @@ public class ProfileController {
                     String profilePhotoJson = user.getProfilePhoto();
                     if (user.getProfilePhoto() != null && !user.getProfilePhoto().isEmpty()) {
                         final String thumbnailUrl = getProfileUrl(profilePhotoJson);
-                        LOG.info("set thumbnailUrl in profilePhoto: {}", thumbnailUrl);
+                        LOG.debug("set profile photo thumbnail URL");
                         user.setProfilePhoto(thumbnailUrl);
                     }
 
@@ -83,7 +83,7 @@ public class ProfileController {
      * @return thumbnail string
      */
     private String getProfileUrl(String profilePhotoJson) {
-        LOG.info("got profilePhoto json: {}", profilePhotoJson);
+        LOG.debug("profile photo metadata received");
 
         if (profilePhotoJson == null || profilePhotoJson.isEmpty()) {
             LOG.info("profilePhoto json is empty or null, return empty string");
@@ -91,26 +91,23 @@ public class ProfileController {
         }
         try {
             JsonElement jsonElement = JsonParser.parseString(profilePhotoJson);
-            LOG.info("jsonElement: {}", jsonElement.toString());
-            LOG.info("json.instance of {}", jsonElement.getClass());
+            LOG.debug("profile photo metadata type: {}", jsonElement.getClass());
 
             JsonObject jsonObject2 = null;
             if (jsonElement.isJsonPrimitive()) {
                 JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
                 // Get the primitive value (string, number, boolean)
-                LOG.debug("json primitive: {}", jsonPrimitive);
-                LOG.debug("jsonPrimitive.string: {}", jsonPrimitive.getAsString());
                 JsonElement jsonElement2 = JsonParser.parseString(jsonPrimitive.getAsString());
                 LOG.info("jsonPrimitive to jsonElement.isJsonObject ?: {}", jsonElement2.isJsonObject());
 
                 jsonObject2 = jsonElement2.getAsJsonObject();
                 final String thumbnailUrl = jsonObject2.get("thumbnailUrl").getAsString();
-                LOG.info("jsonPrimitive thumbnailUrl: {}", thumbnailUrl);
+                LOG.debug("thumbnail URL extracted from profile photo metadata");
                 return thumbnailUrl;
             } else if (jsonElement.isJsonObject()) {
                 JsonObject jsonObject = jsonElement.getAsJsonObject();
                 final String thumbnailUrl = jsonObject.get("thumbnailUrl").getAsString();
-                LOG.info("thumbnailUrl: {}", thumbnailUrl);
+                LOG.debug("thumbnail URL extracted from profile photo metadata");
                 return thumbnailUrl;
             } else {
                 return "empty";
@@ -140,20 +137,20 @@ public class ProfileController {
                     return userWebClient.getUserById(accessToken, userId)
                                     .flatMap(user -> {
 
-                                        LOG.info("jsonObject: {}", jsonObject.toString());
+                                        LOG.debug("profile photo upload metadata created");
                                         user.setProfilePhoto(jsonObject.toString());
                                         return Mono.just(user);
                                     });
                 })
                 .flatMap(user -> userWebClient.updateProfilePhoto(accessToken, user).zipWith(Mono.just(user)))
-                .doOnNext(objects -> LOG.info("updated profilePhoto, server response: {}", objects.getT1()))
+                .doOnNext(objects -> LOG.info("profile photo updated"))
                 .flatMap(objects -> userWebClient.getUserById(accessToken, objects.getT2().getId()))
                 .doOnNext(user -> {
                             LOG.info("got user: {}", user);
                             String profilePhotoJson = user.getProfilePhoto();
                             if (user.getProfilePhoto() != null && !user.getProfilePhoto().isEmpty()) {
                                 final String thumbnailUrl = getProfileUrl(profilePhotoJson);
-                                LOG.info("set thumbnailUrl in profilePhoto: {}", thumbnailUrl);
+                                LOG.debug("set profile photo thumbnail URL");
                                 user.setProfilePhoto(thumbnailUrl);
                             }
                             model.addAttribute("user", user);
@@ -199,7 +196,7 @@ public class ProfileController {
                     String profilePhotoJson = user1.getProfilePhoto();
                     if (user1.getProfilePhoto() != null && !user1.getProfilePhoto().isEmpty()) {
                         final String thumbnailUrl = getProfileUrl(profilePhotoJson);
-                        LOG.info("set thumbnailUrl in profilePhoto: {}", thumbnailUrl);
+                        LOG.debug("set profile photo thumbnail URL");
                         user1.setProfilePhoto(thumbnailUrl);
                     }
 

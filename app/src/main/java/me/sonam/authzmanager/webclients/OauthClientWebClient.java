@@ -106,7 +106,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
                 .append("&sortBy=clientName");
         LOG.info("calling auth-server get clientIds for userId endpoint {}", clientsEndpoint);
 
-        LOG.info("add accessToken to the header webClient {}", accessToken);
+        LOG.debug("add bearer authorization header to client request");
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(clientsEndpoint.toString())
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
                 .retrieve();

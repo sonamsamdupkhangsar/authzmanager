@@ -325,7 +325,7 @@ public class OrganizationController {
     public Mono<String> findUserByAuthenticationId(@PathVariable("id") UUID organizationId,
                                                    @ModelAttribute("username") String authenticationId, final Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
-        LOG.info("find user by authenticationId: {}", authenticationId);
+        LOG.info("find user by authentication identifier");
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();

@@ -60,7 +60,7 @@ public class DeleteMyDataController {
 
         LOG.info("delete user data for userId: {}", userIdString);
         final String accessToken = tokenService.getAccessToken();
-        LOG.info("accessToken {}", accessToken);
+        LOG.info("authenticated delete-my-data request received");
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 

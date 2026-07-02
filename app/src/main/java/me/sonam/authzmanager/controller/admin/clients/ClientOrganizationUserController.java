@@ -65,7 +65,7 @@ public class ClientOrganizationUserController {
 
         String accessToken = tokenService.getAccessToken();
 
-        LOG.info("accesstoken: {}", accessToken);
+        LOG.info("authenticated client-organization role deletion requested");
         return roleWebClient.deleteClientOrganizationUserRole(accessToken, id)
                         .flatMap(s -> {
                             LOG.info("response: {}", s);

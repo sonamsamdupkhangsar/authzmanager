@@ -65,7 +65,7 @@ public class TokenFilter {
         return (request, next) -> {
             if (request.headers().getFirst(AUTHORIZATION) != null) {
                 LOG.info("request contains authorization header already");
-                LOG.debug("authorization header: {}", request.headers().getFirst(AUTHORIZATION));
+                LOG.debug("authorization header is present");
 
                 if (request.headers().getFirst(AUTHORIZATION).contains("Bearer null")) {
                     LOG.warn("request header contains Bearer but null token");
@@ -188,7 +188,7 @@ public class TokenFilter {
                     headers.set(HttpHeaders.ORIGIN, request.headers().getFirst(HttpHeaders.ORIGIN));
                     if (accessToken != null) {
                         headers.setBearerAuth(accessToken);
-                        LOG.info("set authorization header with {}", accessToken);
+                        LOG.debug("set bearer authorization header on outbound request");
                     }
                 }).build();
     }
@@ -226,7 +226,7 @@ public class TokenFilter {
                 .retrieve();
 
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {}).map(map -> {
-            LOG.debug("response for '{}' is in map: {}", oauth2TokenEndpoint, map);
+            LOG.debug("received successful token response from '{}'", oauth2TokenEndpoint);
             if (map.get("access_token") != null) {
                 accessToken.setAccessToken(map.get("access_token"));
                 return map.get("access_token");

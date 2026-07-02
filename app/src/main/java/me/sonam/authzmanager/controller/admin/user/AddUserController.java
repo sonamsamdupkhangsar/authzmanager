@@ -126,15 +126,14 @@ public class AddUserController {
         LOG.info("User signup initiated by admin for user: {}", userSignup);
 
         if (bindingResult.hasErrors()) {
-            LOG.info("required fields missing for user {}", bindingResult.getAllErrors());
+            LOG.info("admin add user validation failed with {} error(s)", bindingResult.getErrorCount());
             model.addAttribute("error", "Data validation failed");
             return Mono.just(PATH);
         }
 
         Optional<String> emailPolicyError = userSearchPolicyService.validateSignupEmail(userSignup.getEmail(), subdomain);
         if (emailPolicyError.isPresent()) {
-            LOG.info("admin add user email {} failed tenant policy for host {}: {}",
-                    userSignup.getEmail(), subdomain, emailPolicyError.get());
+            LOG.info("admin add user failed tenant policy for host {}: {}", subdomain, emailPolicyError.get());
             model.addAttribute("error", emailPolicyError.get());
             model.addAttribute("userSignup", userSignup);
             return Mono.just(PATH);
@@ -194,7 +193,7 @@ public class AddUserController {
             return;
         }
 
-        LOG.info("admin signup password was submitted with length {}", password.length);
+        LOG.info("admin signup password was supplied");
         for (char c : password) {
             if (!Character.isWhitespace(c)) {
                 LOG.info("admin signup password contains non-whitespace characters; keeping submitted password");
