@@ -210,21 +210,28 @@ public class OrganizationController {
                     if (isOrgAdmin) {
                         return Mono.just(organization);
                     }
-                    return organizationWebClient.getSubdomainByHost(accessToken, organizationHost)
-                            .flatMap(subdomain -> roleWebClient.isSubdomainAdminInSubdomainId(accessToken, userId,
-                                            subdomain.getId()))
-                            .flatMap(isSubdomainAdmin -> {
-                                if (!isSubdomainAdmin) {
-                                    model.addAttribute("error",
-                                            "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain");
-                                    return Mono.error(new AuthenticationException(
-                                            "You are not an OrgAdmin for orgId or SubdomainAdmin for subdomain: "
-                                                    + organization.getName()));
-                                }
-                                return organizationWebClient.organizationBelongsToSubdomain(accessToken,
-                                                organization.getId(), organizationHost)
-                                        .thenReturn(organization);
-                            });
+                    return requireSubdomainAdminForOrganization(accessToken, userId, organizationHost,
+                            organization, model);
+                });
+    }
+
+    private Mono<Organization> requireSubdomainAdminForOrganization(String accessToken, UUID userId,
+                                                                     String organizationHost,
+                                                                     Organization organization, Model model) {
+        return organizationWebClient.getSubdomainByHost(accessToken, organizationHost)
+                .flatMap(subdomain -> roleWebClient.isSubdomainAdminInSubdomainId(accessToken, userId,
+                        subdomain.getId()))
+                .flatMap(isSubdomainAdmin -> {
+                    if (!isSubdomainAdmin) {
+                        model.addAttribute("error",
+                                "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain");
+                        return Mono.error(new AuthenticationException(
+                                "You are not an OrgAdmin for orgId or SubdomainAdmin for subdomain: "
+                                        + organization.getName()));
+                    }
+                    return organizationWebClient.organizationBelongsToSubdomain(accessToken,
+                                    organization.getId(), organizationHost)
+                            .thenReturn(organization);
                 });
     }
 
@@ -253,11 +260,12 @@ public class OrganizationController {
                 })
                 .flatMap(orgId ->roleWebClient.isOrgAdminInOrgId(accessToken, userId, id))
                 .flatMap(isOrgAdmin -> {
-                    if (!isOrgAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + id);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
+                    if (isOrgAdmin) {
+                        return organizationWebClient.getOrganizationById(accessToken, id);
                     }
-                    return organizationWebClient.getOrganizationById(accessToken, id);
+                    return organizationWebClient.getOrganizationById(accessToken, id)
+                            .flatMap(organization -> requireSubdomainAdminForOrganization(accessToken, userId,
+                                    organizationHost, organization, model));
                 })
                  .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, id, pageable))
@@ -272,11 +280,13 @@ public class OrganizationController {
     public Mono<String> getUserForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return getUsersForOrganization(id, userId, accessToken, model, userPageable);
+        return getUsersForOrganization(id, userId, accessToken, organizationHost, model, userPageable);
     }
 
-    private Mono<String> getUsersForOrganization(UUID organizationId, UUID userId, String accessToken, Model model, Pageable userPageable) {
+    private Mono<String> getUsersForOrganization(UUID organizationId, UUID userId, String accessToken,
+                                                  String organizationHost, Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
         LOG.info("get users for organization by id: {}", organizationId);
         int pageSize = 5;
@@ -289,11 +299,12 @@ public class OrganizationController {
 
         return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organizationId)
                 .flatMap(isOrgAdmin -> {
-                    if (!isOrgAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organizationId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
+                    if (isOrgAdmin) {
+                        return organizationWebClient.getOrganizationById(accessToken, organizationId);
                     }
-                    return organizationWebClient.getOrganizationById(accessToken, organizationId);
+                    return organizationWebClient.getOrganizationById(accessToken, organizationId)
+                            .flatMap(organization -> requireSubdomainAdminForOrganization(accessToken, userId,
+                                    organizationHost, organization, model));
                 })
                 .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
@@ -325,7 +336,7 @@ public class OrganizationController {
     public Mono<String> findUserByAuthenticationId(@PathVariable("id") UUID organizationId,
                                                    @ModelAttribute("username") String authenticationId, final Model model, Pageable userPageable) {
         final String PATH = "admin/organizations/user";
-        LOG.info("find user by authentication identifier");
+        LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
