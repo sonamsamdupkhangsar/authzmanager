@@ -5,10 +5,10 @@
 
 <body>
 <div th:fragment="menu">
-    <ul class="nav flex-column nav-pills" th:fragment="navibar(activeLink)">
+    <ul class="nav flex-column nav-pills admin-nav" th:fragment="navibar(activeLink)">
         <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Home')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/dashboard}">Home</a></li>
         <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Clients')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/clients}">Clients</a></li>
-        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Organizations')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/organizations}">Organization</a></li>
+        <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Organizations')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/organizations}">Organizations</a></li>
         <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Add User')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/organizations/users}">Add User</a></li>
         <li class="nav-item"><a th:class="${#strings.equals(activeLink, 'Roles')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/roles}">Roles</a></li>
         <li class="nav-item" th:if="${showSubdomainMenu == true}"><a th:class="${#strings.equals(activeLink, 'Subdomain')} ? 'nav-link active' : 'nav-link'" th:href="@{/admin/subdomain}">Subdomain</a></li>

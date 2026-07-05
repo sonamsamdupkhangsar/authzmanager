@@ -187,7 +187,7 @@ public class SettingsController {
     public Mono<String> findUserByAuthenticationId(@PathVariable("organizationId") UUID organizationId,
                                                    @ModelAttribute("username") String authenticationId, final Model model,
                                                    Pageable userPageable, HttpServletRequest request) {
-        LOG.info("find user by authenticationId: {}", authenticationId);
+        LOG.info("find user by authentication identifier");
         final String accessToken = tokenService.getAccessToken();
         UUID loggedInUserId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();

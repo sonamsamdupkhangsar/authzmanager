@@ -109,14 +109,9 @@ public class UserSignup {
     @Override
     public String toString() {
         return "UserSignup{" +
-                "firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", authenticationId='" + authenticationId + '\'' +
-                ", password=" + (password == null ? null : "****") +
-                ", active='" +active + '\'' +
-                ", activationHost='" + activationHost + '\'' +
-                ", organizationId='" + organizationId +'\'' +
+                "active=" + active +
+                ", organizationId=" + organizationId +
+                ", passwordSupplied=" + (password != null && password.length > 0) +
                 '}';
     }
 

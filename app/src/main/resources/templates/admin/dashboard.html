@@ -12,17 +12,39 @@
 <div class="container">
     <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2" th:with="activeLink=Home" th:insert="~{leftnav :: menu}"></div>
-        <div class="col-sm">
-            <div class="m-4">
-            <span class="h3">Welcome to the Admin dashboard!</span>
-            <p class="mt-4">This is the Authorization Manager web application.</p>
-                <p>This is for managing OAuth2 Client and for setting up Organization and roles.</p>
+        <div class="col-2 admin-sidebar" th:with="activeLink=Home" th:insert="~{leftnav :: menu}"></div>
+        <div class="col-sm admin-main-panel">
+            <div class="admin-content-panel">
+                <p class="text-uppercase fw-bold text-success small mb-2">Admin dashboard</p>
+                <h1 class="admin-page-title">Manage tenant authorization.</h1>
+                <p class="admin-page-text">
+                    Use this workspace to configure OAuth2/OIDC clients, manage organizations,
+                    add users, assign roles, and review tenant-level administration.
+                </p>
+
+                <div class="admin-card-grid">
+                    <section class="admin-card">
+                        <h2>OAuth clients</h2>
+                        <p>Create clients, redirect URIs, scopes, grant types, and token settings for tenant apps.</p>
+                    </section>
+                    <section class="admin-card">
+                        <h2>Organizations</h2>
+                        <p>Review organizations, membership, default organization access, and tenant user views.</p>
+                    </section>
+                    <section class="admin-card">
+                        <h2>Roles</h2>
+                        <p>Create app roles and assign them to organizations and users for application access.</p>
+                    </section>
+                    <section class="admin-card">
+                        <h2>Subdomain access</h2>
+                        <p>Subdomain admins can manage organizations and users across the current subdomain.</p>
+                    </section>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="p-4 m-4 bg-secondary-subtle rounded-2">
+    <div class="admin-footer">
         <div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>

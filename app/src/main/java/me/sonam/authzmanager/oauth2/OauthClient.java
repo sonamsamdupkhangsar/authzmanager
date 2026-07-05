@@ -729,7 +729,7 @@ public class OauthClient {
 
         RegisteredClient registeredClient = registeredClientBuilder.build();
 
-        LOG.info("registeredClient: {}", registeredClient);
+        LOG.info("built registered client id {}", registeredClient.getId());
 
         return registeredClient;
 

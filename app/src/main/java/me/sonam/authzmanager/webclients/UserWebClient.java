@@ -92,7 +92,7 @@ public class UserWebClient {
      * @return
      */
     public Mono<User> findByAuthenticationId(String accessToken, String authenticationId) {
-        LOG.info("find user by authenticationId: {}", authenticationId);
+        LOG.info("find user by authentication identifier");
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/authentication-id/")
                 .append(authenticationId);
@@ -104,7 +104,7 @@ public class UserWebClient {
                 .retrieve();
 
         return responseSpec.bodyToMono(User.class).onErrorResume(throwable -> {
-            LOG.error("user not found with authenticationId: {}", authenticationId, throwable.getMessage());
+            LOG.error("user not found by authentication identifier: {}", throwable.getMessage());
             String errorMessage = throwable.getMessage();
             if (throwable instanceof WebClientResponseException) {
                 WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
@@ -132,7 +132,7 @@ public class UserWebClient {
      * @return
      */
     public Mono<User> findByAuthenticationProfileSearch(String accessToken, String authenticationId) {
-        LOG.info("find user profile search by authenticationId: {}", authenticationId);
+        LOG.info("find user profile by authentication identifier");
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint).append("/profile/authentication-id/")
                 .append(authenticationId).append("?ignoreSearchable=true");  //this queryParam is to search regardless of user setting
@@ -144,7 +144,7 @@ public class UserWebClient {
                 .retrieve();
 
         return responseSpec.bodyToMono(User.class).onErrorResume(throwable -> {
-            LOG.error("no user found authenticatioId: {}", authenticationId, throwable.getMessage());
+            LOG.error("no user found by authentication identifier: {}", throwable.getMessage());
             String errorMessage = throwable.getMessage();
             if (throwable instanceof WebClientResponseException) {
                 WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
@@ -166,7 +166,7 @@ public class UserWebClient {
     }
 
     public Mono<String> updateProfile(String accessToken, User user) {
-        LOG.info("update user profile using accessToken: {}", accessToken);
+        LOG.info("update authenticated user profile");
 
         StringBuilder stringBuilder = new StringBuilder(userRestServiceEndpoint);
 
@@ -180,7 +180,7 @@ public class UserWebClient {
     }
 
     public Mono<String> updateProfilePhoto(String accessToken, User user) {
-        LOG.info("update user profile photo using accessToken: {}", accessToken);
+        LOG.info("update authenticated user profile photo");
 
         StringBuilder stringBuilder = new StringBuilder(profilePhotoEndpoint);
 

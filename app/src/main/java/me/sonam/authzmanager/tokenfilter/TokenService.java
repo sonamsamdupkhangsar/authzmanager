@@ -33,23 +33,6 @@ public class TokenService {
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
 
-    //@PreAuthorize("hasAuthority('SCOPE_profile')")
-    private String getJwtToken() {
-        LOG.info("get jwt token");
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var accessToken = getAccessToken(authentication);
-        var refreshToken = getRefreshToken(authentication);
-      /*  return String.format("Access Token = %s <br>",
-                accessToken.getTokenValue());//, refreshToken.getTokenValue());*/
-
-        String refreshTokenValue = null;
-        if (refreshToken != null) {
-            refreshTokenValue = refreshToken.getTokenValue();
-        }
-        return String.format("Access Token = %s <br><br><br> Refresh Token = %s",
-                accessToken.getTokenValue(), refreshTokenValue);
-    }
-
     public String getAccessToken() {
         LOG.info("getAccessToken");
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -58,7 +41,7 @@ public class TokenService {
             if (oAuth2AccessToken != null) {
                 String accessToken = oAuth2AccessToken.getTokenValue();
 
-                LOG.info("returning accessToken: {}", accessToken);
+                LOG.debug("returning access token to authenticated service code");
                 return accessToken;
             }
             else {
@@ -74,7 +57,7 @@ public class TokenService {
 
     public OAuth2AccessToken getAccessToken(Authentication authentication) {
         var authorizedClient = this.getAuthorizedClient(authentication);
-        LOG.info("authorizedClient: {}", authorizedClient);
+        LOG.debug("authorized client available: {}", authorizedClient != null);
         if (authorizedClient != null) {
             OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
 
@@ -89,11 +72,11 @@ public class TokenService {
                 return accessToken;
             }
             else {
-                LOG.info("accessToken object is null: {}", accessToken);
+                LOG.info("access token object is null");
             }
         }
         else {
-            LOG.error("authorizedClient is null, authentication: {}", authentication);
+            LOG.error("authorized client is null");
             throw new TokenExpiredException("Token is expired");
         }
         return null;
@@ -111,22 +94,21 @@ public class TokenService {
     }
 
     private OAuth2AuthorizedClient getAuthorizedClient(Authentication authentication) {
-        LOG.info("get Oauth2AuthorizedClient: {}", authentication);
+        LOG.debug("get OAuth2 authorized client for authenticated request");
         if (authentication instanceof OAuth2AuthenticationToken) {
             LOG.info("is Oauth2AuthenticationToken type");
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
             LOG.info("got oauthToken");
             String clientRegistrationId = oauthToken.getAuthorizedClientRegistrationId();
             String principalName = oauthToken.getName();
-            LOG.info("returning OAuth2AuthorizedClient: clientRegistrationId: {}, principalName: {}",
-                    clientRegistrationId, principalName);
+            LOG.info("load OAuth2 authorized client for registration {}", clientRegistrationId);
             OAuth2AuthorizedClient oAuth2AuthorizedClient = authorizedClientService
                     .loadAuthorizedClient(clientRegistrationId, principalName);
-            LOG.info("oauth2AuthorizedClient to return: {}", oAuth2AuthorizedClient);
+            LOG.debug("OAuth2 authorized client loaded: {}", oAuth2AuthorizedClient != null);
             return oAuth2AuthorizedClient;
         }
         else {
-            LOG.error("returning null, authentication is not an instanceof OAuth2AuthenticationToken: {}", authentication);
+            LOG.error("returning null because authentication is not an OAuth2AuthenticationToken");
         }
         return null;
     }

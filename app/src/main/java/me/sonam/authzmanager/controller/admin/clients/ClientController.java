@@ -102,7 +102,7 @@ public class ClientController implements ClientUserPage {
 
     private Mono<String> setClientInModel(String accessToken, UUID id, Model model, final String PATH,
                                           HttpServletRequest request) {
-        LOG.info("set client in model with accesssToken: {}", accessToken);
+        LOG.info("load client {} into model", id);
 
         return oauthClientWebClient.getOauthClientById(accessToken, id).map(registeredClient -> {
             LOG.info("got client {}", registeredClient.getClientId());

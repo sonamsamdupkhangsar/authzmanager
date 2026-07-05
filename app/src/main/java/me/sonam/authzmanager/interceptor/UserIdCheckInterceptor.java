@@ -48,7 +48,7 @@ public class UserIdCheckInterceptor implements HandlerInterceptor {
                         UUID userId = UUID.fromString(userIdString);
 
                         final String accessToken = tokenService.getAccessToken();
-                        LOG.info("userId: {}, token {}", userId, accessToken);
+                        LOG.info("validate authenticated userId {}", userId);
 
                         LOG.info("get user by id to verify the user exists in user-rest-service");//in case it was deleted or does not exist
                         userWebClient.getUserById(accessToken, userId)

@@ -11,7 +11,7 @@
 <div class="container">
     <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
-        <div class="col-2" th:with="activeLink=Organizations" th:insert="~{leftnav :: menu}"></div>
+        <div class="col-2 admin-sidebar" th:with="activeLink=Organizations" th:insert="~{leftnav :: menu}"></div>
         <div class="col-sm p-2 pe-4 m-1">
             <div>
                 <ul class="nav nav-tabs">
@@ -69,7 +69,7 @@
             </div>
         </div>
     </div>
-    <div class="p-4 m-4 bg-secondary-subtle rounded-2">
+    <div class="admin-footer">
         <div th:insert="~{footer :: copyright}"></div>
     </div>
 </div>

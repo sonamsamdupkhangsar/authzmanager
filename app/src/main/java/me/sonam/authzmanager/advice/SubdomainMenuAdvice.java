@@ -24,7 +24,7 @@ import java.util.UUID;
 public class SubdomainMenuAdvice {
     private static final Logger LOG = LoggerFactory.getLogger(SubdomainMenuAdvice.class);
     private static final Duration ROLE_CHECK_TIMEOUT = Duration.ofSeconds(2);
-    private static final String SHOW_SUBDOMAIN_MENU_SESSION_ATTRIBUTE = "showSubdomainMenu";
+    public static final String SHOW_SUBDOMAIN_MENU_SESSION_ATTRIBUTE = "showSubdomainMenu";
 
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
