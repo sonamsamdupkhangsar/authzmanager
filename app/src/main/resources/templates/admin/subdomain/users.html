@@ -27,6 +27,9 @@
             <div class="alert alert-danger mt-3" th:if="${error}">
                 <span th:text="${error}"></span>
             </div>
+            <div class="alert alert-success mt-3" th:if="${message}">
+                <span th:text="${message}"></span>
+            </div>
 
             <div class="mt-4" th:if="${error == null}">
                 <p class="text-muted" th:if="${subdomain}" th:text="${subdomain.host}"></p>
@@ -68,6 +71,7 @@
                         <th scope="col">Email</th>
                         <th scope="col">Handle</th>
                         <th scope="col">Organization</th>
+                        <th scope="col">Subdomain administrator</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -80,6 +84,18 @@
                         <td>
                             <a th:text="${row.membership.organizationName}"
                                th:href="@{/admin/organizations/{id}(id=${row.membership.organizationId})}"></a>
+                        </td>
+                        <td>
+                            <form method="post"
+                                  th:if="${row.user != null and row.user.authzManagerRoleAssignmentId == null}"
+                                  th:action="@{/admin/subdomain/users/{userId}/subdomain-admin(userId=${row.user.id})}">
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Make SubdomainAdmin</button>
+                            </form>
+                            <form method="post"
+                                  th:if="${row.user != null and row.user.authzManagerRoleAssignmentId != null}"
+                                  th:action="@{/admin/subdomain/administrators/{assignmentId}/remove(assignmentId=${row.user.authzManagerRoleAssignmentId})}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Remove SubdomainAdmin</button>
+                            </form>
                         </td>
                     </tr>
                     </tbody>

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import reactor.core.publisher.Mono;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 @ControllerAdvice
+@ConditionalOnProperty(name = "authzmanager.subdomain-menu.enabled", havingValue = "true", matchIfMissing = true)
 public class SubdomainMenuAdvice {
     private static final Logger LOG = LoggerFactory.getLogger(SubdomainMenuAdvice.class);
     private static final Duration ROLE_CHECK_TIMEOUT = Duration.ofSeconds(2);

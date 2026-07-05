@@ -2,6 +2,7 @@ package me.sonam.authzmanager.webclients;
 
 import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.clients.user.ClientOrganizationUserRole;
+import me.sonam.authzmanager.clients.role.AuthzManagerRoleAssignment;
 import me.sonam.authzmanager.controller.admin.roles.RoleOrganization;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.admin.roles.Role;
@@ -336,5 +337,38 @@ public class RoleWebClient {
                     LOG.error("error occurred when checking if user is SubdomainAdmin for subdomainId", throwable);
                     return Mono.error(throwable);
                 });
+    }
+
+    public Mono<RestPage<AuthzManagerRoleAssignment>> getSubdomainAdminAssignments(
+            String accessToken, UUID subdomainId, Pageable pageable) {
+        String endpoint = roleEndpoint + "/authzmanagerroles/subdomains/" + subdomainId
+                + "/administrators?page=" + pageable.getPageNumber() + "&size=" + pageable.getPageSize();
+
+        return webClientBuilder.build().get().uri(endpoint)
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<RestPage<AuthzManagerRoleAssignment>>() {});
+    }
+
+    public Mono<AuthzManagerRoleAssignment> addSubdomainAdmin(
+            String accessToken, UUID subdomainId, UUID userId) {
+        String endpoint = roleEndpoint + "/authzmanagerroles/subdomains/" + subdomainId
+                + "/administrators/" + userId;
+
+        return webClientBuilder.build().post().uri(endpoint)
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .retrieve()
+                .bodyToMono(AuthzManagerRoleAssignment.class);
+    }
+
+    public Mono<String> removeSubdomainAdmin(
+            String accessToken, UUID subdomainId, UUID assignmentId) {
+        String endpoint = roleEndpoint + "/authzmanagerroles/subdomains/" + subdomainId
+                + "/administrators/" + assignmentId;
+
+        return webClientBuilder.build().delete().uri(endpoint)
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .retrieve()
+                .bodyToMono(String.class);
     }
 }

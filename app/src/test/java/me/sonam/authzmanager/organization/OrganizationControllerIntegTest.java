@@ -378,6 +378,66 @@ public class OrganizationControllerIntegTest {
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
+    public void subdomainAdminCanViewAnotherOrganizationInSameSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // organization belongs to subdomain
+        mockWebServer.enqueue(jsonResponse(Map.of("message", organizationId))); // default organization
+
+        webTestClient.get().uri("/admin/organizations/" + organizationId)
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange()
+                .expectStatus().isOk();
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/users/" + userId + "/default-organization-id");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotViewOrganizationOutsideSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // organization is outside subdomain
+
+        Assertions.assertThatThrownBy(() -> webTestClient.get()
+                        .uri("/admin/organizations/" + organizationId)
+                        .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange())
+                .hasRootCauseMessage("organization does not belong to subdomain");
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
     public void getRolesForOrganizationId() throws InterruptedException {
         LOG.info("get roles for organization by id");
 
@@ -422,6 +482,72 @@ public class OrganizationControllerIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/organizations/"+ organization.getId());
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanViewRolesInAnotherOrganizationInSameSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+        Role role = new Role(UUID.randomUUID(), "adminRole", null);
+
+        mockWebServer.enqueue(jsonResponse(Map.of("message", organizationId))); // default organization
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // organization belongs to subdomain
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(List.of(role), 0, 5, 1)));
+
+        webTestClient.get().uri("/admin/organizations/" + organizationId + "/roles")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange()
+                .expectStatus().isOk();
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/users/" + userId + "/default-organization-id");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/roles/organizations/" + organizationId);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotViewRolesInOrganizationOutsideSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+
+        mockWebServer.enqueue(jsonResponse(Map.of("message", organizationId))); // default organization
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // organization is outside subdomain
+
+        Assertions.assertThatThrownBy(() -> webTestClient.get()
+                        .uri("/admin/organizations/" + organizationId + "/roles")
+                        .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange())
+                .hasRootCauseMessage("organization does not belong to subdomain");
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/users/" + userId + "/default-organization-id");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -503,6 +629,70 @@ public class OrganizationControllerIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/"+userId1+","+userId2);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanViewUsersInAnotherOrganizationInSameSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+        UUID organizationUserId = UUID.randomUUID();
+
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // organization belongs to subdomain
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(List.of(organizationUserId), 0, 5, 1)));
+        mockWebServer.enqueue(jsonResponse(List.of(new User(organizationUserId, "member@openissuer.test"))));
+
+        webTestClient.get().uri("/admin/organizations/" + organizationId + "/users")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange()
+                .expectStatus().isOk();
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/organizations/" + organizationId + "/users");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/users/ids/" + organizationUserId);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotViewUsersInOrganizationOutsideSubdomain() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // not OrgAdmin
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // organization is outside subdomain
+
+        Assertions.assertThatThrownBy(() -> webTestClient.get()
+                        .uri("/admin/organizations/" + organizationId + "/users")
+                        .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange())
+                .hasRootCauseMessage("organization does not belong to subdomain");
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
@@ -892,6 +1082,11 @@ public class OrganizationControllerIntegTest {
             LOG.error("error occurred", e);
             return null;
         }
+    }
+
+    private static MockResponse jsonResponse(Object body) {
+        return new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(body));
     }
 
     private static String getSimpleJson(Object object) {
