@@ -62,7 +62,8 @@
                     </div>
                 </div>
 
-                <table class="table table-hover align-middle" th:if="${userRows != null and !userRows.isEmpty()}">
+                <div class="table-responsive" th:if="${userRows != null and !userRows.isEmpty()}">
+                <table class="table table-hover align-middle">
                     <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -71,7 +72,7 @@
                         <th scope="col">Email</th>
                         <th scope="col">Handle</th>
                         <th scope="col">Organization</th>
-                        <th scope="col">Subdomain administrator</th>
+                        <th scope="col">Subdomain admin</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -89,17 +90,18 @@
                             <form method="post"
                                   th:if="${row.user != null and row.user.authzManagerRoleAssignmentId == null}"
                                   th:action="@{/admin/subdomain/users/{userId}/subdomain-admin(userId=${row.user.id})}">
-                                <button type="submit" class="btn btn-outline-primary btn-sm">Make SubdomainAdmin</button>
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Make admin</button>
                             </form>
                             <form method="post"
                                   th:if="${row.user != null and row.user.authzManagerRoleAssignmentId != null}"
                                   th:action="@{/admin/subdomain/administrators/{assignmentId}/remove(assignmentId=${row.user.authzManagerRoleAssignmentId})}">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Remove SubdomainAdmin</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Remove admin</button>
                             </form>
                         </td>
                     </tr>
                     </tbody>
                 </table>
+                </div>
 
                 <p th:if="${userRows != null and userRows.isEmpty()}">No users found.</p>
             </div>
