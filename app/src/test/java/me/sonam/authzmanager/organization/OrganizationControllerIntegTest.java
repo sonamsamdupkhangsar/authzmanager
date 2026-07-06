@@ -714,13 +714,13 @@ public class OrganizationControllerIntegTest {
         UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
 
         Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
-        //1 is user superamdin response
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
-
-        //2 get org by id
+        //1 get org by id
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(organization)));
+
+        //2 is user OrgAdmin response
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
@@ -754,11 +754,11 @@ public class OrganizationControllerIntegTest {
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+ organization.getId());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+userId+"/organizations/"+ organization.getId());
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -786,10 +786,10 @@ public class OrganizationControllerIntegTest {
 
         Organization organization = new Organization(UUID.randomUUID(), "my company", UUID.randomUUID());
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+                .setResponseCode(200).setBody(getJson(organization)));
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .setResponseCode(200).setBody(getJson(organization)));
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
         UUID searchedUserId = UUID.randomUUID();
         RestPage<UUID> userIdPage = new RestPage<>(List.of(searchedUserId), 0,1,1);
@@ -819,11 +819,11 @@ public class OrganizationControllerIntegTest {
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+loggedInUserId+"/organizations/"+ organization.getId());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+organization.getId());
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+loggedInUserId+"/organizations/"+ organization.getId());
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -1081,6 +1081,219 @@ public class OrganizationControllerIntegTest {
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/"+userId1+","+userId2);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanSearchUserInAnotherOrganization() throws InterruptedException {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID searchedUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+        User searchedUser = new User(searchedUserId, "hello@sonam.cloud");
+
+        enqueueSubdomainAuthorization(organization, subdomainId, true);
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(List.of(searchedUserId), 0, 1, 1)));
+        mockWebServer.enqueue(jsonResponse(List.of(searchedUser)));
+        mockWebServer.enqueue(jsonResponse(searchedUser));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false)));
+
+        webTestClient.post().uri("/admin/organizations/" + organizationId + "/users")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .body(BodyInserters.fromFormData("username", "hello@sonam.cloud"))
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("Found user"));
+
+        assertSubdomainAuthorizationRequests(loggedInUserId, organizationId, subdomainId);
+        takeRequests(4);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanAddUserAndMakeOrganizationDefault() throws InterruptedException {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+
+        enqueueSubdomainAuthorization(organization, subdomainId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "added")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "default updated")));
+        mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 5, 0)));
+        mockWebServer.enqueue(jsonResponse(List.of()));
+
+        BodyInserters.FormInserter<String> form = BodyInserters.fromFormData("id", targetUserId.toString())
+                .with("authenticationId", "target@openissuer.test")
+                .with("organizationChoice.organizationId", UUID.randomUUID().toString())
+                .with("organizationChoice.selected", "false")
+                .with("organizationChoice.defaultOrganization", "true")
+                .with("action", "add");
+
+        webTestClient.post().uri("/admin/organizations/" + organizationId + "/users/add")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(form)
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("successfully added"));
+
+        assertSubdomainAuthorizationRequests(loggedInUserId, organizationId, subdomainId);
+        RecordedRequest addRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(addRequest.getPath()).startsWith("/organizations/users");
+        RecordedRequest defaultRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(defaultRequest.getPath())
+                .startsWith("/organizations/" + organizationId + "/users/" + targetUserId + "/default");
+        takeRequests(2);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanMakeExistingUserOrganizationDefault() throws InterruptedException {
+        verifySubdomainAdminUserMutation("default", "PUT");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanRemoveUserFromAnotherOrganization() throws InterruptedException {
+        verifySubdomainAdminUserMutation("remove", "DELETE");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCanDeleteUserFromAnotherOrganization() throws InterruptedException {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+
+        enqueueSubdomainAuthorization(organization, subdomainId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "removed")));
+        mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 5, 0)));
+        mockWebServer.enqueue(jsonResponse(List.of()));
+
+        webTestClient.delete()
+                .uri("/admin/organizations/" + organizationId + "/users/" + targetUserId
+                        + "/authenticationId/target@openissuer.test")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange().expectStatus().isOk();
+
+        assertSubdomainAuthorizationRequests(loggedInUserId, organizationId, subdomainId);
+        RecordedRequest deleteRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(deleteRequest.getMethod()).isEqualTo("DELETE");
+        Assertions.assertThat(deleteRequest.getPath())
+                .startsWith("/organizations/" + organizationId + "/users/" + targetUserId);
+        takeRequests(2);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotSearchUsersOutsideSubdomain() throws InterruptedException {
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+        enqueueSubdomainAuthorization(organization, subdomainId, false);
+
+        webTestClient.post().uri("/admin/organizations/" + organizationId + "/users")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .body(BodyInserters.fromFormData("username", "target@outside.test"))
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("organization does not belong to subdomain"));
+
+        takeRequests(5);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotMutateUsersOutsideSubdomain() throws InterruptedException {
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+        enqueueSubdomainAuthorization(organization, subdomainId, false);
+
+        BodyInserters.FormInserter<String> form = BodyInserters.fromFormData("id", targetUserId.toString())
+                .with("organizationChoice.organizationId", organizationId.toString())
+                .with("organizationChoice.selected", "true")
+                .with("action", "default");
+
+        Assertions.assertThatThrownBy(() -> webTestClient.post()
+                        .uri("/admin/organizations/" + organizationId + "/users/add")
+                        .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(form).exchange())
+                .hasRootCauseMessage("organization does not belong to subdomain");
+
+        takeRequests(5);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void subdomainAdminCannotDeleteUsersOutsideSubdomain() throws InterruptedException {
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "outside organization", UUID.randomUUID());
+        enqueueSubdomainAuthorization(organization, subdomainId, false);
+
+        Assertions.assertThatThrownBy(() -> webTestClient.delete()
+                        .uri("/admin/organizations/" + organizationId + "/users/" + targetUserId
+                                + "/authenticationId/target@outside.test")
+                        .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange())
+                .hasRootCauseMessage("organization does not belong to subdomain");
+
+        takeRequests(5);
+    }
+
+    private void verifySubdomainAdminUserMutation(String action, String expectedMethod) throws InterruptedException {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        UUID subdomainId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
+
+        enqueueSubdomainAuthorization(organization, subdomainId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", "updated")));
+        mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 5, 0)));
+        mockWebServer.enqueue(jsonResponse(List.of()));
+
+        BodyInserters.FormInserter<String> form = BodyInserters.fromFormData("id", targetUserId.toString())
+                .with("authenticationId", "target@openissuer.test")
+                .with("organizationChoice.organizationId", UUID.randomUUID().toString())
+                .with("organizationChoice.selected", "true")
+                .with("action", action);
+
+        webTestClient.post().uri("/admin/organizations/" + organizationId + "/users/add")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(form)
+                .exchange().expectStatus().isOk();
+
+        assertSubdomainAuthorizationRequests(loggedInUserId, organizationId, subdomainId);
+        RecordedRequest mutationRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(mutationRequest.getMethod()).isEqualTo(expectedMethod);
+        Assertions.assertThat(mutationRequest.getPath()).contains("/organizations/" + organizationId + "/users/" + targetUserId);
+        takeRequests(2);
+    }
+
+    private void enqueueSubdomainAuthorization(Organization organization, UUID subdomainId, boolean belongs) {
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false)));
+        mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", belongs)));
+    }
+
+    private void assertSubdomainAuthorizationRequests(UUID userId, UUID organizationId, UUID subdomainId)
+            throws InterruptedException {
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).contains("/organizations/subdomains/");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/subdomains/" + subdomainId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .contains("/organizations/" + organizationId + "/exists");
+    }
+
+    private void takeRequests(int count) throws InterruptedException {
+        for (int i = 0; i < count; i++) {
+            mockWebServer.takeRequest();
+        }
     }
 
     private static String getJson(Object object) {
