@@ -356,15 +356,10 @@ public class OrganizationController {
         UUID userId = Util.getLoggedInUserId();
         String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organizationId)
-                .flatMap(aBoolean -> {
-                    if (!aBoolean)  {
-                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organizationId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
-                    }
-                    return Mono.just(aBoolean);
-                }).flatMap(aBoolean -> organizationWebClient.getOrganizationById(accessToken, organizationId))
+        return organizationWebClient.getOrganizationById(accessToken, organizationId)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
+                .flatMap(organization -> requireOrgAdminOrSubdomainAdmin(accessToken, userId,
+                        organizationHost, organization, model))
                 .flatMap(organization -> {
                     int pageSize = 5;
 
@@ -456,29 +451,27 @@ public class OrganizationController {
         LOG.info("organizationHost: {}", organizationHost);
 
         return organizationWebClient.getOrganizationById(accessToken, orgId)
-                .flatMap(organization -> roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId()).zipWith(Mono.just(organization)))
-                .flatMap(objects -> {
-                    if (!objects.getT1()) {
-                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + orgId);
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
-                    }
+                .flatMap(organization -> requireOrgAdminOrSubdomainAdmin(accessToken, userId,
+                        organizationHost, organization, model))
+                .flatMap(organization -> {
+                    user.getOrganizationChoice().setOrganizationId(orgId);
 
                     if ("add".equals(action)) {
                         LOG.info("add user to organization action selected");
 
-                        return addUserToOrganization(PATH, user, userId, objects.getT2(), accessToken,
+                        return addUserToOrganization(PATH, user, userId, organization, accessToken,
                                 model, pageable, organizationHost);
                     }
                     else if ("remove".equals(action)) {
                         LOG.info("remove user from organization action selected");
-                        return removeUserFromOrganization(PATH, user, userId, objects.getT2(), accessToken, model, pageable);
+                        return removeUserFromOrganization(PATH, user, userId, organization, accessToken, model, pageable);
 
                     }
                     else if ("default".equals(action)) {
                         LOG.info("set default organization action selected");
-                        model.addAttribute("organization", objects.getT2());
+                        model.addAttribute("organization", organization);
                         return organizationWebClient.setDefaultOrganization(accessToken,
-                                        user.getOrganizationChoice().getOrganizationId(), user.getId())
+                                        orgId, user.getId())
                                 .doOnNext(message -> {
                                     user.getOrganizationChoice().setSelected(true);
                                     user.getOrganizationChoice().setDefaultOrganization(true);
@@ -486,7 +479,7 @@ public class OrganizationController {
                                     model.addAttribute("message",
                                             "default organization updated for username: " + user.getAuthenticationId());
                                 })
-                                .then(getUsersInOrganization(PATH, userId, objects.getT2(), accessToken, model, pageable));
+                                .then(getUsersInOrganization(PATH, userId, organization, accessToken, model, pageable));
                     }
 
                     model.addAttribute("message", "invalid user organization action: " + action);
@@ -505,8 +498,11 @@ public class OrganizationController {
         user.setOrganizationChoice(new OrganizationChoice(orgId));
         final String accessToken = tokenService.getAccessToken();
         UUID loggedUserId = Util.getLoggedInUserId();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return organizationWebClient.getOrganizationById(accessToken, orgId)
+                .flatMap(organization -> requireOrgAdminOrSubdomainAdmin(accessToken, loggedUserId,
+                        organizationHost, organization, model))
                 .flatMap(organization -> removeUserFromOrganization(PATH, user, loggedUserId, organization, accessToken, model, pageable));
     }
 
