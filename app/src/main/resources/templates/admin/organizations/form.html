@@ -65,7 +65,7 @@
                     <p th:if="${#fields.hasErrors('name')}" class="text-danger">Please enter organization name</p>
                     <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="organization name" />
 
-                    <div class="form-check">
+                    <div class="form-check" th:if="*{defaultOrganization != null}">
                         <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" th:field="*{defaultOrganization}" th:disabled="*{defaultOrganization != null and defaultOrganization}">
                         <input type="hidden" th:field="*{previousDefaultOrganization}"/>
 
@@ -76,6 +76,9 @@
                             Default organization (will replace any existing default preference) (can't change)
                         </label>
                     </div>
+                    <p class="text-muted" th:if="*{defaultOrganization == null}">
+                        You must be a member of this organization before you can make it your default organization.
+                    </p>
                 </div>
 
                 <div class="mb-3">
