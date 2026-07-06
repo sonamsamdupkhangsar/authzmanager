@@ -130,15 +130,13 @@ public class OrganizationController {
         LOG.info("create organization from organization: {}", organization);
 
         final String accessToken = tokenService.getAccessToken();
+        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
-        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId())
-                .flatMap(isOrgAdmin -> {
-                    if (!isOrgAdmin) {
-                        model.addAttribute("error", MessageConstants.NOT_ORG_ADMIN + " " + organization.getId());
-                        return Mono.error(new AuthenticationException(MessageConstants.NOT_ORG_ADMIN));
-                    }
-                    return organizationWebClient.updateOrganization(accessToken, org, HttpMethod.PUT);
-                })
+        return organizationWebClient.getOrganizationById(accessToken, organization.getId())
+                .doOnNext(existingOrganization -> model.addAttribute("organization", existingOrganization))
+                .flatMap(existingOrganization -> requireOrgAdminOrSubdomainAdmin(accessToken, userId,
+                        organizationHost, existingOrganization, model))
+                .flatMap(existingOrganization -> organizationWebClient.updateOrganization(accessToken, org, HttpMethod.PUT))
                 .flatMap(organization1 -> {
                     LOG.info("got back response: {}", organization1);
                     model.addAttribute("organization", organization1);
@@ -171,7 +169,7 @@ public class OrganizationController {
                     return Mono.just(PATH);
                 }).onErrorResume(throwable -> {
                     LOG.error("error occurred {}", throwable.getMessage());
-
+                    model.addAttribute("error", "failed to update organization: " + throwable.getMessage());
                     return Mono.just(PATH);
                 });
     }
