@@ -187,20 +187,35 @@ public class OrganizationController {
 
         return organizationWebClient.getOrganizationById(accessToken, id)
                 .flatMap(organization -> requireOrgAdminOrSubdomainAdmin(accessToken, userId, organizationHost, organization, model))
-                .flatMap(objects -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken,
-                        userId, organizationHost).zipWith(Mono.just(objects)))
-                .flatMap(objects -> {
-                    Organization organization = objects.getT2();
-
-                    if (objects.getT1().equals(organization.getId())) {
-                        LOG.info("the selected orgId is default organization: {}", organization.getId());
-                        organization.setDefaultOrganization(true);
-                        organization.setPreviousDefaultOrganization(true);
-                    }
+                .flatMap(organization -> organizationWebClient
+                        .userExistsInOrganization(accessToken, userId, organization.getId())
+                        .flatMap(isMember -> setDefaultOrganizationState(accessToken, userId,
+                                organizationHost, organization, isMember)))
+                .flatMap(organization -> {
                     model.addAttribute("organization", organization);
-
                     return Mono.just(PATH);
                 });
+    }
+
+    private Mono<Organization> setDefaultOrganizationState(String accessToken, UUID userId,
+                                                            String organizationHost, Organization organization,
+                                                            boolean isMember) {
+        if (!isMember) {
+            organization.setDefaultOrganization(null);
+            return Mono.just(organization);
+        }
+
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
+                .map(defaultOrganizationId -> {
+                    boolean isDefault = defaultOrganizationId.equals(organization.getId());
+                    organization.setDefaultOrganization(isDefault);
+                    organization.setPreviousDefaultOrganization(isDefault);
+                    return organization;
+                })
+                .switchIfEmpty(Mono.fromSupplier(() -> {
+                    organization.setDefaultOrganization(false);
+                    return organization;
+                }));
     }
 
     private Mono<Organization> requireOrgAdminOrSubdomainAdmin(String accessToken, UUID userId, String organizationHost,

@@ -346,6 +346,9 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
+        // logged-in user belongs to this organization
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+
         //get default org response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", organization.getId()))));
@@ -372,6 +375,11 @@ public class OrganizationControllerIntegTest {
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath())
+                .contains("/organizations/" + organization.getId() + "/users/" + userId);
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
         Assertions.assertThat(recordedRequest.getPath()).contains("/users/" + userId + "/default-organization-id");
     }
@@ -389,11 +397,15 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(jsonResponse(Map.of("id", subdomainId, "host", "free.openissuer.test")));
         mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // is SubdomainAdmin
         mockWebServer.enqueue(jsonResponse(Map.of("message", true))); // organization belongs to subdomain
-        mockWebServer.enqueue(jsonResponse(Map.of("message", organizationId))); // default organization
+        mockWebServer.enqueue(jsonResponse(Map.of("message", false))); // user is not a member
 
-        webTestClient.get().uri("/admin/organizations/" + organizationId)
+        EntityExchangeResult<String> result = webTestClient.get().uri("/admin/organizations/" + organizationId)
                 .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange()
-                .expectStatus().isOk();
+                .expectStatus().isOk().expectBody(String.class).returnResult();
+
+        assertThat(result.getResponseBody()).contains(
+                "You must be a member of this organization before you can make it your default organization.");
+        assertThat(result.getResponseBody()).doesNotContain("id=\"flexCheckDefault\"");
 
         Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + organizationId);
         Assertions.assertThat(mockWebServer.takeRequest().getPath())
@@ -404,7 +416,7 @@ public class OrganizationControllerIntegTest {
         Assertions.assertThat(mockWebServer.takeRequest().getPath())
                 .contains("/organizations/" + organizationId + "/exists");
         Assertions.assertThat(mockWebServer.takeRequest().getPath())
-                .contains("/users/" + userId + "/default-organization-id");
+                .contains("/organizations/" + organizationId + "/users/" + userId);
     }
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
