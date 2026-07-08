@@ -4,7 +4,7 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Oauth Clients</title>
+    <title>Organization Roles</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
 <body>
@@ -12,7 +12,7 @@
     <div th:insert="~{header :: jumbotron}"></div>
     <div class="row p-3">
         <div class="col-2 admin-sidebar" th:with="activeLink=Organizations" th:insert="~{leftnav :: menu}"></div>
-        <div class="col-sm p-2 pe-4 m-1">
+        <div class="col-sm admin-main-panel">
             <div>
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
@@ -32,7 +32,9 @@
                 </ul>
             </div>
 
-            <div class="col-sm m-3">
+            <div class="m-3">
+                <a class="btn btn-primary mb-3"
+                   th:href="@{/admin/organizations/{organizationId}/roles/new(organizationId=${organization.id})}">Create role</a>
                 <div th:if="${page != null}">
                     <div>
                         <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
@@ -56,12 +58,12 @@
                             <a class="dropdown-item" th:href="@{?(page=${page.number},(size='50'))}">50</a>
                         </div>
                     </div>
-                    <div class="col-sm-6 mt-4">
+                    <div class="col-sm-8 mt-4">
                         <ol class="list-group list-group-numbered">
 
                             <li class="list-group-item" th:each="role : ${page.content}">
-                                <span th:if="${role.organizationId != defaultOrganizationId}" th:text="${role.name}"></span>
-                                <a th:text="${role.name}" th:href="@{/admin/roles/{id}(id=${role.id})}" th:if="${defaultOrganizationId == role.organizationId}" ></a>
+                                <a th:text="${role.name}"
+                                   th:href="@{/admin/organizations/{organizationId}/roles/{roleId}(organizationId=${organization.id},roleId=${role.id})}"></a>
                             </li>
                         </ol>
                     </div>

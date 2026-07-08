@@ -37,10 +37,10 @@
                 <div th:if="${page != null}">
                     <ul class="pagination" th:if="${page}" th:with="pageSize=${param.size}">
                         <li class="page-item" th:classappend="${page.number <= 0} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number-1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}" tabindex="-1">Previous</a>
+                            <a class="page-link" th:href="@{/admin/subdomain/users(page=${page.number-1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}" tabindex="-1">Previous</a>
                         </li>
                         <li class="page-item" th:classappend="${page.totalPages <= (page.number+1)} ? 'disabled'">
-                            <a class="page-link" th:href="@{?(page=${page.number+1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}">Next</a>
+                            <a class="page-link" th:href="@{/admin/subdomain/users(page=${page.number+1},__(${#strings.isEmpty(pageSize)} ? '' : ('size=' + ${pageSize}))__)}">Next</a>
                         </li>
                     </ul>
 
@@ -50,10 +50,10 @@
                                 Page size
                             </button>
                             <div class="dropdown-menu" aria-labelledby="pageSizeButton">
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='2')}">2</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='5')}">5</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='20')}">20</a>
-                                <a class="dropdown-item" th:href="@{?(page=${page.number},size='50')}">50</a>
+                                <a class="dropdown-item" th:href="@{/admin/subdomain/users(page=${page.number},size='2')}">2</a>
+                                <a class="dropdown-item" th:href="@{/admin/subdomain/users(page=${page.number},size='5')}">5</a>
+                                <a class="dropdown-item" th:href="@{/admin/subdomain/users(page=${page.number},size='20')}">20</a>
+                                <a class="dropdown-item" th:href="@{/admin/subdomain/users(page=${page.number},size='50')}">50</a>
                             </div>
                         </div>
 
@@ -88,10 +88,14 @@
                         </td>
                         <td>
                             <form method="post"
-                                  th:if="${row.user != null and row.user.authzManagerRoleAssignmentId == null}"
+                                  th:if="${row.user != null and row.user.authzManagerRoleAssignmentId == null and row.subdomainAdminEligible}"
                                   th:action="@{/admin/subdomain/users/{userId}/subdomain-admin(userId=${row.user.id})}">
                                 <button type="submit" class="btn btn-outline-primary btn-sm">Make admin</button>
                             </form>
+                            <span class="text-muted small"
+                                  th:if="${row.user != null and row.user.authzManagerRoleAssignmentId == null and !row.subdomainAdminEligible}">
+                                Requires OrgAdmin for default organization
+                            </span>
                             <form method="post"
                                   th:if="${row.user != null and row.user.authzManagerRoleAssignmentId != null}"
                                   th:action="@{/admin/subdomain/administrators/{assignmentId}/remove(assignmentId=${row.user.authzManagerRoleAssignmentId})}">

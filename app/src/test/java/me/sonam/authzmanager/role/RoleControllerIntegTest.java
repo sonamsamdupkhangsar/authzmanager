@@ -129,6 +129,32 @@ public class RoleControllerIntegTest {
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
+    public void organizationAdminCanOpenOrganizationScopedRoleForm() throws InterruptedException {
+        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "Organization", UUID.randomUUID());
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(organization)));
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(Map.of("message", true))));
+
+        webTestClient.get().uri("/admin/organizations/" + organizationId + "/roles/new")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).exchange()
+                .expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body)
+                        .contains("Create role")
+                        .contains("/admin/organizations/" + organizationId + "/roles")
+                        .doesNotContain("href=\"/admin/roles\""));
+
+        RecordedRequest organizationRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(organizationRequest.getPath()).startsWith("/organizations/" + organizationId);
+        RecordedRequest authorizationRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(authorizationRequest.getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + userId + "/organizations/" + organizationId);
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
     public void getRolesByOrganizationId() throws InterruptedException {
         LOG.info("get roles by userId");
 

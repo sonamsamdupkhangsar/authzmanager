@@ -3,6 +3,9 @@ package me.sonam.authzmanager.subdomain;
 import me.sonam.authzmanager.clients.role.AuthzManagerRoleAssignment;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.controller.admin.subdomain.SubdomainAdminController;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainUserRow;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
@@ -22,6 +25,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.ui.ExtendedModelMap;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -33,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,6 +87,7 @@ class SubdomainAdminControllerTest {
         AuthzManagerRoleAssignment assignment = new AuthzManagerRoleAssignment(UUID.randomUUID(), UUID.randomUUID(),
                 targetUserId, "SUBDOMAIN", subdomain.getId());
         ExtendedModelMap model = new ExtendedModelMap();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
 
         when(organizationWebClient.getDefaultOrganizationIdForUser(ACCESS_TOKEN, targetUserId, HOST))
                 .thenReturn(Mono.just(defaultOrganizationId));
@@ -90,9 +96,9 @@ class SubdomainAdminControllerTest {
         when(roleWebClient.addSubdomainAdmin(ACCESS_TOKEN, subdomain.getId(), targetUserId))
                 .thenReturn(Mono.just(assignment));
 
-        assertThat(controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5)).block())
-                .isEqualTo("admin/subdomain/users");
-        assertThat(model.get("message")).isEqualTo("SubdomainAdmin assigned");
+        assertThat(controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5), redirectAttributes).block())
+                .isEqualTo("redirect:/admin/subdomain/users?page=0&size=5");
+        assertThat(redirectAttributes.getFlashAttributes().get("message")).isEqualTo("SubdomainAdmin assigned");
         verify(roleWebClient).addSubdomainAdmin(ACCESS_TOKEN, subdomain.getId(), targetUserId);
     }
 
@@ -100,12 +106,13 @@ class SubdomainAdminControllerTest {
     void rejectsUserWithoutDefaultOrganizationInSubdomain() {
         UUID targetUserId = UUID.randomUUID();
         ExtendedModelMap model = new ExtendedModelMap();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
         when(organizationWebClient.getDefaultOrganizationIdForUser(ACCESS_TOKEN, targetUserId, HOST))
                 .thenReturn(Mono.empty());
 
-        controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5)).block();
+        controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5), redirectAttributes).block();
 
-        assertThat(model.get("error").toString())
+        assertThat(redirectAttributes.getFlashAttributes().get("error").toString())
                 .contains("User must have a default organization in this subdomain");
         verify(roleWebClient, never()).addSubdomainAdmin(eq(ACCESS_TOKEN), eq(subdomain.getId()), any());
     }
@@ -115,14 +122,15 @@ class SubdomainAdminControllerTest {
         UUID targetUserId = UUID.randomUUID();
         UUID defaultOrganizationId = UUID.randomUUID();
         ExtendedModelMap model = new ExtendedModelMap();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
         when(organizationWebClient.getDefaultOrganizationIdForUser(ACCESS_TOKEN, targetUserId, HOST))
                 .thenReturn(Mono.just(defaultOrganizationId));
         when(roleWebClient.isOrgAdminInOrgId(ACCESS_TOKEN, targetUserId, defaultOrganizationId))
                 .thenReturn(Mono.just(false));
 
-        controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5)).block();
+        controller.addSubdomainAdmin(targetUserId, model, PageRequest.of(0, 5), redirectAttributes).block();
 
-        assertThat(model.get("error").toString())
+        assertThat(redirectAttributes.getFlashAttributes().get("error").toString())
                 .contains("User must be OrgAdmin for their default organization");
         verify(roleWebClient, never()).addSubdomainAdmin(eq(ACCESS_TOKEN), eq(subdomain.getId()), any());
     }
@@ -131,33 +139,90 @@ class SubdomainAdminControllerTest {
     void removesSubdomainAdmin() {
         UUID assignmentId = UUID.randomUUID();
         ExtendedModelMap model = new ExtendedModelMap();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
         when(roleWebClient.removeSubdomainAdmin(ACCESS_TOKEN, subdomain.getId(), assignmentId))
                 .thenReturn(Mono.just("SubdomainAdmin assignment deleted"));
 
-        assertThat(controller.removeSubdomainAdmin(assignmentId, model, PageRequest.of(0, 5)).block())
-                .isEqualTo("admin/subdomain/users");
-        assertThat(model.get("message")).isEqualTo("SubdomainAdmin removed");
+        assertThat(controller.removeSubdomainAdmin(assignmentId, model, PageRequest.of(0, 5), redirectAttributes).block())
+                .isEqualTo("redirect:/admin/subdomain/users?page=0&size=5");
+        assertThat(redirectAttributes.getFlashAttributes().get("message")).isEqualTo("SubdomainAdmin removed");
     }
 
     @Test
     void displaysFinalAdministratorRemovalError() {
         UUID assignmentId = UUID.randomUUID();
         ExtendedModelMap model = new ExtendedModelMap();
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
         when(roleWebClient.removeSubdomainAdmin(ACCESS_TOKEN, subdomain.getId(), assignmentId))
                 .thenReturn(Mono.error(new IllegalStateException("Cannot remove the final SubdomainAdmin")));
 
-        assertThat(controller.removeSubdomainAdmin(assignmentId, model, PageRequest.of(0, 5)).block())
-                .isEqualTo("admin/subdomain/users");
-        assertThat(model.get("error").toString()).contains("Cannot remove the final SubdomainAdmin");
+        assertThat(controller.removeSubdomainAdmin(assignmentId, model, PageRequest.of(0, 5), redirectAttributes).block())
+                .isEqualTo("redirect:/admin/subdomain/users?page=0&size=5");
+        assertThat(redirectAttributes.getFlashAttributes().get("error").toString())
+                .contains("Cannot remove the final SubdomainAdmin");
+    }
+
+    @Test
+    void marksOrgAdminOfDefaultOrganizationEligible() {
+        UUID userId = UUID.randomUUID();
+        UUID defaultOrganizationId = UUID.randomUUID();
+        ExtendedModelMap model = renderCandidate(userId, defaultOrganizationId, true);
+
+        List<SubdomainUserRow> rows = (List<SubdomainUserRow>) model.get("userRows");
+        assertThat(rows).singleElement().extracting(SubdomainUserRow::subdomainAdminEligible).isEqualTo(true);
+    }
+
+    @Test
+    void marksUserWithoutDefaultOrganizationIneligible() {
+        UUID userId = UUID.randomUUID();
+        ExtendedModelMap model = renderCandidate(userId, null, null);
+
+        List<SubdomainUserRow> rows = (List<SubdomainUserRow>) model.get("userRows");
+        assertThat(rows).singleElement().extracting(SubdomainUserRow::subdomainAdminEligible).isEqualTo(false);
+        verify(roleWebClient, never()).isOrgAdminInOrgId(eq(ACCESS_TOKEN), eq(userId), any());
+    }
+
+    @Test
+    void marksNonOrgAdminOfDefaultOrganizationIneligible() {
+        UUID userId = UUID.randomUUID();
+        UUID defaultOrganizationId = UUID.randomUUID();
+        ExtendedModelMap model = renderCandidate(userId, defaultOrganizationId, false);
+
+        List<SubdomainUserRow> rows = (List<SubdomainUserRow>) model.get("userRows");
+        assertThat(rows).singleElement().extracting(SubdomainUserRow::subdomainAdminEligible).isEqualTo(false);
+    }
+
+    private ExtendedModelMap renderCandidate(UUID userId, UUID defaultOrganizationId,
+                                              Boolean isOrgAdmin) {
+        UUID organizationId = UUID.randomUUID();
+        SubdomainOrganizationUser membership = new SubdomainOrganizationUser(userId, organizationId, "Organization");
+        User user = new User(userId, "candidate@openissuer.test");
+        when(organizationWebClient.getUsersBySubdomain(eq(ACCESS_TOKEN), eq(HOST), any()))
+                .thenReturn(Mono.just(new RestPage<>(List.of(membership), 0, 5, 1)));
+        when(userWebClient.getUserByBatchOfIds(ACCESS_TOKEN, List.of(userId))).thenReturn(Mono.just(List.of(user)));
+        if (defaultOrganizationId == null) {
+            when(organizationWebClient.getDefaultOrganizationIdForUser(ACCESS_TOKEN, userId, HOST))
+                    .thenReturn(Mono.empty());
+        }
+        else {
+            when(organizationWebClient.getDefaultOrganizationIdForUser(ACCESS_TOKEN, userId, HOST))
+                    .thenReturn(Mono.just(defaultOrganizationId));
+            when(roleWebClient.isOrgAdminInOrgId(ACCESS_TOKEN, userId, defaultOrganizationId))
+                    .thenReturn(Mono.just(isOrgAdmin));
+        }
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        controller.getSubdomainUsers(model, PageRequest.of(0, 5)).block();
+        return model;
     }
 
     private void stubPageRendering() {
         when(organizationWebClient.getSubdomainByHost(ACCESS_TOKEN, HOST)).thenReturn(Mono.just(subdomain));
         when(roleWebClient.isSubdomainAdminInSubdomainId(ACCESS_TOKEN, LOGGED_IN_USER_ID, subdomain.getId()))
                 .thenReturn(Mono.just(true));
-        when(organizationWebClient.getUsersBySubdomain(eq(ACCESS_TOKEN), eq(HOST), any()))
+        lenient().when(organizationWebClient.getUsersBySubdomain(eq(ACCESS_TOKEN), eq(HOST), any()))
                 .thenReturn(Mono.just(new RestPage<>(List.of(), 0, 5, 0)));
-        when(roleWebClient.getSubdomainAdminAssignments(eq(ACCESS_TOKEN), eq(subdomain.getId()), any()))
+        lenient().when(roleWebClient.getSubdomainAdminAssignments(eq(ACCESS_TOKEN), eq(subdomain.getId()), any()))
                 .thenReturn(Mono.just(new RestPage<>(List.of(), 0, 1000, 0)));
     }
 

@@ -8,6 +8,7 @@ import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.service.UserSearchPolicyService;
+import me.sonam.authzmanager.service.OrganizationAuthorizationService;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -44,17 +45,20 @@ public class OrganizationController {
     private final TokenService tokenService;
     private final UserSearchPolicyService userSearchPolicyService;
     private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                                   UserWebClient userWebClient, TokenService tokenService,
                                   UserSearchPolicyService userSearchPolicyService,
-                                  TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
+                                  TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver,
+                                  OrganizationAuthorizationService organizationAuthorizationService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.tokenService = tokenService;
         this.userSearchPolicyService = userSearchPolicyService;
         this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
+        this.organizationAuthorizationService = organizationAuthorizationService;
     }
 
     /**
@@ -218,34 +222,19 @@ public class OrganizationController {
 
     private Mono<Organization> requireOrgAdminOrSubdomainAdmin(String accessToken, UUID userId, String organizationHost,
                                                                Organization organization, Model model) {
-        return roleWebClient.isOrgAdminInOrgId(accessToken, userId, organization.getId())
-                .flatMap(isOrgAdmin -> {
-                    if (isOrgAdmin) {
-                        return Mono.just(organization);
-                    }
-                    return requireSubdomainAdminForOrganization(accessToken, userId, organizationHost,
-                            organization, model);
-                });
+        return organizationAuthorizationService.requireOrgAdminOrSubdomainAdmin(accessToken, userId,
+                        organizationHost, organization)
+                .doOnError(throwable -> model.addAttribute("error",
+                        "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain"));
     }
 
     private Mono<Organization> requireSubdomainAdminForOrganization(String accessToken, UUID userId,
                                                                      String organizationHost,
                                                                      Organization organization, Model model) {
-        return organizationWebClient.getSubdomainByHost(accessToken, organizationHost)
-                .flatMap(subdomain -> roleWebClient.isSubdomainAdminInSubdomainId(accessToken, userId,
-                        subdomain.getId()))
-                .flatMap(isSubdomainAdmin -> {
-                    if (!isSubdomainAdmin) {
-                        model.addAttribute("error",
-                                "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain");
-                        return Mono.error(new AuthenticationException(
-                                "You are not an OrgAdmin for orgId or SubdomainAdmin for subdomain: "
-                                        + organization.getName()));
-                    }
-                    return organizationWebClient.organizationBelongsToSubdomain(accessToken,
-                                    organization.getId(), organizationHost)
-                            .thenReturn(organization);
-                });
+        return organizationAuthorizationService.requireSubdomainAdminForOrganization(accessToken, userId,
+                        organizationHost, organization)
+                .doOnError(throwable -> model.addAttribute("error",
+                        "You are not an OrgAdmin for this organization or a SubdomainAdmin for this subdomain"));
     }
 
 
