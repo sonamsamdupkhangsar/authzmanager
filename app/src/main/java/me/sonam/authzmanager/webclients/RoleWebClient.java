@@ -3,7 +3,6 @@ package me.sonam.authzmanager.webclients;
 import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.clients.user.ClientOrganizationUserRole;
 import me.sonam.authzmanager.clients.role.AuthzManagerRoleAssignment;
-import me.sonam.authzmanager.controller.admin.roles.RoleOrganization;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.rest.RestPage;
@@ -187,33 +186,6 @@ public class RoleWebClient {
         return responseSpec.bodyToMono(String.class);
     }
 
-    public Mono<RoleOrganization> addRoleToOrganization(String accessToken, RoleOrganization roleOrganization) {
-        LOG.info("add role to organization");
-
-        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint);
-        stringBuilder.append("/organizations");
-
-
-        LOG.info("add role to organization endpoint: {}", stringBuilder);
-
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().post().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
-                .bodyValue(roleOrganization).retrieve();
-        return responseSpec.bodyToMono(RoleOrganization.class);
-    }
-
-    public Mono<String> deleteRoleOrganization(String accessToken, UUID roleId, UUID organizationId) {
-        LOG.info("delete roleOrganization by id");
-
-        final StringBuilder stringBuilder = new StringBuilder(roleEndpoint).append("/").append(roleId);
-        stringBuilder.append("/organizations/").append(organizationId);
-
-        LOG.info("delete roleOrganization ndpoint: {}", stringBuilder);
-
-        WebClient.ResponseSpec responseSpec = webClientBuilder.build().delete().uri(stringBuilder.toString())
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken)).retrieve();
-        return responseSpec.bodyToMono(String.class);
-    }
     public Mono<Map<String, String>> getAuthzManagerRoleByName(String accessToken, String name) {
         LOG.info("get AuthzManagerRole id by name {}", name);
 

@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -87,13 +89,16 @@ public class SubdomainAdminController {
                                 roleWebClient.getSubdomainAdminAssignments(accessToken, subdomain.getId(),
                                         PageRequest.of(0, 1000)))
                         .flatMap(result -> getSubdomainUserRows(accessToken, result.getT1())
-                                .doOnNext(userRows -> {
+                                .flatMap(userRows -> {
                                     Map<UUID, UUID> assignmentsByUser = result.getT2().content().stream()
                                             .collect(Collectors.toMap(AuthzManagerRoleAssignment::userId,
                                                     AuthzManagerRoleAssignment::id, (first, second) -> first));
                                     userRows.stream().filter(row -> row.user() != null).forEach(row ->
                                             row.user().setAuthzManagerRoleAssignmentId(
                                                     assignmentsByUser.get(row.user().getId())));
+                                    return addSubdomainAdminEligibility(accessToken, host, userRows);
+                                })
+                                .doOnNext(userRows -> {
                                     model.addAttribute("subdomain", subdomain);
                                     model.addAttribute("page", result.getT1());
                                     model.addAttribute("userRows", userRows);
@@ -103,7 +108,8 @@ public class SubdomainAdminController {
     }
 
     @PostMapping("/users/{userId}/subdomain-admin")
-    public Mono<String> addSubdomainAdmin(@PathVariable UUID userId, Model model, Pageable userPageable) {
+    public Mono<String> addSubdomainAdmin(@PathVariable UUID userId, Model model, Pageable userPageable,
+                                          RedirectAttributes redirectAttributes) {
         String accessToken = tokenService.getAccessToken();
         String host = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
@@ -119,28 +125,31 @@ public class SubdomainAdminController {
                                         "User must be OrgAdmin for their default organization"))))
                         .then(Mono.defer(() -> roleWebClient.addSubdomainAdmin(
                                 accessToken, subdomain.getId(), userId))))
-                .doOnNext(assignment -> model.addAttribute("message", "SubdomainAdmin assigned"))
+                .doOnNext(assignment -> redirectAttributes.addFlashAttribute(
+                        "message", "SubdomainAdmin assigned"))
                 .onErrorResume(throwable -> {
-                    model.addAttribute("error", throwable.getMessage());
+                    redirectAttributes.addFlashAttribute("error", throwable.getMessage());
                     return Mono.empty();
                 })
-                .then(getSubdomainUsers(model, userPageable));
+                .thenReturn(usersRedirect(userPageable));
     }
 
     @PostMapping("/administrators/{assignmentId}/remove")
-    public Mono<String> removeSubdomainAdmin(@PathVariable UUID assignmentId, Model model, Pageable userPageable) {
+    public Mono<String> removeSubdomainAdmin(@PathVariable UUID assignmentId, Model model, Pageable userPageable,
+                                             RedirectAttributes redirectAttributes) {
         String accessToken = tokenService.getAccessToken();
         String host = tenantAuthorizationUrlResolver.currentAuthorizationHost();
 
         return requireSubdomainAdmin(accessToken, host, model)
                 .flatMap(subdomain -> roleWebClient.removeSubdomainAdmin(
                         accessToken, subdomain.getId(), assignmentId))
-                .doOnNext(ignored -> model.addAttribute("message", "SubdomainAdmin removed"))
+                .doOnNext(ignored -> redirectAttributes.addFlashAttribute(
+                        "message", "SubdomainAdmin removed"))
                 .onErrorResume(throwable -> {
-                    model.addAttribute("error", throwable.getMessage());
+                    redirectAttributes.addFlashAttribute("error", throwable.getMessage());
                     return Mono.empty();
                 })
-                .then(getSubdomainUsers(model, userPageable));
+                .thenReturn(usersRedirect(userPageable));
     }
 
     private Mono<Subdomain> requireSubdomainAdmin(String accessToken, String host, Model model) {
@@ -175,9 +184,35 @@ public class SubdomainAdminController {
                     Map<UUID, User> usersById = users.stream()
                             .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first));
                     return userMembershipPage.content().stream()
-                            .map(membership -> new SubdomainUserRow(membership, usersById.get(membership.userId())))
+                            .map(membership -> new SubdomainUserRow(
+                                    membership, usersById.get(membership.userId()), false))
                             .toList();
                 });
+    }
+
+    private Mono<List<SubdomainUserRow>> addSubdomainAdminEligibility(String accessToken, String host,
+                                                                      List<SubdomainUserRow> userRows) {
+        return Flux.fromIterable(userRows)
+                .flatMapSequential(row -> addSubdomainAdminEligibility(accessToken, host, row))
+                .collectList();
+    }
+
+    private Mono<SubdomainUserRow> addSubdomainAdminEligibility(String accessToken, String host,
+                                                                 SubdomainUserRow row) {
+        if (row.user() == null || row.user().getAuthzManagerRoleAssignmentId() != null) {
+            return Mono.just(row);
+        }
+
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, row.user().getId(), host)
+                .flatMap(defaultOrganizationId -> roleWebClient.isOrgAdminInOrgId(
+                        accessToken, row.user().getId(), defaultOrganizationId))
+                .defaultIfEmpty(false)
+                .onErrorResume(throwable -> {
+                    LOG.debug("Unable to determine SubdomainAdmin eligibility for user {}",
+                            row.user().getId(), throwable);
+                    return Mono.just(false);
+                })
+                .map(eligible -> new SubdomainUserRow(row.membership(), row.user(), eligible));
     }
 
     private Pageable pageRequest(Pageable userPageable) {
@@ -190,6 +225,11 @@ public class SubdomainAdminController {
             return requestedPageSize;
         }
         return DEFAULT_PAGE_SIZE;
+    }
+
+    private String usersRedirect(Pageable userPageable) {
+        return "redirect:/admin/subdomain/users?page=" + userPageable.getPageNumber()
+                + "&size=" + boundedPageSize(userPageable.getPageSize());
     }
 
     private Mono<String> renderAccessError(Model model, Throwable throwable, String view) {
