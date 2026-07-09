@@ -42,6 +42,7 @@ REQUEST_SCOPES: message.read message.write
 BASE64_CLIENT_ID_SECRET: b2F1dGgtY2xpZW50Om9hdXRoLXNlY3JldA==
 
 AUTHZMANAGER_INITIAL_SECRET: hello
+AUTHZMANAGER_OAUTH2_PREPEND_UUID_TO_CREATED_CLIENT_ID_HOSTS: free.admin.openissuer.test
 
 authzmanager:
   user-search:

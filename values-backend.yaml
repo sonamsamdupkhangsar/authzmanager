@@ -80,6 +80,10 @@ httproute:
       hostname: "free.admin.openissuer.com"
       httpsListenerName: "https-free-admin"
       httpListenerName: "http-free-admin"
+    - name: demo-admin
+      hostname: "demo.admin.openissuer.com"
+      httpsListenerName: "https-demo-admin"
+      httpListenerName: "http-demo-admin"
 
 resources:
   requests:
