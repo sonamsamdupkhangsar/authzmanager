@@ -46,13 +46,16 @@
                         <span>You can find the user in the <a th:href="@{/admin/organizations/{id}/users(id=${organization.id})}">users tab</a></span>
 
                     </div>
-                    <div th:if="${error}" class="alert alert-danger">
+                    <div th:if="${error == 'Max number of organization users reached'}" class="alert alert-danger">
+                        <span th:text="${error}"></span>
+                    </div>
+                    <div th:if="${error != null && error != 'Max number of organization users reached'}" class="alert alert-danger">
                         <strong>Failed to signup user!</strong> <span th:text="${error}"></span>
                     </div>
                 </div>
 
                 <!-- should contain a org.id (default org) and the signup was not success or has not started-->
-                <div class="col m-2" th:if="${organization.id != null && message == null}">
+                <div class="col m-2" th:if="${organization.id != null && message == null && showAddUser != false}">
                     <form action="#" th:action="@{/admin/organizations/users}" th:object="${signupUser}" enctype="multipart/form-data"
                           method="post" class="needs-validation" id="myForm">
 

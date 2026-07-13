@@ -8,6 +8,7 @@ import me.sonam.authzmanager.controller.admin.clients.ClientController;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
+import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.security.WithMockCustomUser;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.util.JwtUtil;
@@ -49,6 +50,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -155,6 +157,7 @@ public class UserSignupIntegTest {
 
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(1);
         mockWebServer.enqueue(jsonResponse(Map.of("error", "user not found")).setResponseCode(404));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
         mockWebServer.enqueue(jsonResponse(signedUpUser));
@@ -178,6 +181,8 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath())
                 .startsWith("/organizations/subdomain/" + organizationHost + "/organizations/" + orgId + "/exists");
+
+        assertOrganizationUserCountPreflight(orgId);
 
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
@@ -227,6 +232,7 @@ public class UserSignupIntegTest {
 
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(1);
         mockWebServer.enqueue(jsonResponse(existingUser));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
         mockWebServer.enqueue(jsonResponse(existingUser));
@@ -246,6 +252,7 @@ public class UserSignupIntegTest {
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertOrganizationUserCountPreflight(orgId);
         assertUserLookup(authenticationId);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
@@ -288,6 +295,7 @@ public class UserSignupIntegTest {
 
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(1);
         mockWebServer.enqueue(jsonResponse(Map.of("error", "user not found")).setResponseCode(404));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
         mockWebServer.enqueue(jsonResponse(signedUpUser));
@@ -307,6 +315,7 @@ public class UserSignupIntegTest {
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertOrganizationUserCountPreflight(orgId);
         assertUserLookup(email);
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
@@ -367,6 +376,7 @@ public class UserSignupIntegTest {
 
         enqueueAdminSignupSetup(organization, loggedInUserId, true);
         mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(1);
         mockWebServer.enqueue(jsonResponse(existingUser));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "user added successfully")));
         mockWebServer.enqueue(jsonResponse(existingUser));
@@ -383,6 +393,7 @@ public class UserSignupIntegTest {
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
         assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertOrganizationUserCountPreflight(orgId);
 
         assertUserLookup(authenticationId);
 
@@ -419,6 +430,93 @@ public class UserSignupIntegTest {
                         .contains("user email domain is not allowed for this business"));
 
         assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupStopsBeforeUserCreationWhenOrganizationUserLimitReached() throws Exception {
+        String subdomain = "business1.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "tenant company", UUID.randomUUID());
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(6);
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Limit", "Reached", "limit-reached@business1.com", false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("Max number of organization users reached")
+                        .doesNotContain("Failed to signup user!"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertOrganizationUserCountPreflight(orgId);
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupFormHidesAddUserWhenOrganizationUserLimitReached() throws Exception {
+        String subdomain = "demo.admin.openissuer.test";
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "demo company", UUID.randomUUID());
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        enqueueOrganizationUserCount(3);
+
+        webTestClient.get()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("Max number of organization users reached")
+                        .doesNotContain("Failed to signup user!")
+                        .doesNotContain("id=\"myForm\"")
+                        .doesNotContain("id=\"submit\""));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationUserCountPreflight(orgId);
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminSignupUsesFreeTenantUserLimit() throws Exception {
+        String subdomain = "free.admin.openissuer.test";
+        String organizationHost = organizationHostFor(subdomain);
+        UUID orgId = UUID.randomUUID();
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        Organization organization = new Organization(orgId, "free company", UUID.randomUUID());
+
+        enqueueAdminSignupSetup(organization, loggedInUserId, true);
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        enqueueOrganizationUserCount(3);
+
+        webTestClient.post()
+                .uri("/admin/organizations/users")
+                .header(HttpHeaders.HOST, subdomain)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue(signupFormData(orgId, "Free", "Limit", "free-limit@sonam.cloud", false))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> Assertions.assertThat(body)
+                        .contains("Max number of organization users reached")
+                        .doesNotContain("Failed to signup user!"));
+
+        assertAdminSignupSetupRequests(loggedInUserId, orgId);
+        assertOrganizationSubdomainPreflight(organizationHost, orgId);
+        assertOrganizationUserCountPreflight(orgId);
         Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -471,17 +569,21 @@ public class UserSignupIntegTest {
 
         //4 user does not exist yet for user-specific preflight
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(new RestPage<UUID>(List.of(UUID.randomUUID()), 0, 1, 1))));
+
+        //5 user does not exist yet for user-specific preflight
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(404).setBody(getJson(Map.of("error", "user not found"))));
 
-        //5 user signup response
+        //6 user signup response
        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"user added successfully\"}"));
 
-       //6 find user by auth-id response
+       //7 find user by auth-id response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(user)));
 
-        //7 add user to org response
+        //8 add user to org response
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody("{\"message\": \"added user to organization\"}"));
 
@@ -526,6 +628,11 @@ public class UserSignupIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/subdomain/");
         Assertions.assertThat(recordedRequest.getPath()).contains("/organizations/" + orgId + "/exists");
+
+        //preflight organization user count
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + orgId + "/users");
 
         //preflight existing user lookup
         recordedRequest = mockWebServer.takeRequest();
@@ -593,6 +700,14 @@ public class UserSignupIntegTest {
                 .startsWith("/organizations/subdomain/" + subdomain + "/organizations/" + organizationId + "/exists");
     }
 
+    private void assertOrganizationUserCountPreflight(UUID organizationId) throws InterruptedException {
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + organizationId + "/users");
+        Assertions.assertThat(recordedRequest.getPath()).contains("page=0");
+        Assertions.assertThat(recordedRequest.getPath()).contains("size=1");
+    }
+
     private String organizationHostFor(String requestHost) {
         if (requestHost.contains(".admin.")) {
             return requestHost.replace(".admin.", ".");
@@ -647,5 +762,9 @@ public class UserSignupIntegTest {
                 .setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200)
                 .setBody(getJson(object));
+    }
+
+    private void enqueueOrganizationUserCount(long totalElements) throws JsonProcessingException {
+        mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 1, totalElements)));
     }
 }

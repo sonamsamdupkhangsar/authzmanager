@@ -4,6 +4,7 @@ import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,14 +24,21 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
     private final String clientsEndpoint;
 
     private final WebClient.Builder webClientBuilder;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     private final RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
-    public OauthClientWebClient(WebClient.Builder webclientBuilder, String clientsEndpoint) {
+    public OauthClientWebClient(WebClient.Builder webclientBuilder, String clientsEndpoint,
+                                TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.webClientBuilder = webclientBuilder;
         this.clientsEndpoint = clientsEndpoint;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     public Mono<RegisteredClient> updateClient(String accessToken, Map<String, Object> map) {
+        return updateClient(accessToken, map, null);
+    }
+
+    public Mono<RegisteredClient> updateClient(String accessToken, Map<String, Object> map, String authorizationHost) {
         LOG.info("update client with endpoint {}", clientsEndpoint);
         HttpMethod httpMethod = HttpMethod.POST;
 
@@ -40,7 +48,12 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         }
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().method(httpMethod).uri(clientsEndpoint)
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
+                .headers(httpHeaders -> {
+                    httpHeaders.setBearerAuth(accessToken);
+                    if (authorizationHost != null && !authorizationHost.isBlank()) {
+                        tenantAuthorizationUrlResolver.applyTenantForwardHeaders(httpHeaders, authorizationHost);
+                    }
+                })
                 .bodyValue(map).retrieve();
         return responseSpec.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>(){}).map(responseMap-> {
             LOG.info("got back response from auth-server update client call for clientId: {}", responseMap.get("clientId"));
@@ -70,10 +83,10 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         return responseSpec.bodyToMono(String.class).then();
     }
 
-    public Mono<Integer> getClientCount(String accessToken) {
-        LOG.info("call oauth rest service to get client count");
+    public Mono<Integer> getDefaultOrganizationClientCount(String accessToken) {
+        LOG.info("call oauth rest service to get default organization client count");
 
-        String endpoint = clientsEndpoint + "/count/users";
+        String endpoint = clientsEndpoint + "/count/organizations/default";
 
         WebClient.ResponseSpec responseSpec = webClientBuilder.build().get().uri(endpoint)
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(accessToken))
@@ -82,7 +95,7 @@ public class OauthClientWebClient/* implements OauthClientRoute*/ {
         return responseSpec.bodyToMono(Integer.class)
                 .doOnNext(count -> LOG.info("got {} count", count))
                 .onErrorResume(throwable -> {
-            String errorMessage = "auth-server get clientId count for userId failed: " +
+            String errorMessage = "auth-server get clientId count for default organization failed: " +
                     throwable.getMessage();
             LOG.error(errorMessage);
             return Mono.error(throwable);

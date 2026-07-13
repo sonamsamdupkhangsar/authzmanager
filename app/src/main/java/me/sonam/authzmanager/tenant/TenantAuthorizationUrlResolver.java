@@ -38,6 +38,10 @@ public class TenantAuthorizationUrlResolver {
             LOG.info("no current request found; using fallback issuer host {}", fallbackIssuerUri.getHost());
             return fallbackIssuerUri.getHost();
         }
+        return authorizationHost(request);
+    }
+
+    public String authorizationHost(HttpServletRequest request) {
         String requestHost = currentRequestHost(request);
         LOG.info("resolve tenant authorization host from request host '{}'", requestHost);
         String expectedSegment = "." + hostLabel + ".";
@@ -74,7 +78,15 @@ public class TenantAuthorizationUrlResolver {
      * Adds forwarded headers so the internal authorization service resolves the correct tenant issuer.
      */
     public void applyTenantForwardHeaders(HttpHeaders headers) {
-        headers.set("X-Forwarded-Host", currentAuthorizationHost());
+        String authorizationHost = headers.getFirst("X-Forwarded-Host");
+        if (authorizationHost == null || authorizationHost.isBlank()) {
+            authorizationHost = currentAuthorizationHost();
+        }
+        applyTenantForwardHeaders(headers, authorizationHost);
+    }
+
+    public void applyTenantForwardHeaders(HttpHeaders headers, String authorizationHost) {
+        headers.set("X-Forwarded-Host", authorizationHost);
         headers.set("X-Forwarded-Proto", issuerScheme());
         int port = issuerPort();
         if (port > 0) {

@@ -34,6 +34,7 @@
 
             <div class="m-3">
                 <a class="btn btn-primary mb-3"
+                   th:if="${showCreateRole}"
                    th:href="@{/admin/organizations/{organizationId}/roles/new(organizationId=${organization.id})}">Create role</a>
                 <div th:if="${page != null}">
                     <div>

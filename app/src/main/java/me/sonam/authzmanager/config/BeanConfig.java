@@ -1,6 +1,7 @@
 package me.sonam.authzmanager.config;
 
 import me.sonam.authzmanager.AuthenticationCallout;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.user.UserRoute;
 import me.sonam.authzmanager.user.UserRouteAuthServer;
 import me.sonam.authzmanager.webclients.*;
@@ -51,6 +52,9 @@ public class BeanConfig {
     @Qualifier("authServerWebClient")
     private WebClient.Builder authServerWebClient;
 
+    @Autowired
+    private TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
+
     /**
      * Creates the route used for user signup and authentication-related calls.
      */
@@ -64,7 +68,7 @@ public class BeanConfig {
      */
     @Bean
     public OauthClientWebClient oauthClientWebClient() {
-        return new OauthClientWebClient(authServerWebClient, authServerClientsEndpoint);
+        return new OauthClientWebClient(authServerWebClient, authServerClientsEndpoint, tenantAuthorizationUrlResolver);
     }
 
 

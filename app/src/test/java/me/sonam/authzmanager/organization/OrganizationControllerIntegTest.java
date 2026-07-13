@@ -944,6 +944,10 @@ public class OrganizationControllerIntegTest {
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", true))));
 
+        UUID existingUserId = UUID.randomUUID();
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(new RestPage<>(List.of(existingUserId), 0, 1, 1))));
+
         //2
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(Map.of("message", "added user to organization"))));
@@ -987,6 +991,11 @@ public class OrganizationControllerIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/roles/authzmanagerroles/users/"+user.getId()+"/organizations/"+orgId);
 
+        // precheck user ids in organization
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/"+orgId + "/users");
+
         // add user to organization
         recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
@@ -1002,6 +1011,99 @@ public class OrganizationControllerIntegTest {
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/ids/"+userId1+","+userId2);
 
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void findUserByAuthenticationIdDisablesAddWhenUserAssociationLimitReached() {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID organizationId = UUID.randomUUID();
+        Organization organization = new Organization(organizationId, "my company", loggedInUserId);
+
+        UUID userId1 = UUID.randomUUID();
+        UUID userId2 = UUID.randomUUID();
+        UUID userId3 = UUID.randomUUID();
+        UUID userId4 = UUID.randomUUID();
+        UUID userId5 = UUID.randomUUID();
+        UUID userId6 = UUID.randomUUID();
+        List<UUID> userIds = List.of(userId1, userId2, userId3, userId4, userId5, userId6);
+
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(userIds, 0, 6, 6)));
+        mockWebServer.enqueue(jsonResponse(List.of(
+                new User(userId1, "user1@sonam.cloud"),
+                new User(userId2, "user2@sonam.cloud"),
+                new User(userId3, "user3@sonam.cloud"),
+                new User(userId4, "user4@sonam.cloud"),
+                new User(userId5, "user5@sonam.cloud"),
+                new User(userId6, "user6@sonam.cloud"))));
+
+        User searchedUser = new User(UUID.randomUUID(), "searched@sonam.cloud");
+        mockWebServer.enqueue(jsonResponse(searchedUser));
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("{\"message\": \"false\"}"));
+
+        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("username", "searched@sonam.cloud");
+
+        webTestClient.post()
+                .uri("/admin/organizations/" + organizationId + "/users")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(formInserter)
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body)
+                        .contains("max user association reached")
+                        .contains("Add user")
+                        .contains("disabled"));
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void addUserToOrganizationStopsBeforeAssociationWhenUserAssociationLimitReached() throws InterruptedException {
+        UUID loggedInUserId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
+        UUID orgId = UUID.randomUUID();
+        User user = new User(UUID.randomUUID(), "user1@sonam.cloud");
+        OrganizationChoice organizationChoice = new OrganizationChoice();
+        organizationChoice.setOrganizationId(orgId);
+        user.setOrganizationChoice(organizationChoice);
+
+        Organization organization = new Organization(orgId, "my company", loggedInUserId);
+        List<UUID> existingUserIds = List.of(loggedInUserId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID());
+        int requestCountBefore = mockWebServer.getRequestCount();
+
+        mockWebServer.enqueue(jsonResponse(organization));
+        mockWebServer.enqueue(jsonResponse(Map.of("message", true)));
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(existingUserIds, 0, 1, 6)));
+        mockWebServer.enqueue(jsonResponse(new RestPage<>(existingUserIds, 0, 1, 6)));
+        mockWebServer.enqueue(jsonResponse(List.of(
+                new User(existingUserIds.get(0), "owner@sonam.cloud"),
+                new User(existingUserIds.get(1), "user2@sonam.cloud"),
+                new User(existingUserIds.get(2), "user3@sonam.cloud"),
+                new User(existingUserIds.get(3), "user4@sonam.cloud"),
+                new User(existingUserIds.get(4), "user5@sonam.cloud"),
+                new User(existingUserIds.get(5), "user6@sonam.cloud"))));
+
+        BodyInserters.FormInserter<String> formInserter = BodyInserters.fromFormData("id", user.getId().toString())
+                .with("authenticationId", user.getAuthenticationId())
+                .with("organizationChoice.organizationId", user.getOrganizationChoice().getOrganizationId().toString())
+                .with("organizationChoice.selected", "false")
+                .with("action", "add");
+
+        webTestClient.post()
+                .uri("/admin/organizations/"+ organizationChoice.getOrganizationId()+"/users/add")
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(formInserter)
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("max user association reached"));
+
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + orgId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath())
+                .startsWith("/roles/authzmanagerroles/users/" + loggedInUserId + "/organizations/" + orgId);
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/organizations/" + orgId + "/users");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/organizations/" + orgId + "/users");
+        Assertions.assertThat(mockWebServer.takeRequest().getPath()).startsWith("/users/ids/");
+        Assertions.assertThat(mockWebServer.getRequestCount() - requestCountBefore).isEqualTo(5);
     }
 
     /**
@@ -1193,6 +1295,7 @@ public class OrganizationControllerIntegTest {
         Organization organization = new Organization(organizationId, "another organization", UUID.randomUUID());
 
         enqueueSubdomainAuthorization(organization, subdomainId, true);
+        mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 1, 0)));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "added")));
         mockWebServer.enqueue(jsonResponse(Map.of("message", "default updated")));
         mockWebServer.enqueue(jsonResponse(new RestPage<UUID>(List.of(), 0, 5, 0)));
@@ -1211,6 +1314,9 @@ public class OrganizationControllerIntegTest {
                 .value(body -> Assertions.assertThat(body).contains("successfully added"));
 
         assertSubdomainAuthorizationRequests(loggedInUserId, organizationId, subdomainId);
+        RecordedRequest precheckRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(precheckRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(precheckRequest.getPath()).startsWith("/organizations/" + organizationId + "/users");
         RecordedRequest addRequest = mockWebServer.takeRequest();
         Assertions.assertThat(addRequest.getPath()).startsWith("/organizations/users");
         RecordedRequest defaultRequest = mockWebServer.takeRequest();
