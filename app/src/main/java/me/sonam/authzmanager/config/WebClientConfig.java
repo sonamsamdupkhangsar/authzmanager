@@ -59,7 +59,12 @@ public class WebClientConfig {
     @Bean("webClientWithTokenFilter")
     public WebClient.Builder webClientBuilderNoFilter() {
         LOG.info("creating a WebClient.Builder with tokenFilter set");
-        TokenFilter tokenFilter = new TokenFilter(tokenWebClientBuilder, tokenRequestFilter,
+        WebClient.Builder tokenRequestBuilder = tokenWebClientBuilder.clone()
+                .filter((request, next) -> next.exchange(ClientRequest.from(request)
+                        .headers(tenantAuthorizationUrlResolver::applyTenantForwardHeaders)
+                        .build()));
+
+        TokenFilter tokenFilter = new TokenFilter(tokenRequestBuilder, tokenRequestFilter,
                 oauth2TokenEndpoint, grantType, accessTokenPath, tokenExpireSeconds, tokenService);
         WebClient.Builder webClientBuilder = serviceWebClientBuilder.clone();
         webClientBuilder.filter(tokenFilter.renewTokenFilter()).build();

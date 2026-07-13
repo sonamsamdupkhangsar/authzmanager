@@ -77,6 +77,7 @@ public class OrganizationRoleController {
                              @Valid @ModelAttribute("role") Role submittedRole,
                              BindingResult bindingResult, Model model, HttpServletRequest request) {
         submittedRole.setOrganizationId(organizationId);
+        String accessToken = tokenService.getAccessToken();
         if (bindingResult.hasErrors()) {
             model.addAttribute("error", "Data validation failed");
             return requireOrganization(organizationId, model).thenReturn(FORM);
@@ -87,13 +88,12 @@ public class OrganizationRoleController {
         return requireOrganization(organizationId, model)
                 .flatMap(organization -> {
                     if (submittedRole.getId() == null) {
-                        String accessToken = tokenService.getAccessToken();
                         return enforceRoleLimit(accessToken, organizationId, maxRoles)
                                 .then(Mono.defer(() -> roleWebClient.updateRole(accessToken,
                                         new Role(null, submittedRole.getName(), organizationId), HttpMethod.POST)));
                     }
-                    return requireRoleInOrganization(submittedRole.getId(), organizationId)
-                            .flatMap(existingRole -> roleWebClient.updateRole(tokenService.getAccessToken(),
+                    return requireRoleInOrganization(accessToken, submittedRole.getId(), organizationId)
+                            .flatMap(existingRole -> roleWebClient.updateRole(accessToken,
                                     new Role(existingRole.getId(), submittedRole.getName(), organizationId),
                                     HttpMethod.PUT));
                 })
@@ -107,9 +107,10 @@ public class OrganizationRoleController {
 
     @DeleteMapping("/{roleId}")
     public Mono<String> delete(@PathVariable UUID organizationId, @PathVariable UUID roleId, Model model) {
+        String accessToken = tokenService.getAccessToken();
         return requireOrganization(organizationId, model)
-                .then(requireRoleInOrganization(roleId, organizationId))
-                .flatMap(role -> roleWebClient.deleteRole(tokenService.getAccessToken(), roleId))
+                .then(requireRoleInOrganization(accessToken, roleId, organizationId))
+                .flatMap(role -> roleWebClient.deleteRole(accessToken, roleId))
                 .doOnNext(message -> model.addAttribute("message", "deleted role"))
                 .thenReturn(DASHBOARD)
                 .onErrorResume(throwable -> {
@@ -129,7 +130,11 @@ public class OrganizationRoleController {
     }
 
     private Mono<Role> requireRoleInOrganization(UUID roleId, UUID organizationId) {
-        return roleWebClient.getRoleById(tokenService.getAccessToken(), roleId)
+        return requireRoleInOrganization(tokenService.getAccessToken(), roleId, organizationId);
+    }
+
+    private Mono<Role> requireRoleInOrganization(String accessToken, UUID roleId, UUID organizationId) {
+        return roleWebClient.getRoleById(accessToken, roleId)
                 .filter(role -> organizationId.equals(role.getOrganizationId()))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(
                         "Role does not belong to organization " + organizationId)));

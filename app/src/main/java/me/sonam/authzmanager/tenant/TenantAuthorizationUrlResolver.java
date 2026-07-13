@@ -86,6 +86,7 @@ public class TenantAuthorizationUrlResolver {
     }
 
     public void applyTenantForwardHeaders(HttpHeaders headers, String authorizationHost) {
+        headers.set(HttpHeaders.HOST, authorizationHost);
         headers.set("X-Forwarded-Host", authorizationHost);
         headers.set("X-Forwarded-Proto", issuerScheme());
         int port = issuerPort();
