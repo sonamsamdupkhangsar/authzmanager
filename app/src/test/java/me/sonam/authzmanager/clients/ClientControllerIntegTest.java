@@ -168,6 +168,53 @@ public class ClientControllerIntegTest {
     public void createClient() throws Exception {
         final String clientId = saveOauthClient();
     }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void createClientStopsBeforeSaveWhenClientLimitReached() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("5"));
+
+        webTestClient.post().uri("/admin/clients")
+                .body(getFormInserter(oauthClient))
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("Max number of clients reached"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients/count/organizations/default");
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void createClientDisplaysAuthorizationLimitError() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("0"));
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(400).setBody("{\"error\":\"Max number of clients reached\"}"));
+
+        webTestClient.post().uri("/admin/clients")
+                .body(getFormInserter(oauthClient))
+                .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam")))
+                .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .exchange().expectStatus().isOk().expectBody(String.class)
+                .value(body -> Assertions.assertThat(body).contains("Max number of clients reached"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients/count/organizations/default");
+
+        recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
+    }
     @MockitoBean
     ReactiveJwtDecoder jwtDecoder;
 
@@ -462,6 +509,9 @@ public class ClientControllerIntegTest {
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
 
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("1"));
+
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
                 .setResponseCode(200).setBody(getJson(map)));
 
 
@@ -474,7 +524,10 @@ public class ClientControllerIntegTest {
 
         // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients/count/organizations/default");
 
+        recordedRequest = mockWebServer.takeRequest();
         Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
         Assertions.assertThat(recordedRequest.getPath()).startsWith("/issuer/clients");
 

@@ -14,6 +14,8 @@ import me.sonam.authzmanager.oauth2.RegisteredClient;
 import me.sonam.authzmanager.oauth2.util.RegisteredClientUtil;
 import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.service.ClientLimitService;
+import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.*;
 import org.slf4j.Logger;
@@ -50,8 +52,8 @@ public class ClientController implements ClientUserPage {
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
     private TokenService tokenService;
-    @Value("${maxClients}")
-    private int maxClients;
+    private final ClientLimitService clientLimitService;
+    private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     @Value("${authzmanager.oauth2.prepend-uuid-to-created-client-id:true}")
     private boolean prependUuidToCreatedClientId;
     @Value("${authzmanager.oauth2.prepend-uuid-to-created-client-id-hosts:}")
@@ -61,13 +63,17 @@ public class ClientController implements ClientUserPage {
                             OrganizationWebClient organizationWebClient,
                             ClientOrganizationWebClient clientOrganizationWebClient,
                             UserWebClient userWebClient, RoleWebClient roleWebClient,
-                            TokenService tokenService) {
+                            TokenService tokenService,
+                            ClientLimitService clientLimitService,
+                            TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver) {
         this.oauthClientWebClient = oauthClientWebClient;
         this.organizationWebClient = organizationWebClient;
         this.clientOrganizationWebClient = clientOrganizationWebClient;
         this.userWebClient = userWebClient;
         this.roleWebClient = roleWebClient;
         this.tokenService = tokenService;
+        this.clientLimitService = clientLimitService;
+        this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
     }
 
     @GetMapping("/createForm")
@@ -151,18 +157,21 @@ public class ClientController implements ClientUserPage {
         DefaultOidcUser defaultOidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userIdString = defaultOidcUser.getAttribute("userId");
         client.setPrependUuidToClientId(prependUuidToCreatedClientId(request));
+        String authorizationHost = tenantAuthorizationUrlResolver.authorizationHost(request);
+        int maxClients = clientLimitService.maxClientsForHost(authorizationHost);
 
         return hasDataValidationError(client, PATH, bindingResult, model)
             .flatMap(aBoolean -> getRegisteredClient(client))
             .flatMap(registeredClient -> {
-                if (registeredClient.getId() == null) {
-                    LOG.info("a new client to create, check if max count of clients reached");
-                    return oauthClientWebClient.getClientCount(accessToken).zipWith(Mono.just(registeredClient));
+                if (isNewClient(registeredClient)) {
+                    LOG.info("a new client to create, check if max count of default organization clients reached");
+                    return oauthClientWebClient.getDefaultOrganizationClientCount(accessToken)
+                            .zipWith(Mono.just(registeredClient));
                 }
                 return Mono.just(0).zipWith(Mono.just(registeredClient));
             })
                 .flatMap(objects -> {
-                    if (objects.getT1() <= maxClients) {
+                    if (objects.getT1() < maxClients) {
                         RegisteredClient registeredClient = objects.getT2();
                         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
                         map.put("userId", userIdString);
@@ -172,9 +181,9 @@ public class ClientController implements ClientUserPage {
 
                         return Mono.just(map);
                     }
-                    return Mono.error(new BadRequestException("max client count reached"));
+                    return Mono.error(new BadRequestException("Max number of clients reached"));
                 })
-                .flatMap(map -> oauthClientWebClient.updateClient(accessToken, map))
+                .flatMap(map -> oauthClientWebClient.updateClient(accessToken, map, authorizationHost))
                 .flatMap(updatedRegisteredClient -> {
                     LOG.info("client updated and registeredClient returned");
                     LOG.info("updatedRegisteredClient.clientIdIssuedAt: {}", updatedRegisteredClient.getClientIdIssuedAt());
@@ -195,15 +204,32 @@ public class ClientController implements ClientUserPage {
                 checkIfOauth2ClientError(bindingResult, (Exception) throwable);
 
                 LOG.error("Failed to update client {}", throwable.getMessage());
-                model.addAttribute("error", "Failed");
-
-                if (throwable instanceof WebClientResponseException) {
-                    WebClientResponseException webClientResponseException = (WebClientResponseException) throwable;
-                    LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
-                    model.addAttribute("error", webClientResponseException.getResponseBodyAsString());
-                }
+                model.addAttribute("error", errorMessage(throwable));
                 return Mono.just(PATH);
             });
+    }
+
+    private String errorMessage(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException webClientResponseException) {
+            LOG.error("error body contains: {}", webClientResponseException.getResponseBodyAsString());
+            try {
+                Map<String, String> errorResponse = webClientResponseException.getResponseBodyAs(Map.class);
+                if (errorResponse != null && StringUtils.hasText(errorResponse.get("error"))) {
+                    return errorResponse.get("error");
+                }
+            }
+            catch (Exception exception) {
+                LOG.debug("failed to parse oauth client error response body", exception);
+            }
+            if (StringUtils.hasText(webClientResponseException.getResponseBodyAsString())) {
+                return webClientResponseException.getResponseBodyAsString();
+            }
+        }
+
+        if (StringUtils.hasText(throwable.getMessage())) {
+            return throwable.getMessage();
+        }
+        return "Failed";
     }
 
     private Mono<RegisteredClient> getRegisteredClient(OauthClient client) {
@@ -215,6 +241,10 @@ public class ClientController implements ClientUserPage {
 
             LOG.info("client.id is not null and not empty, it's an update");
             return Mono.just(client.getRegisteredClient());
+    }
+
+    private boolean isNewClient(RegisteredClient registeredClient) {
+        return registeredClient.getId() == null || registeredClient.getId().isBlank();
     }
 
     private boolean prependUuidToCreatedClientId(HttpServletRequest request) {
@@ -270,7 +300,7 @@ public class ClientController implements ClientUserPage {
     }
 
     @GetMapping
-    public Mono<String> getLoggedInUserClients(Model model, Pageable userPageable) {
+    public Mono<String> getLoggedInUserClients(Model model, Pageable userPageable, HttpServletRequest request) {
         LOG.info("get this logged-in users clients only");
         int pageSize = 5;
 
@@ -289,11 +319,12 @@ public class ClientController implements ClientUserPage {
         LOG.info("userId: {}", userId);
 
         String accessToken = tokenService.getAccessToken();
+        int maxClients = clientLimitService.maxClientsForHost(tenantAuthorizationUrlResolver.authorizationHost(request));
 
         return oauthClientWebClient.getUserClientIds(accessToken, userId, pageable).flatMap(page -> {
             LOG.info("got clientIds for this userId: {}", userId);
             model.addAttribute("page", page);
-            allowCreateClient(page, model);
+            allowCreateClient(page, model, maxClients);
 
             return Mono.just(PATH);
         }).onErrorResume(throwable -> {
@@ -485,7 +516,7 @@ public class ClientController implements ClientUserPage {
                 });
     }
 
-    private void allowCreateClient(RestPage<CustomPair<String, String>> page, Model model) {
+    private void allowCreateClient(RestPage<CustomPair<String, String>> page, Model model, int maxClients) {
         if (page.totalElements() >= maxClients) {
             model.addAttribute("showCreateClient", "false");
         }

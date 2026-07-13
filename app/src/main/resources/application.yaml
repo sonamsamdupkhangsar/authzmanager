@@ -96,6 +96,24 @@ authzmanager:
         allowed-email-domains:
           - business2.com
 
+organization-user-limits:
+  default-max-added-users: ${MAX_ADDED_USERS_PER_ORGANIZATION:5}
+  hosts:
+    free.openissuer.com: ${FREE_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+    demo.openissuer.com: ${DEMO_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+
+role-limits:
+  default-max-roles: ${MAX_ROLES:5}
+  hosts:
+    free.openissuer.com: ${FREE_MAX_ROLES:2}
+    demo.openissuer.com: ${DEMO_MAX_ROLES:2}
+
+client-limits:
+  default-max-clients: ${MAX_CLIENTS:5}
+  hosts:
+    free.openissuer.com: ${FREE_MAX_CLIENTS:2}
+    demo.openissuer.com: ${DEMO_MAX_CLIENTS:2}
+
 aws:
   s3:
     region: ${REGION}
@@ -122,4 +140,4 @@ maxClients: 5
 maxOrganizations: 1
 maxUserPerOrganization: 5
 maxRoles: 5
-maxUsersPerOrganization: 10
+maxUsersPerOrganization: 5

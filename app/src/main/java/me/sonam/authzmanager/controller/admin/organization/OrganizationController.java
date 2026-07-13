@@ -7,6 +7,8 @@ import me.sonam.authzmanager.clients.user.OrganizationChoice;
 import me.sonam.authzmanager.controller.util.MessageConstants;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.RestPage;
+import me.sonam.authzmanager.service.OrganizationUserLimitService;
+import me.sonam.authzmanager.service.RoleLimitService;
 import me.sonam.authzmanager.service.UserSearchPolicyService;
 import me.sonam.authzmanager.service.OrganizationAuthorizationService;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
@@ -38,6 +40,7 @@ import java.util.*;
 public class OrganizationController {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
     private static final String USER_IN_ANOTHER_ORG_MESSAGE = "user is already in another organization";
+    private static final String USER_ASSOCIATION_LIMIT_MESSAGE = "max user association reached";
 
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
@@ -46,12 +49,16 @@ public class OrganizationController {
     private final UserSearchPolicyService userSearchPolicyService;
     private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     private final OrganizationAuthorizationService organizationAuthorizationService;
+    private final RoleLimitService roleLimitService;
+    private final OrganizationUserLimitService organizationUserLimitService;
 
     public OrganizationController(OrganizationWebClient organizationWebClient, RoleWebClient roleWebClient,
                                   UserWebClient userWebClient, TokenService tokenService,
                                   UserSearchPolicyService userSearchPolicyService,
                                   TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver,
-                                  OrganizationAuthorizationService organizationAuthorizationService) {
+                                  OrganizationAuthorizationService organizationAuthorizationService,
+                                  RoleLimitService roleLimitService,
+                                  OrganizationUserLimitService organizationUserLimitService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
@@ -59,6 +66,8 @@ public class OrganizationController {
         this.userSearchPolicyService = userSearchPolicyService;
         this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
         this.organizationAuthorizationService = organizationAuthorizationService;
+        this.roleLimitService = roleLimitService;
+        this.organizationUserLimitService = organizationUserLimitService;
     }
 
     /**
@@ -254,7 +263,8 @@ public class OrganizationController {
 
         Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize, Sort.by("name"));
         String accessToken = tokenService.getAccessToken();
-        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        String organizationHost = tenantAuthorizationUrlResolver.authorizationHost(request);
+        int maxRoles = roleLimitService.maxRolesForHost(organizationHost);
         return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, organizationHost)
                 .doOnNext(uuid -> {
                     LOG.info("add defaultOrganizationId to model: {}", uuid);
@@ -271,7 +281,10 @@ public class OrganizationController {
                 })
                  .doOnNext(organization -> model.addAttribute("organization", organization))
                 .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, id, pageable))
-                .doOnNext(roleRestPage -> model.addAttribute("page", roleRestPage))
+                .doOnNext(roleRestPage -> {
+                    model.addAttribute("page", roleRestPage);
+                    model.addAttribute("showCreateRole", roleRestPage.totalElements() < maxRoles);
+                })
                 .thenReturn(PATH);
     }
 
@@ -279,10 +292,11 @@ public class OrganizationController {
     get users in the organization id
      */
     @GetMapping("/{id}/users")
-    public Mono<String> getUserForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable) {
+    public Mono<String> getUserForOrganizationId(@PathVariable("id") UUID id, Model model, Pageable userPageable,
+                                                 HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
-        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        String organizationHost = tenantAuthorizationUrlResolver.authorizationHost(request);
 
         return getUsersForOrganization(id, userId, accessToken, organizationHost, model, userPageable);
     }
@@ -292,6 +306,7 @@ public class OrganizationController {
         final String PATH = "admin/organizations/user";
         LOG.info("get users for organization by id: {}", organizationId);
         int pageSize = 5;
+        int maxAddedUsersPerOrganization = organizationUserLimitService.maxAddedUsersForHost(organizationHost);
 
         if (userPageable.getPageSize() < 100) {
             pageSize = userPageable.getPageSize();
@@ -309,11 +324,15 @@ public class OrganizationController {
                                     organizationHost, organization, model));
                 })
                 .doOnNext(organization -> model.addAttribute("organization", organization))
-                .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable))
+                .flatMap(organization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
+                        .map(uuidPage -> Map.entry(organization, uuidPage)))
                 .flatMap(uuidPage -> {
-                    LOG.info("uuidPage: {}", uuidPage.content());
-                    model.addAttribute("page", uuidPage);
-                    return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
+                    Organization organization = uuidPage.getKey();
+                    RestPage<UUID> usersPage = uuidPage.getValue();
+                    LOG.info("uuidPage: {}", usersPage.content());
+                    model.addAttribute("page", usersPage);
+                    setUserAssociationLimitState(usersPage, organization, maxAddedUsersPerOrganization, model);
+                    return userWebClient.getUserByBatchOfIds(accessToken, usersPage.content());
                 })
                 .doOnNext(users -> {
                     LOG.info("got users: {}", users);
@@ -336,12 +355,15 @@ public class OrganizationController {
 
     @PostMapping("/{id}/users")
     public Mono<String> findUserByAuthenticationId(@PathVariable("id") UUID organizationId,
-                                                   @ModelAttribute("username") String authenticationId, final Model model, Pageable userPageable) {
+                                                   @ModelAttribute("username") String authenticationId,
+                                                   final Model model, Pageable userPageable,
+                                                   HttpServletRequest request) {
         final String PATH = "admin/organizations/user";
         LOG.info("find user by authenticationId: {}", authenticationId);
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
-        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        String organizationHost = tenantAuthorizationUrlResolver.authorizationHost(request);
+        int maxAddedUsersPerOrganization = organizationUserLimitService.maxAddedUsersForHost(organizationHost);
 
         return organizationWebClient.getOrganizationById(accessToken, organizationId)
                 .doOnNext(organization -> model.addAttribute("organization", organization))
@@ -359,6 +381,7 @@ public class OrganizationController {
                             .flatMap(uuidPage -> {
                                 LOG.info("uuidPage: {}", uuidPage.content());
                                 model.addAttribute("page", uuidPage);
+                                setUserAssociationLimitState(uuidPage, organization, maxAddedUsersPerOrganization, model);
                                 return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                             })
                             .doOnNext(users -> {
@@ -389,6 +412,9 @@ public class OrganizationController {
                                 }
                                 user.getOrganizationChoice().setDefaultOrganization(false);
                                 model.addAttribute("user", user);
+                                if (Boolean.TRUE.equals(model.asMap().get("userAssociationLimitReached"))) {
+                                    model.addAttribute("message", USER_ASSOCIATION_LIMIT_MESSAGE);
+                                }
                                 return Mono.just(false);
                             });
                 }
@@ -428,13 +454,14 @@ public class OrganizationController {
     @PostMapping("/{id}/users/add")
     public Mono<String> updateUserOrganization(@PathVariable("id") UUID orgId, @ModelAttribute("user") User user,
                                                @RequestParam("action") String action,
-                                               Model model, Pageable pageable) {
+                                               Model model, Pageable pageable, HttpServletRequest request) {
         final String PATH = "admin/organizations/user";
         LOG.info("update user in organization with action: {}", action);
 
         final String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
-        String organizationHost = tenantAuthorizationUrlResolver.currentAuthorizationHost();
+        String organizationHost = tenantAuthorizationUrlResolver.authorizationHost(request);
+        int maxAddedUsersPerOrganization = organizationUserLimitService.maxAddedUsersForHost(organizationHost);
         LOG.info("organizationHost: {}", organizationHost);
 
         return organizationWebClient.getOrganizationById(accessToken, orgId)
@@ -447,26 +474,27 @@ public class OrganizationController {
                         LOG.info("add user to organization action selected");
 
                         return addUserToOrganization(PATH, user, userId, organization, accessToken,
-                                model, pageable, organizationHost);
+                                model, pageable, organizationHost, maxAddedUsersPerOrganization);
                     }
                     else if ("remove".equals(action)) {
                         LOG.info("remove user from organization action selected");
                         return removeUserFromOrganization(PATH, user, userId, organization, accessToken, model, pageable);
 
                     }
-                    else if ("default".equals(action)) {
-                        LOG.info("set default organization action selected");
-                        model.addAttribute("organization", organization);
-                        return organizationWebClient.setDefaultOrganization(accessToken,
-                                        orgId, user.getId())
-                                .doOnNext(message -> {
-                                    user.getOrganizationChoice().setSelected(true);
-                                    user.getOrganizationChoice().setDefaultOrganization(true);
-                                    model.addAttribute("user", user);
-                                    model.addAttribute("message",
-                                            "default organization updated for username: " + user.getAuthenticationId());
-                                })
-                                .then(getUsersInOrganization(PATH, userId, organization, accessToken, model, pageable));
+	                    else if ("default".equals(action)) {
+	                        LOG.info("set default organization action selected");
+	                        model.addAttribute("organization", organization);
+	                        return organizationWebClient.setDefaultOrganization(accessToken,
+	                                        orgId, user.getId())
+	                                .doOnNext(message -> {
+	                                    user.getOrganizationChoice().setSelected(true);
+	                                    user.getOrganizationChoice().setDefaultOrganization(true);
+	                                    model.addAttribute("user", user);
+	                                    model.addAttribute("message",
+	                                            "default organization updated for username: " + user.getAuthenticationId());
+	                                })
+	                                .then(getUsersInOrganization(PATH, userId, organization, accessToken, model, pageable,
+	                                        maxAddedUsersPerOrganization));
                     }
 
                     model.addAttribute("message", "invalid user organization action: " + action);
@@ -494,34 +522,64 @@ public class OrganizationController {
     }
 
     private Mono<String> addUserToOrganization(final String PATH, User user, UUID loggedInUserId, Organization organization,
-                                               String accessToken, Model model, Pageable userPageable, String subdomain) {
+                                               String accessToken, Model model, Pageable userPageable, String subdomain,
+                                               int maxAddedUsersPerOrganization) {
         LOG.info("add user to organization: {}", user);
 
         model.addAttribute("organization", organization);
 
-        return organizationWebClient.addUserToOrganization(accessToken, user.getId(),
-                        user.getOrganizationChoice().getOrganizationId(), subdomain, true)
-                .flatMap(stringStringMap -> setDefaultOrganizationIfRequested(accessToken, user)
-                        .thenReturn(stringStringMap))
-                .doOnNext(stringStringMap -> {
-                    model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
-                    LOG.info("added to user to organization, nullify the user so the form does not show this user again");
-                    model.addAttribute("user", null);
-                })
-                .flatMap(stringStringMap -> {
-                    int pageSize = 5;
-
-                    if (userPageable.getPageSize() < 100) {
-                        pageSize = userPageable.getPageSize();
-                        LOG.info("taking page size from pageable: {}", pageSize);
+        return organizationWebClient.getUserIdsInOrganizationId(accessToken,
+                        user.getOrganizationChoice().getOrganizationId(), PageRequest.of(0, 1))
+                .flatMap(organizationUsers -> {
+                    setUserAssociationLimitState(organizationUsers, organization, maxAddedUsersPerOrganization, model);
+                    if (Boolean.TRUE.equals(model.asMap().get("userAssociationLimitReached"))) {
+                        model.addAttribute("user", user);
+                        return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, userPageable);
                     }
-                    Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
-                    return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, pageable);
-                }).onErrorResume(throwable -> {
-                    LOG.error("error occured during adding user to organization", throwable);
-                    model.addAttribute("message", "error occured during adding user to organization: " + throwable.getMessage());
-                  return  Mono.just(PATH);
-                });
+                    return organizationWebClient.addUserToOrganization(accessToken, user.getId(),
+                                    user.getOrganizationChoice().getOrganizationId(), subdomain, true)
+                            .flatMap(stringStringMap -> setDefaultOrganizationIfRequested(accessToken, user)
+                                    .thenReturn(stringStringMap))
+                            .doOnNext(stringStringMap -> {
+                                model.addAttribute("message", "user successfully added to organization with username: "+ user.getAuthenticationId());
+                                LOG.info("added to user to organization, nullify the user so the form does not show this user again");
+                                model.addAttribute("user", null);
+                            })
+                            .flatMap(stringStringMap -> {
+                                int pageSize = 5;
+
+                                if (userPageable.getPageSize() < 100) {
+                                    pageSize = userPageable.getPageSize();
+                                    LOG.info("taking page size from pageable: {}", pageSize);
+                                }
+                                Pageable pageable = PageRequest.of(userPageable.getPageNumber(), pageSize);
+                                return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, pageable,
+                                        maxAddedUsersPerOrganization);
+                            });
+	                }).onErrorResume(throwable -> {
+	                    LOG.error("error occured during adding user to organization", throwable);
+	                    model.addAttribute("message", "error occured during adding user to organization: " + throwable.getMessage());
+	                    return Mono.just(PATH);
+	                });
+    }
+
+    private void setUserAssociationLimitState(RestPage<UUID> organizationUsers, Organization organization,
+                                              int maxAddedUsersPerOrganization, Model model) {
+        int maxTotalUsers = maxTotalUsersForOrganization(organization, maxAddedUsersPerOrganization);
+        boolean limitReached = organizationUsers.totalElements() >= maxTotalUsers;
+        LOG.info("organization {} has {} users; max added users {}, max total users {}, association limit reached? {}",
+                organization.getId(), organizationUsers.totalElements(), maxAddedUsersPerOrganization, maxTotalUsers,
+                limitReached);
+        model.addAttribute("userAssociationLimitReached", limitReached);
+        if (limitReached) {
+            model.addAttribute("message", USER_ASSOCIATION_LIMIT_MESSAGE);
+        }
+    }
+
+    private int maxTotalUsersForOrganization(Organization organization, int maxAddedUsersPerOrganization) {
+        return organization.getCreatorUserId() == null
+                ? maxAddedUsersPerOrganization
+                : maxAddedUsersPerOrganization + 1;
     }
 
     private Mono<String> setDefaultOrganizationIfRequested(String accessToken, User user) {
@@ -572,10 +630,19 @@ public class OrganizationController {
     }
 
     private Mono<String> getUsersInOrganization(final String PATH, UUID loggedInUserId, Organization organization, String accessToken, Model model, Pageable pageable) {
+         return getUsersInOrganization(PATH, loggedInUserId, organization, accessToken, model, pageable, null);
+    }
+
+    private Mono<String> getUsersInOrganization(final String PATH, UUID loggedInUserId, Organization organization,
+                                                String accessToken, Model model, Pageable pageable,
+                                                Integer maxAddedUsersPerOrganization) {
          return organizationWebClient.getUserIdsInOrganizationId(accessToken, organization.getId(), pageable)
                 .flatMap(uuidPage -> {
                     LOG.info("uuidPage: {}", uuidPage.content());
                     model.addAttribute("page", uuidPage);
+                    if (maxAddedUsersPerOrganization != null) {
+                        setUserAssociationLimitState(uuidPage, organization, maxAddedUsersPerOrganization, model);
+                    }
                     return userWebClient.getUserByBatchOfIds(accessToken, uuidPage.content());
                 })
                 .doOnNext(users -> {

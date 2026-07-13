@@ -1,14 +1,17 @@
 package me.sonam.authzmanager.controller.admin.organization;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import me.sonam.authzmanager.AuthzManagerException;
 import me.sonam.authzmanager.controller.admin.roles.Role;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.service.OrganizationAuthorizationService;
+import me.sonam.authzmanager.service.RoleLimitService;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,17 +37,20 @@ public class OrganizationRoleController {
     private final TokenService tokenService;
     private final TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     private final OrganizationAuthorizationService organizationAuthorizationService;
+    private final RoleLimitService roleLimitService;
 
     public OrganizationRoleController(OrganizationWebClient organizationWebClient,
                                       RoleWebClient roleWebClient,
                                       TokenService tokenService,
                                       TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver,
-                                      OrganizationAuthorizationService organizationAuthorizationService) {
+                                      OrganizationAuthorizationService organizationAuthorizationService,
+                                      RoleLimitService roleLimitService) {
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.tokenService = tokenService;
         this.tenantAuthorizationUrlResolver = tenantAuthorizationUrlResolver;
         this.organizationAuthorizationService = organizationAuthorizationService;
+        this.roleLimitService = roleLimitService;
     }
 
     @GetMapping("/new")
@@ -69,18 +75,22 @@ public class OrganizationRoleController {
     @PostMapping
     public Mono<String> save(@PathVariable UUID organizationId,
                              @Valid @ModelAttribute("role") Role submittedRole,
-                             BindingResult bindingResult, Model model) {
+                             BindingResult bindingResult, Model model, HttpServletRequest request) {
         submittedRole.setOrganizationId(organizationId);
         if (bindingResult.hasErrors()) {
             model.addAttribute("error", "Data validation failed");
             return requireOrganization(organizationId, model).thenReturn(FORM);
         }
 
+        int maxRoles = roleLimitService.maxRolesForHost(tenantAuthorizationUrlResolver.authorizationHost(request));
+
         return requireOrganization(organizationId, model)
                 .flatMap(organization -> {
                     if (submittedRole.getId() == null) {
-                        return roleWebClient.updateRole(tokenService.getAccessToken(),
-                                new Role(null, submittedRole.getName(), organizationId), HttpMethod.POST);
+                        String accessToken = tokenService.getAccessToken();
+                        return enforceRoleLimit(accessToken, organizationId, maxRoles)
+                                .then(Mono.defer(() -> roleWebClient.updateRole(accessToken,
+                                        new Role(null, submittedRole.getName(), organizationId), HttpMethod.POST)));
                     }
                     return requireRoleInOrganization(submittedRole.getId(), organizationId)
                             .flatMap(existingRole -> roleWebClient.updateRole(tokenService.getAccessToken(),
@@ -123,6 +133,16 @@ public class OrganizationRoleController {
                 .filter(role -> organizationId.equals(role.getOrganizationId()))
                 .switchIfEmpty(Mono.error(new AuthzManagerException(
                         "Role does not belong to organization " + organizationId)));
+    }
+
+    private Mono<Void> enforceRoleLimit(String accessToken, UUID organizationId, int maxRoles) {
+        return roleWebClient.getRolesByOrganizationId(accessToken, organizationId, PageRequest.of(0, 1))
+                .flatMap(rolePage -> {
+                    if (rolePage.totalElements() >= maxRoles) {
+                        return Mono.error(new AuthzManagerException("Max number of roles reached"));
+                    }
+                    return Mono.empty();
+                });
     }
 
     private Mono<String> renderError(Model model, Role role, Throwable throwable) {

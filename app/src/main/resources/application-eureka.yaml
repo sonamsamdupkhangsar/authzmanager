@@ -56,6 +56,21 @@ authzmanager:
       "[business2.openissuer.test]":
         allowed-email-domains:
           - business2.com
+
+role-limits:
+  hosts:
+    free.openissuer.test: ${FREE_MAX_ROLES:2}
+    demo.openissuer.test: ${DEMO_MAX_ROLES:2}
+
+organization-user-limits:
+  hosts:
+    free.openissuer.test: ${FREE_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+    demo.openissuer.test: ${DEMO_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+
+client-limits:
+  hosts:
+    free.openissuer.test: ${FREE_MAX_CLIENTS:2}
+    demo.openissuer.test: ${DEMO_MAX_CLIENTS:2}
 #jwtrequest:
 #  - in:  /*
 #    out: /authenticate

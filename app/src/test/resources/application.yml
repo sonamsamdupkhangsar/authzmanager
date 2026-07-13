@@ -69,6 +69,24 @@ authzmanager:
         allowed-email-domains:
           - business2.com
 
+organization-user-limits:
+  default-max-added-users: 5
+  hosts:
+    free.openissuer.test: 2
+    demo.openissuer.test: 2
+
+role-limits:
+  default-max-roles: 5
+  hosts:
+    free.openissuer.test: 2
+    demo.openissuer.test: 2
+
+client-limits:
+  default-max-clients: 5
+  hosts:
+    free.openissuer.test: 2
+    demo.openissuer.test: 2
+
 user-rest-service:
   root: http://localhost:{port}
   context: /users
@@ -145,3 +163,4 @@ maxClients: 5
 maxOrganizations: 1
 maxUserPerOrganization: 5
 maxRoles: 5
+maxUsersPerOrganization: 5

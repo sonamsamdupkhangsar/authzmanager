@@ -1,9 +1,12 @@
 package me.sonam.authzmanager.organization;
 
+import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.organization.OrganizationRoleController;
 import me.sonam.authzmanager.controller.admin.roles.Role;
+import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.service.OrganizationAuthorizationService;
+import me.sonam.authzmanager.service.RoleLimitService;
 import me.sonam.authzmanager.tenant.TenantAuthorizationUrlResolver;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
@@ -34,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,15 +57,21 @@ class OrganizationRoleControllerTest {
     private TenantAuthorizationUrlResolver tenantAuthorizationUrlResolver;
     @Mock
     private OrganizationAuthorizationService organizationAuthorizationService;
+    @Mock
+    private RoleLimitService roleLimitService;
+    @Mock
+    private HttpServletRequest request;
 
     private OrganizationRoleController controller;
 
     @BeforeEach
     void setUp() {
         controller = new OrganizationRoleController(organizationWebClient, roleWebClient, tokenService,
-                tenantAuthorizationUrlResolver, organizationAuthorizationService);
+                tenantAuthorizationUrlResolver, organizationAuthorizationService, roleLimitService);
         when(tokenService.getAccessToken()).thenReturn(ACCESS_TOKEN);
         when(tenantAuthorizationUrlResolver.currentAuthorizationHost()).thenReturn(HOST);
+        lenient().when(tenantAuthorizationUrlResolver.authorizationHost(request)).thenReturn(HOST);
+        lenient().when(roleLimitService.maxRolesForHost(HOST)).thenReturn(5);
         setLoggedInUser(USER_ID);
     }
 
@@ -77,11 +87,13 @@ class OrganizationRoleControllerTest {
         Role submitted = new Role(null, "Support", UUID.randomUUID());
         Role saved = new Role(UUID.randomUUID(), "Support", organizationId);
         ExtendedModelMap model = new ExtendedModelMap();
+        when(roleWebClient.getRolesByOrganizationId(eq(ACCESS_TOKEN), eq(organizationId), any()))
+                .thenReturn(Mono.just(new RestPage<>(List.of(), 0, 1, 0)));
         when(roleWebClient.updateRole(eq(ACCESS_TOKEN), any(Role.class), eq(HttpMethod.POST)))
                 .thenReturn(Mono.just(saved));
 
         assertThat(controller.save(organizationId, submitted,
-                new BeanPropertyBindingResult(submitted, "role"), model).block())
+                new BeanPropertyBindingResult(submitted, "role"), model, request).block())
                 .isEqualTo("admin/organizations/role-form");
 
         ArgumentCaptor<Role> roleCaptor = ArgumentCaptor.forClass(Role.class);
@@ -104,7 +116,7 @@ class OrganizationRoleControllerTest {
                 .thenReturn(Mono.just(saved));
 
         controller.save(organizationId, submitted,
-                new BeanPropertyBindingResult(submitted, "role"), new ExtendedModelMap()).block();
+                new BeanPropertyBindingResult(submitted, "role"), new ExtendedModelMap(), request).block();
 
         ArgumentCaptor<Role> roleCaptor = ArgumentCaptor.forClass(Role.class);
         verify(roleWebClient).updateRole(eq(ACCESS_TOKEN), roleCaptor.capture(), eq(HttpMethod.PUT));
@@ -122,7 +134,7 @@ class OrganizationRoleControllerTest {
         ExtendedModelMap model = new ExtendedModelMap();
 
         controller.save(organizationId, submitted,
-                new BeanPropertyBindingResult(submitted, "role"), model).block();
+                new BeanPropertyBindingResult(submitted, "role"), model, request).block();
 
         assertThat(model.get("error").toString()).contains("Role does not belong to organization");
         verify(roleWebClient, never()).updateRole(eq(ACCESS_TOKEN), any(), any(HttpMethod.class));
@@ -155,9 +167,25 @@ class OrganizationRoleControllerTest {
         ExtendedModelMap model = new ExtendedModelMap();
 
         controller.save(organizationId, submitted,
-                new BeanPropertyBindingResult(submitted, "role"), model).block();
+                new BeanPropertyBindingResult(submitted, "role"), model, request).block();
 
         assertThat(model.get("error").toString()).contains("organization does not belong to subdomain");
+        verify(roleWebClient, never()).updateRole(eq(ACCESS_TOKEN), any(), any(HttpMethod.class));
+    }
+
+    @Test
+    void createRoleStopsBeforeSaveWhenRoleLimitReached() {
+        UUID organizationId = UUID.randomUUID();
+        authorizedOrganization(organizationId);
+        Role submitted = new Role(null, "Support", organizationId);
+        ExtendedModelMap model = new ExtendedModelMap();
+        when(roleWebClient.getRolesByOrganizationId(eq(ACCESS_TOKEN), eq(organizationId), any()))
+                .thenReturn(Mono.just(new RestPage<>(List.of(), 1, 1, 5)));
+
+        controller.save(organizationId, submitted,
+                new BeanPropertyBindingResult(submitted, "role"), model, request).block();
+
+        assertThat(model.get("error").toString()).contains("Max number of roles reached");
         verify(roleWebClient, never()).updateRole(eq(ACCESS_TOKEN), any(), any(HttpMethod.class));
     }
 
