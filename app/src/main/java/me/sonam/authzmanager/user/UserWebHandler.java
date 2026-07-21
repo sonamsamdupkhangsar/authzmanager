@@ -39,23 +39,4 @@ public class UserWebHandler implements UserHandler {
                             .bodyValue(Map.of("error", "user sign up failed: "+ throwable.getMessage()));
                 });
     }
-    @Override
-    public Mono<ServerResponse> authenticate(ServerRequest serverRequest) {
-        LOG.info("authenticate user");
-
-        return serverRequest.bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
-                .flatMap(stringStringMap -> userRoute.authenticate(stringStringMap))
-                .flatMap(s -> {
-                    LOG.info("authenticate response: {}", s);
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("message", "Authentication successful",
-                                    "roleNames", s));
-                })
-                .onErrorResume(throwable -> {
-                    LOG.error("authenticate failed, message: {}", throwable.getMessage());
-                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("error", throwable.getMessage()));
-                });
-    }
-
 }

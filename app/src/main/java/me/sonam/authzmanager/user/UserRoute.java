@@ -6,5 +6,4 @@ import java.util.Map;
 
 public interface UserRoute {
     Mono<String> signupUser(Map<String, String> map);
-    Mono<String> authenticate(Map<String, String> map);
 }
