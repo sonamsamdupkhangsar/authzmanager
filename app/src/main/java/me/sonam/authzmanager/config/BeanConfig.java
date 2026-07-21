@@ -23,8 +23,6 @@ public class BeanConfig {
     @Value("${user-rest-service.root}${user-rest-service.context}${user-rest-service.photo}")
     private String userProfilePhoto;
 
-    @Value("${authentication-rest-service.root}${authentication-rest-service.authenticate}")
-    private String authenticateEndpoint;
     @Value("${auth-server.root}${auth-server.contextPath}${auth-server.clients}")
     private String authServerClientsEndpoint;
 
@@ -60,7 +58,7 @@ public class BeanConfig {
      */
     @Bean
     public UserRoute userRoute() {
-        return new UserRouteAuthServer(webClientWithTokenFilter, userSignupEndpoint, authenticateEndpoint);
+        return new UserRouteAuthServer(webClientWithTokenFilter, userSignupEndpoint);
     }
 
     /**
