@@ -110,26 +110,6 @@ client-limits:
     free.openissuer.com: ${FREE_MAX_CLIENTS:2}
     demo.openissuer.com: ${DEMO_MAX_CLIENTS:2}
 
-aws:
-  s3:
-    region: ${REGION}
-    accessKeyId: ${ACCESS_KEY_ID}
-    secretAccessKey: ${SECRET_ACCESS_KEY}
-    bucket: sonam
-    endpoint: ${ENDPOINT}
-    subdomain: ${SUBDOMAIN}
-    rootPath: authzmanager/
-    videoPath: videos/
-    photoPath: photos/
-    filePath: files/
-    imageAclHeader: x-amz-acl
-    imageAclValue: public-read
-    presignDurationInMinutes: 60
-    thumbnailSize:
-      width: 200
-      height: 200
-
-profilePhotoFolder: profile/
 tokenExpireSeconds: 180
 
 maxClients: 5
