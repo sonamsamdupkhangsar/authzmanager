@@ -44,7 +44,6 @@ dependencies {
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity6', version: '3.1.1.RELEASE'
-    implementation ("cloud.sonam:digitalocean-s3-lib:1.0.0-SNAPSHOT")
     implementation("org.glassfish.jersey.core:jersey-common:3.1.11")
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

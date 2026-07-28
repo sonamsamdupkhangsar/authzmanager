@@ -1,7 +1,5 @@
 package me.sonam.authzmanager.user;
 
-import cloud.sonam.s3.config.S3ClientConfigurationProperties;
-import cloud.sonam.s3.file.S3FileUploadService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -50,7 +48,6 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -63,22 +60,12 @@ import org.springframework.validation.support.BindingAwareModelMap;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.core.async.AsyncRequestBody;
-import software.amazon.awssdk.http.SdkHttpResponse;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -104,17 +91,8 @@ public class ProfileControllerIntegTest {
     @Autowired
     private MockMvc mockMvc;
     private static MockWebServer mockWebServer;
-    @MockitoBean
-    private S3AsyncClient s3Client;
-
-    @Autowired
-    private S3ClientConfigurationProperties s3ClientConfigurationProperties;
-
     @Value("classpath:langur.jpg")
     private Resource langurPhoto;
-
-    @MockitoSpyBean
-    private S3FileUploadService s3Service;
 
     private RegisteredClientUtil registeredClientUtil = new RegisteredClientUtil();
 
@@ -241,82 +219,25 @@ public class ProfileControllerIntegTest {
     public void updateUserProfilePhoto() throws InterruptedException, IOException {
         LOG.info("update user profile with photo");
 
-        PutObjectResponse putObjectResponse = Mockito.mock(PutObjectResponse.class);
-        SdkHttpResponse sdkHttpResponse = Mockito.mock(SdkHttpResponse.class);
-        when(putObjectResponse.sdkHttpResponse()).thenReturn(sdkHttpResponse);
-
-        when(sdkHttpResponse.isSuccessful()).thenReturn(true);
-
-        Mockito.when(s3Client.putObject(Mockito.any(PutObjectRequest.class),
-                        AsyncRequestBody.fromPublisher(Mockito.any())))
-                .thenReturn(CompletableFuture.completedFuture(putObjectResponse));
-
-
-        URI mockUri = Mockito.mock(URI.class);
-        s3ClientConfigurationProperties.setSubdomain(mockUri);
-        when(mockUri.resolve(any(String.class))).thenReturn(mockUri);
-        URL mockUrl = Mockito.mock(URL.class);
-
-        when(mockUri.toURL()).thenReturn(mockUrl);
-
-        JsonObject profilePhotoJsonObject = getJsonObject();
-        UUID userId = UUID.fromString("5d8de63a-0b45-4c33-b9eb-d7fb8d662107");
-        User user = new User(userId, "sonam", "london", "cat@meow.com", "sonam", true, true, new OrganizationChoice(UUID.randomUUID()), false, profilePhotoJsonObject.toString());
-
-        String userJson = getJson(user);
-        assertThat(userJson).isNotNull();
-
         mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody(userJson));
-
-        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("user firstname, lastname and email updated"));
-        assert userJson != null;
-        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
-                .setResponseCode(200).setBody(userJson));
-
-        OauthClient oauthClient = getOauthClient();
-
-        oauthClient.setId(UUID.randomUUID().toString());
-        RegisteredClient registeredClient = oauthClient.getRegisteredClient();
+                .setResponseCode(200).setBody("{\"thumbnailUrl\":\"https://example.com/profile.jpg\"}"));
 
         when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
-
-        Mockito.doReturn(Mono.just(langurPhoto.getURL())).when(s3Service).createPresignedUrl(Mockito.any(Mono.class));
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", langurPhoto);
 
-        ListObjectsResponse listObjectsResponse = Mockito.mock(ListObjectsResponse.class);
-         sdkHttpResponse = Mockito.mock(SdkHttpResponse.class);
-        when(listObjectsResponse.sdkHttpResponse()).thenReturn(sdkHttpResponse);
-
-        when(sdkHttpResponse.isSuccessful()).thenReturn(true);
-
-        Mockito.when(s3Client.listObjects(Mockito.any(ListObjectsRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(listObjectsResponse));
-
         webTestClient.post().uri("/admin/user/profile/photo")
-                .header("acl", "private")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .headers(JwtUtil.addJwt(JwtUtil.jwt("sonam"))).body(BodyInserters.fromMultipartData(body))
+                .exchange().expectStatus().is3xxRedirection();
 
-                .exchange().expectStatus().isOk()
-                .expectBody(String.class)
-                .consumeWith(stringEntityExchangeResult -> LOG.info("result: {}", stringEntityExchangeResult.getResponseBody()));
-
-        // take request for mocked response of access token
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/"+userId.toString());
-
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users");
-
-        recordedRequest = mockWebServer.takeRequest();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("GET");
-        Assertions.assertThat(recordedRequest.getPath()).startsWith("/users/"+userId.toString());
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(recordedRequest.getPath()).isEqualTo("/users/profile/photo");
+        Assertions.assertThat(recordedRequest.getBody().readUtf8())
+                .contains("name=\"authenticationId\"")
+                .contains("sonam");
     }
 
 
@@ -344,8 +265,6 @@ public class ProfileControllerIntegTest {
         Map<String, Object> map = registeredClientUtil.getMapObject(registeredClient);
 
         when(tokenService.getAccessToken()).thenReturn("sometokenvalue");
-
-        Mockito.doReturn(Mono.just(langurPhoto.getURL())).when(s3Service).createPresignedUrl(Mockito.any(Mono.class));
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("id", user.getId().toString());
