@@ -18,6 +18,8 @@ COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
 
+USER 10001:10001
+
 ENTRYPOINT ["java", "-cp","app:app/lib/*","me.sonam.authzmanager.Application"]
 
 LABEL org.opencontainers.image.source https://github.com/sonamsamdupkhangsar/authzmanager
