@@ -74,10 +74,6 @@ httproute:
       hostname: "business1.admin.openissuer.com"
       httpsListenerName: "https-business1-admin"
       httpListenerName: "http-business1-admin"
-    - name: business2-admin
-      hostname: "business2.admin.openissuer.com"
-      httpsListenerName: "https-business2-admin"
-      httpListenerName: "http-business2-admin"
     - name: free-admin
       hostname: "free.admin.openissuer.com"
       httpsListenerName: "https-free-admin"
