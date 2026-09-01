@@ -88,10 +88,6 @@ authzmanager:
       "[business1.openissuer.com]":
         allowed-email-domains:
           - business1.com
-      "[business2.openissuer.com]":
-        allowed-email-domains:
-          - business2.com
-
 organization-user-limits:
   default-max-added-users: ${MAX_ADDED_USERS_PER_ORGANIZATION:5}
   hosts:
