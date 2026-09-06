@@ -30,10 +30,10 @@ class TenantAuthorizationUrlResolverTest {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         TenantAuthorizationUrlResolver resolver =
-                new TenantAuthorizationUrlResolver("admin", "https://platform.openissuer.com");
+                new TenantAuthorizationUrlResolver("admin", "https://platform.openissuer.com/issuer");
 
         assertEquals("business1.openissuer.com", resolver.currentAuthorizationHost());
-        assertEquals("https://business1.openissuer.com", resolver.currentIssuerUri());
+        assertEquals("https://business1.openissuer.com/issuer", resolver.currentIssuerUri());
     }
 
     /**
@@ -50,6 +50,18 @@ class TenantAuthorizationUrlResolverTest {
 
         assertEquals("business2.openissuer.test", resolver.currentAuthorizationHost());
         assertEquals("http://business2.openissuer.test:9001", resolver.currentIssuerUri());
+    }
+
+    @Test
+    void preservesConfiguredIssuerPathForLocalDevelopment() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServerName("business2.admin.openissuer.test");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        TenantAuthorizationUrlResolver resolver =
+                new TenantAuthorizationUrlResolver("admin", "http://platform.openissuer.test:9001/issuer/");
+
+        assertEquals("http://business2.openissuer.test:9001/issuer", resolver.currentIssuerUri());
     }
 
     @Test
