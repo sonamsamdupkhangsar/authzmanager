@@ -31,15 +31,15 @@ class TenantAwareClientRegistrationRepositoryTest {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         TenantAuthorizationUrlResolver resolver =
-                new TenantAuthorizationUrlResolver("admin", "https://platform.openissuer.com");
+                new TenantAuthorizationUrlResolver("admin", "https://platform.openissuer.com/issuer");
         TenantAwareClientRegistrationRepository repository =
                 new TenantAwareClientRegistrationRepository("authzmanager", "client-id", "secret", resolver);
 
         ClientRegistration clientRegistration = repository.findByRegistrationId("authzmanager");
 
-        assertEquals("https://business1.openissuer.com/oauth2/authorize", clientRegistration.getProviderDetails().getAuthorizationUri());
-        assertEquals("https://business1.openissuer.com/oauth2/token", clientRegistration.getProviderDetails().getTokenUri());
-        assertEquals("https://business1.openissuer.com/oauth2/jwks", clientRegistration.getProviderDetails().getJwkSetUri());
-        assertEquals("https://business1.openissuer.com/userinfo", clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri());
+        assertEquals("https://business1.openissuer.com/issuer/oauth2/authorize", clientRegistration.getProviderDetails().getAuthorizationUri());
+        assertEquals("https://business1.openissuer.com/issuer/oauth2/token", clientRegistration.getProviderDetails().getTokenUri());
+        assertEquals("https://business1.openissuer.com/issuer/oauth2/jwks", clientRegistration.getProviderDetails().getJwkSetUri());
+        assertEquals("https://business1.openissuer.com/issuer/userinfo", clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri());
     }
 }

@@ -96,7 +96,8 @@ public class TenantAuthorizationUrlResolver {
     }
 
     /**
-     * Reconstructs an issuer URI using the configured fallback scheme and port with the tenant-specific host.
+     * Reconstructs an issuer URI using the configured fallback scheme, port, and path
+     * with the tenant-specific host.
      */
     private String toIssuerUri(String authorizationHost) {
         int port = issuerPort();
@@ -104,9 +105,10 @@ public class TenantAuthorizationUrlResolver {
                 || ("https".equalsIgnoreCase(issuerScheme()) && port == 443)
                 || port < 0;
 
-        return defaultPort
+        String authority = defaultPort
                 ? issuerScheme() + "://" + authorizationHost
                 : issuerScheme() + "://" + authorizationHost + ":" + port;
+        return authority + issuerPath();
     }
 
     /**
@@ -121,6 +123,14 @@ public class TenantAuthorizationUrlResolver {
      */
     private int issuerPort() {
         return fallbackIssuerUri.getPort();
+    }
+
+    private String issuerPath() {
+        String path = fallbackIssuerUri.getPath();
+        if (path == null || path.isBlank() || "/".equals(path)) {
+            return "";
+        }
+        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
     }
 
     /**
