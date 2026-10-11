@@ -49,9 +49,16 @@
             border: 1px solid #b8c2bd;
             border-radius: .35rem;
             padding: 0 1rem;
+            background: transparent;
             color: #1b2723;
             font-weight: 700;
+            font: inherit;
+            cursor: pointer;
             text-decoration: none;
+        }
+
+        .admin-logout-form {
+            margin: 0;
         }
 
         .admin-logout:hover {
@@ -301,7 +308,9 @@
             <h1 class="admin-brand">OpenIssuer Admin</h1>
             <p class="admin-kicker">Manage OAuth clients, users, roles, organizations, and tenant access.</p>
         </div>
-        <a class="admin-logout" th:href="@{/logout}">Logout</a>
+        <form class="admin-logout-form" th:action="@{/logout}" method="post">
+            <button class="admin-logout" type="submit">Logout</button>
+        </form>
     </div>
 </div>
 
