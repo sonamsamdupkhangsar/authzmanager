@@ -140,14 +140,14 @@ envs:
 
 health:
   liveness:
-    # Probes call Actuator directly on the pod, without the external gateway prefix.
-    path: /actuator/health
+    # Probes call a dedicated unauthenticated endpoint directly on the pod.
+    path: /api/health/readiness
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
     failureThreshold: 5
   readiness:
-    path: /actuator/health
+    path: /api/health/readiness
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
