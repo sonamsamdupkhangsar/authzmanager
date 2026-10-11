@@ -140,13 +140,14 @@ envs:
 
 health:
   liveness:
-    path: /authzmanager/actuator/health
+    # Probes call Actuator directly on the pod, without the external gateway prefix.
+    path: /actuator/health
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
     failureThreshold: 5
   readiness:
-    path: /authzmanager/actuator/health
+    path: /actuator/health
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
