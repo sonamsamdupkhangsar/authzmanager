@@ -4,9 +4,9 @@ server:
 
 logging:
   level:
-    root: trace
-    me.sonam: trace
-    me.sonam.authzmanager.tokenfilter: trace
+    root: info
+    me.sonam: info
+    me.sonam.authzmanager.tokenfilter: info
 
 spring:
   servlet:
