@@ -35,7 +35,7 @@ public class TenantAuthorizationUrlResolver {
     public String currentAuthorizationHost() {
         HttpServletRequest request = currentRequest();
         if (request == null) {
-            LOG.info("no current request found; using fallback issuer host {}", fallbackIssuerUri.getHost());
+            LOG.debug("no current request found; using fallback issuer host {}", fallbackIssuerUri.getHost());
             return fallbackIssuerUri.getHost();
         }
         return authorizationHost(request);
@@ -43,7 +43,7 @@ public class TenantAuthorizationUrlResolver {
 
     public String authorizationHost(HttpServletRequest request) {
         String requestHost = currentRequestHost(request);
-        LOG.info("resolve tenant authorization host from request host '{}'", requestHost);
+        LOG.debug("resolve tenant authorization host from request host '{}'", requestHost);
         String expectedSegment = "." + hostLabel + ".";
 
         if (requestHost != null && requestHost.contains(expectedSegment)) {
@@ -51,18 +51,18 @@ public class TenantAuthorizationUrlResolver {
             String tenantPrefix = requestHost.substring(0, index);
             String suffix = requestHost.substring(index + expectedSegment.length());
             String authorizationHost = tenantPrefix + "." + suffix;
-            LOG.info("resolved tenant authorization host '{}' from admin host '{}'",
+            LOG.debug("resolved tenant authorization host '{}' from admin host '{}'",
                     authorizationHost, requestHost);
             return authorizationHost;
         }
 
         if (requestHost != null && requestHost.equals(hostLabel)) {
-            LOG.info("request host equals host label '{}'; using fallback issuer host {}",
+            LOG.debug("request host equals host label '{}'; using fallback issuer host {}",
                     hostLabel, fallbackIssuerUri.getHost());
             return fallbackIssuerUri.getHost();
         }
 
-        LOG.info("request host '{}' did not match admin host label '{}'; using fallback issuer host {}",
+        LOG.debug("request host '{}' did not match admin host label '{}'; using fallback issuer host {}",
                 requestHost, hostLabel, fallbackIssuerUri.getHost());
         return fallbackIssuerUri.getHost();
     }
@@ -151,7 +151,7 @@ public class TenantAuthorizationUrlResolver {
                 .split(",")[0]
                 .trim()
                 .replaceFirst(":\\d+$", "");
-        LOG.info("resolved raw request host '{}' from x-forwarded-host='{}', host='{}', serverName='{}'",
+        LOG.debug("resolved raw request host '{}' from x-forwarded-host='{}', host='{}', serverName='{}'",
                 requestHost, request.getHeader("X-Forwarded-Host"),
                 request.getHeader(HttpHeaders.HOST), request.getServerName());
         return requestHost;
