@@ -7,6 +7,10 @@ logging:
     root: info
     me.sonam: info
     me.sonam.authzmanager.tokenfilter: info
+    org.springframework.security: info
+    org.springframework.web: info
+    org.apache.tomcat: info
+    okhttp3: info
 
 spring:
   servlet:

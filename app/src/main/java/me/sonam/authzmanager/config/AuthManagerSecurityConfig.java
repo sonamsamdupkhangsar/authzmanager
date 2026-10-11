@@ -34,7 +34,12 @@ public class AuthManagerSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) ->
-                        authorize.requestMatchers("/actuator/**").permitAll()
+                        // The Kubernetes probes reach this service through the
+                        // /authzmanager gateway path. Keep both the direct
+                        // actuator path (local/service requests) and the
+                        // externally prefixed path public so probes do not
+                        // enter the OAuth2 login flow.
+                        authorize.requestMatchers("/actuator/**", "/authzmanager/actuator/**").permitAll()
                                 .requestMatchers("/api/health/readiness").permitAll()
                                 .requestMatchers("/signup").permitAll()
                                 .requestMatchers("/oauth2-login-error").permitAll()
