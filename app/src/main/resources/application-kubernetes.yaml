@@ -8,6 +8,8 @@ spring:
         namespaces:
            - main
         include-not-ready-addresses: true
+    discovery:
+      enabled: false
 eureka:
   client:
       enabled: false
