@@ -44,6 +44,7 @@ public class AuthManagerSecurityConfig {
                                 .requestMatchers("/signup").permitAll()
                                 .requestMatchers("/oauth2-login-error").permitAll()
                                 .requestMatchers("/userlogout").permitAll()
+                                .requestMatchers("/favicon.png").permitAll()
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated()
                 )
