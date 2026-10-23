@@ -2,6 +2,8 @@ package me.sonam.authzmanager.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
+import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -29,17 +32,20 @@ public class AdminApiController {
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
     private final TokenService tokenService;
+    private final String tenantHost;
 
     public AdminApiController(OauthClientWebClient oauthClientWebClient,
                               OrganizationWebClient organizationWebClient,
                               RoleWebClient roleWebClient,
                               UserWebClient userWebClient,
-                              TokenService tokenService) {
+                              TokenService tokenService,
+                              @Value("${openissuer.tenant-host:}") String tenantHost) {
         this.oauthClientWebClient = oauthClientWebClient;
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
         this.tokenService = tokenService;
+        this.tenantHost = tenantHost;
     }
 
     @GetMapping("/clients")
@@ -61,12 +67,30 @@ public class AdminApiController {
     public Mono<UserListResponse> users(HttpServletRequest request) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
-        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, request.getServerName())
+        return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, effectiveHost(request))
                 .flatMap(organizationId -> organizationWebClient.getUserIdsInOrganizationId(
                         accessToken, organizationId, PageRequest.of(0, 100)))
                 .flatMap(ids -> userWebClient.getUserByBatchOfIds(accessToken, ids.content())
                         .map(users -> new UserListResponse(ids, users)));
     }
 
+    @GetMapping("/subdomain")
+    public Mono<SubdomainResponse> subdomain(HttpServletRequest request) {
+        String accessToken = tokenService.getAccessToken();
+        String host = effectiveHost(request);
+        return organizationWebClient.getSubdomainByHost(accessToken, host)
+                .flatMap(subdomain -> Mono.zip(
+                        organizationWebClient.getOrganizationsBySubdomain(accessToken, host, PageRequest.of(0, 100)),
+                        organizationWebClient.getUsersBySubdomain(accessToken, host, PageRequest.of(0, 100)))
+                        .map(result -> new SubdomainResponse(host, subdomain, result.getT1(), result.getT2())));
+    }
+
+    private String effectiveHost(HttpServletRequest request) {
+        return tenantHost == null || tenantHost.isBlank() ? request.getServerName() : tenantHost;
+    }
+
     public record UserListResponse(RestPage<UUID> page, List<?> users) {}
+    public record SubdomainResponse(String host, Subdomain subdomain,
+                                    RestPage<Organization> organizations,
+                                    RestPage<SubdomainOrganizationUser> users) {}
 }
