@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,6 +35,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 /** JSON facade used by the Next.js AuthzManager UI. Internal service endpoints stay private. */
 @RestController
@@ -201,10 +203,34 @@ public class AdminApiController {
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found")));
     }
 
+    @PutMapping("/organizations/{id}")
+    public Mono<Organization> updateOrganization(@PathVariable UUID id, @RequestBody Organization organization) {
+        if (organization == null || !StringUtils.hasText(organization.getName())) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Organization name is required"));
+        }
+        organization.setId(id);
+        return organizationWebClient.updateOrganization(tokenService.getAccessToken(), organization, HttpMethod.PUT);
+    }
+
     @GetMapping("/organizations/{id}/roles")
     public Mono<RestPage<Role>> organizationRoles(@PathVariable UUID id, Pageable pageable) {
         Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name"));
         return roleWebClient.getRolesByOrganizationId(tokenService.getAccessToken(), id, safePageable);
+    }
+
+    @PostMapping("/organizations/{id}/roles")
+    public Mono<Role> createOrganizationRole(@PathVariable UUID id, @RequestBody Role role) {
+        if (role == null || !StringUtils.hasText(role.getName())) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role name is required"));
+        }
+        role.setOrganizationId(id);
+        return roleWebClient.updateRole(tokenService.getAccessToken(), role, HttpMethod.POST);
+    }
+
+    @DeleteMapping("/organizations/{id}/roles/{roleId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deleteOrganizationRole(@PathVariable UUID id, @PathVariable UUID roleId) {
+        return roleWebClient.deleteRole(tokenService.getAccessToken(), roleId).then();
     }
 
     @GetMapping("/organizations/{id}/users")
@@ -215,6 +241,34 @@ public class AdminApiController {
                 .flatMap(ids -> userWebClient.getUserByBatchOfIds(accessToken, ids.content())
                         .defaultIfEmpty(List.of())
                         .map(users -> new UserListResponse(ids, users)));
+    }
+
+    @PostMapping("/organizations/{id}/users")
+    public Mono<Void> updateOrganizationUser(@PathVariable UUID id, @RequestBody OrganizationUserAction action) {
+        if (action == null || action.userId() == null || !StringUtils.hasText(action.action())) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId and action are required"));
+        }
+        String accessToken = tokenService.getAccessToken();
+        return switch (action.action().toLowerCase()) {
+            case "add" -> organizationWebClient.addUserToOrganization(accessToken, action.userId(), id).then();
+            case "remove" -> organizationWebClient.removeUserFromOrganization(accessToken, action.userId(), id).then();
+            case "default" -> organizationWebClient.setDefaultOrganization(accessToken, id, action.userId()).then();
+            default -> Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported action"));
+        };
+    }
+
+    @PostMapping("/organizations/{id}/users/lookup")
+    public Mono<OrganizationUserLookup> lookupOrganizationUser(@PathVariable UUID id, @RequestBody UserLookup lookup,
+                                                               HttpServletRequest request) {
+        if (lookup == null || !StringUtils.hasText(lookup.authenticationId())) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "authenticationId is required"));
+        }
+        String accessToken = tokenService.getAccessToken();
+        return userWebClient.findByAuthenticationProfileSearch(accessToken, lookup.authenticationId())
+                .flatMap(user -> organizationWebClient.userExistsInOrganization(accessToken, user.getId(), id)
+                        .zipWith(organizationWebClient.getDefaultOrganizationIdForUser(accessToken, user.getId(), effectiveHost(request))
+                                .map(Optional::of).defaultIfEmpty(Optional.empty()))
+                        .map(result -> new OrganizationUserLookup(user, result.getT1(), result.getT2().map(id::equals).orElse(false))));
     }
 
     @GetMapping("/users")
@@ -259,6 +313,9 @@ public class AdminApiController {
 
     public record UserListResponse(RestPage<UUID> page, List<?> users) {}
     public record OrganizationAssociation(UUID organizationId) {}
+    public record OrganizationUserAction(UUID userId, String action) {}
+    public record UserLookup(String authenticationId) {}
+    public record OrganizationUserLookup(User user, boolean selected, boolean defaultOrganization) {}
     public record ClientOrganizationsResponse(UUID clientId, RestPage<ClientOrganization> organizations) {}
     public record ClientUsersResponse(UUID clientId, Organization organization, List<Role> roles,
                                       RestPage<UUID> page, List<User> users,
