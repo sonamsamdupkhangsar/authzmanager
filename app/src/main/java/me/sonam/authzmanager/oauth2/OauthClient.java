@@ -653,7 +653,7 @@ public class OauthClient {
         registeredClientBuilder.clientSecretExpiresAt(getInstant(clientSecretExpiresAt));
 
         for(String s: clientAuthenticationMethods) {
-            switch (s) {
+            switch (s == null ? "" : s.trim().toUpperCase(Locale.ROOT)) {
                 case "CLIENT_SECRET_BASIC" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
                 case "CLIENT_SECRET_POST" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
                 case "CLIENT_SECRET_JWT" -> registeredClientBuilder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
@@ -666,7 +666,7 @@ public class OauthClient {
         }
 
         for(String s: authorizationGrantTypes) {
-            switch (s) {
+            switch (s == null ? "" : s.trim().toUpperCase(Locale.ROOT)) {
                 case "AUTHORIZATION_CODE" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
                 case "CLIENT_CREDENTIALS" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS);
                 case "REFRESH_TOKEN" -> registeredClientBuilder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
@@ -677,7 +677,7 @@ public class OauthClient {
             }
         }
         for(String s: scopes) {
-            switch (s) {
+            switch (s == null ? "" : s.trim().toUpperCase(Locale.ROOT)) {
                 case "OPENID" -> registeredClientBuilder.scope(OidcScopes.OPENID);
                 case "PROFILE" -> registeredClientBuilder.scope(OidcScopes.PROFILE);
                 case "EMAIL" -> registeredClientBuilder.scope(OidcScopes.EMAIL);

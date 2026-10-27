@@ -301,6 +301,27 @@ public class ClientControllerIntegTest {
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test
+    public void adminApiUpdatesClientReturnedByGet() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+        UUID id = UUID.randomUUID();
+        oauthClient.setId(id.toString());
+        oauthClient.setAuthorizationGrantTypes(List.of("authorization_code"));
+        oauthClient.setScopes(List.of("openid", "profile"));
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(registeredClientUtil.getMapObject(oauthClient.getRegisteredClient()))));
+
+        webTestClient.post().uri("/api/admin/clients")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(oauthClient)
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.clientId").isEqualTo(oauthClient.getClientId());
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assertions.assertThat(request.getMethod()).isEqualTo("PUT");
+        Assertions.assertThat(request.getPath()).startsWith("/issuer/clients");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
     public void adminApiRejectsAuthorizationCodeClientWithoutRedirectUri() throws Exception {
         OauthClient oauthClient = getOauthClient();
         oauthClient.setAuthorizationGrantTypes(List.of("AUTHORIZATION_CODE"));
