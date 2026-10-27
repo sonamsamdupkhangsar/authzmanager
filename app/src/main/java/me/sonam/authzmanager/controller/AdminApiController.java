@@ -195,6 +195,28 @@ public class AdminApiController {
                         .map(organizations -> new RestPage<>(organizations, ids.number(), ids.size(), ids.totalElements())));
     }
 
+    @GetMapping("/organizations/{id}")
+    public Mono<Organization> organization(@PathVariable UUID id) {
+        return organizationWebClient.getOrganizationById(tokenService.getAccessToken(), id)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found")));
+    }
+
+    @GetMapping("/organizations/{id}/roles")
+    public Mono<RestPage<Role>> organizationRoles(@PathVariable UUID id, Pageable pageable) {
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name"));
+        return roleWebClient.getRolesByOrganizationId(tokenService.getAccessToken(), id, safePageable);
+    }
+
+    @GetMapping("/organizations/{id}/users")
+    public Mono<UserListResponse> organizationUsers(@PathVariable UUID id, Pageable pageable) {
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25));
+        String accessToken = tokenService.getAccessToken();
+        return organizationWebClient.getUserIdsInOrganizationId(accessToken, id, safePageable)
+                .flatMap(ids -> userWebClient.getUserByBatchOfIds(accessToken, ids.content())
+                        .defaultIfEmpty(List.of())
+                        .map(users -> new UserListResponse(ids, users)));
+    }
+
     @GetMapping("/users")
     public Mono<UserListResponse> users(HttpServletRequest request, Pageable pageable) {
         String accessToken = tokenService.getAccessToken();
