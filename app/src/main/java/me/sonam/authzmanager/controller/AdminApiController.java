@@ -18,6 +18,7 @@ import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -63,10 +64,10 @@ public class AdminApiController {
     }
 
     @GetMapping("/clients")
-    public Mono<RestPage<CustomPair<String, String>>> clients() {
+    public Mono<RestPage<CustomPair<String, String>>> clients(Pageable pageable) {
         return oauthClientWebClient.getUserClientIds(
                 tokenService.getAccessToken(), Util.getLoggedInUserId(),
-                PageRequest.of(0, 100, Sort.by("name")));
+                PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name")));
     }
 
     @GetMapping("/clients/{id}")
@@ -114,32 +115,35 @@ public class AdminApiController {
     }
 
     @GetMapping("/organizations")
-    public Mono<RestPage<Organization>> organizations() {
+    public Mono<RestPage<Organization>> organizations(Pageable pageable) {
         String accessToken = tokenService.getAccessToken();
-        return roleWebClient.getOrgAdminOrganizationIdsForUser(accessToken, PageRequest.of(0, 100, Sort.by("name")))
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name"));
+        return roleWebClient.getOrgAdminOrganizationIdsForUser(accessToken, safePageable)
                 .flatMap(ids -> organizationWebClient.getOrganizationByIdsIn(accessToken, ids.content())
                         .map(organizations -> new RestPage<>(organizations, ids.number(), ids.size(), ids.totalElements())));
     }
 
     @GetMapping("/users")
-    public Mono<UserListResponse> users(HttpServletRequest request) {
+    public Mono<UserListResponse> users(HttpServletRequest request, Pageable pageable) {
         String accessToken = tokenService.getAccessToken();
         UUID userId = Util.getLoggedInUserId();
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25));
         return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, userId, effectiveHost(request))
                 .flatMap(organizationId -> organizationWebClient.getUserIdsInOrganizationId(
-                        accessToken, organizationId, PageRequest.of(0, 100)))
+                        accessToken, organizationId, safePageable))
                 .flatMap(ids -> userWebClient.getUserByBatchOfIds(accessToken, ids.content())
                         .map(users -> new UserListResponse(ids, users)));
     }
 
     @GetMapping("/subdomain")
-    public Mono<SubdomainResponse> subdomain(HttpServletRequest request) {
+    public Mono<SubdomainResponse> subdomain(HttpServletRequest request, Pageable pageable) {
         String accessToken = tokenService.getAccessToken();
         String host = effectiveHost(request);
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25));
         return organizationWebClient.getSubdomainByHost(accessToken, host)
                 .flatMap(subdomain -> Mono.zip(
-                        organizationWebClient.getOrganizationsBySubdomain(accessToken, host, PageRequest.of(0, 100)),
-                        organizationWebClient.getUsersBySubdomain(accessToken, host, PageRequest.of(0, 100)))
+                        organizationWebClient.getOrganizationsBySubdomain(accessToken, host, safePageable),
+                        organizationWebClient.getUsersBySubdomain(accessToken, host, safePageable))
                         .map(result -> new SubdomainResponse(host, subdomain, result.getT1(), result.getT2())));
     }
 
