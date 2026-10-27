@@ -27,6 +27,11 @@ spring:
         enabled: true
   thymeleaf: # to enable hot reload of Thymeleaf templates
     cache: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
 
 
 permitpath:

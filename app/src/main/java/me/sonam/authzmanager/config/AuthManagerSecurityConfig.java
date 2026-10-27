@@ -54,8 +54,11 @@ public class AuthManagerSecurityConfig {
                 )
 
                 .csrf(AbstractHttpConfigurer::disable)
-               .oauth2Login(Customizer.withDefaults())
-                .oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()));
+                // Keep the existing browser session flow and also accept bearer
+                // tokens from the server-side Next.js admin UI.
+                .oauth2Login(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()))
+                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
 
         return http.cors(Customizer.withDefaults()).build();
     }
