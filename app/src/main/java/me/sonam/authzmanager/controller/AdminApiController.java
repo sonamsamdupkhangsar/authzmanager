@@ -31,6 +31,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -224,7 +225,10 @@ public class AdminApiController {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role name is required"));
         }
         role.setOrganizationId(id);
-        return roleWebClient.updateRole(tokenService.getAccessToken(), role, HttpMethod.POST);
+        return roleWebClient.updateRole(tokenService.getAccessToken(), role, HttpMethod.POST)
+                .onErrorResume(WebClientResponseException.class, error ->
+                        Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                error.getResponseBodyAsString(), error)));
     }
 
     @DeleteMapping("/organizations/{id}/roles/{roleId}")
