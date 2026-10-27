@@ -82,6 +82,25 @@ Use my Helm chart here @ [sonam-helm-chart](https://github.com/sonamsamdupkhangs
 helm install user-rest-service sonam/mychart -f values-backend.yaml --version 0.1.15 --namespace=yournamespace
 ```
 
+### Summit Next.js UI handoff note
+
+For the current local Next.js AuthzManager UI test against the Summit dedicated
+tenant, the Summit AuthzManager deployment needs this temporary tenant override:
+
+```bash
+kubectl -n summit set env deployment/authzmanager \
+  OPENISSUER_TENANT_HOST=summit.openissuer.com
+```
+
+This is needed when the UI calls the API through a local port-forward because
+the backend otherwise sees `localhost` as the request host. Keep the port-forward
+running on `localhost:8081` while testing the UI.
+
+Remove this fixed override before using the same AuthzManager deployment for
+multiple tenant hosts. A multi-tenant deployment must derive and validate the
+tenant host from the authenticated request instead of forcing Summit for every
+API call.
+
 ## Instruction for port-forwarding database pod
 ```
 export PGMASTER=$(kubectl get pods -o jsonpath={.items..metadata.name} -l application=spilo,cluster-name=friendships-minimal-cluster,spilo-role=master -n yournamesapce); 
