@@ -5,6 +5,10 @@ import jakarta.validation.Valid;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
+import me.sonam.authzmanager.clients.user.ClientOrganization;
+import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
+import me.sonam.authzmanager.controller.admin.roles.Role;
+import me.sonam.authzmanager.clients.user.User;
 import me.sonam.authzmanager.controller.util.Util;
 import me.sonam.authzmanager.oauth2.AuthorizationGrantType;
 import me.sonam.authzmanager.oauth2.OauthClient;
@@ -14,6 +18,7 @@ import me.sonam.authzmanager.rest.CustomPair;
 import me.sonam.authzmanager.rest.RestPage;
 import me.sonam.authzmanager.tokenfilter.TokenService;
 import me.sonam.authzmanager.webclients.OauthClientWebClient;
+import me.sonam.authzmanager.webclients.ClientOrganizationWebClient;
 import me.sonam.authzmanager.webclients.OrganizationWebClient;
 import me.sonam.authzmanager.webclients.RoleWebClient;
 import me.sonam.authzmanager.webclients.UserWebClient;
@@ -35,6 +40,7 @@ import java.util.UUID;
 @RequestMapping("/api/admin")
 public class AdminApiController {
     private final OauthClientWebClient oauthClientWebClient;
+    private final ClientOrganizationWebClient clientOrganizationWebClient;
     private final OrganizationWebClient organizationWebClient;
     private final RoleWebClient roleWebClient;
     private final UserWebClient userWebClient;
@@ -48,6 +54,7 @@ public class AdminApiController {
     private List<String> prependUuidToCreatedClientIdHosts = List.of();
 
     public AdminApiController(OauthClientWebClient oauthClientWebClient,
+                              ClientOrganizationWebClient clientOrganizationWebClient,
                               OrganizationWebClient organizationWebClient,
                               RoleWebClient roleWebClient,
                               UserWebClient userWebClient,
@@ -55,6 +62,7 @@ public class AdminApiController {
                               @Value("${openissuer.tenant-host:}") String tenantHost,
                               ClientLimitService clientLimitService) {
         this.oauthClientWebClient = oauthClientWebClient;
+        this.clientOrganizationWebClient = clientOrganizationWebClient;
         this.organizationWebClient = organizationWebClient;
         this.roleWebClient = roleWebClient;
         this.userWebClient = userWebClient;
@@ -114,6 +122,70 @@ public class AdminApiController {
         return oauthClientWebClient.deleteClient(tokenService.getAccessToken(), id, Util.getLoggedInUserId());
     }
 
+    @GetMapping("/clients/{id}/organizations")
+    public Mono<ClientOrganizationsResponse> clientOrganizations(@PathVariable UUID id, Pageable pageable) {
+        String accessToken = tokenService.getAccessToken();
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name"));
+        return roleWebClient.getOrgAdminOrganizationIdsForUser(accessToken, safePageable)
+                .flatMap(ids -> organizationWebClient.getOrganizationByIdsIn(accessToken, ids.content())
+                        .flatMap(organizations -> clientOrganizationWebClient
+                                .getClientIdOrganizationIdMatch(accessToken, organizations, id)
+                                .defaultIfEmpty(new ClientOrganization())
+                                .map(selected -> {
+                                    UUID selectedId = selected.getOrganization() == null ? null : selected.getOrganization().getId();
+                                    List<ClientOrganization> rows = organizations.stream()
+                                            .map(org -> new ClientOrganization(id, org, org.getId().equals(selectedId)))
+                                            .toList();
+                                    return new ClientOrganizationsResponse(id, new RestPage<>(rows, ids.number(), ids.size(), ids.totalElements()));
+                                })));
+    }
+
+    @PostMapping("/clients/{id}/organizations")
+    public Mono<Void> addClientOrganization(@PathVariable UUID id, @RequestBody OrganizationAssociation association) {
+        if (association == null || association.organizationId() == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId is required"));
+        }
+        return clientOrganizationWebClient.addClientToOrganization(tokenService.getAccessToken(), id, association.organizationId()).then();
+    }
+
+    @DeleteMapping("/clients/{id}/organizations/{organizationId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeClientOrganization(@PathVariable UUID id, @PathVariable UUID organizationId) {
+        return clientOrganizationWebClient.deleteClientOrganizationAssociation(tokenService.getAccessToken(), id, organizationId).then();
+    }
+
+    @GetMapping("/clients/{id}/users")
+    public Mono<ClientUsersResponse> clientUsers(@PathVariable UUID id, Pageable pageable) {
+        String accessToken = tokenService.getAccessToken();
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 25), Sort.by("name"));
+        return clientOrganizationWebClient.getOrganizationIdAssociatedWithClientId(accessToken, id)
+                .flatMap(organizationId -> organizationWebClient.getOrganizationById(accessToken, organizationId)
+                        .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found")))
+                        .flatMap(organization -> roleWebClient.getRolesByOrganizationId(accessToken, organizationId, PageRequest.of(0, Integer.MAX_VALUE))
+                                .zipWith(Mono.just(organization)))
+                        .flatMap(rolesAndOrganization -> organizationWebClient.getUserIdsInOrganizationId(accessToken, organizationId, safePageable)
+                                .flatMap(userIds -> userWebClient.getUserByBatchOfIds(accessToken, userIds.content())
+                                        .defaultIfEmpty(List.of())
+                                        .flatMap(users -> roleWebClient.getClientOrganizationUserWithRoles(accessToken, id, organizationId, userIds.content())
+                                                .defaultIfEmpty(List.of())
+                                                .map(assignments -> new ClientUsersResponse(id, rolesAndOrganization.getT2(), rolesAndOrganization.getT1().content(), userIds, users, assignments))))));
+    }
+
+    @PostMapping("/clients/{id}/users/roles")
+    public Mono<ClientOrganizationUserWithRole> addClientUserRole(@PathVariable UUID id, @RequestBody ClientOrganizationUserWithRole request) {
+        if (request == null || request.getUser() == null || request.getUser().getId() == null || request.getRole() == null || request.getRole().getId() == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "user and role are required"));
+        }
+        request.setClientId(id);
+        return roleWebClient.addClientOrganizationUserRole(tokenService.getAccessToken(), request).thenReturn(request);
+    }
+
+    @DeleteMapping("/clients/{id}/users/roles/{assignmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeClientUserRole(@PathVariable UUID id, @PathVariable UUID assignmentId) {
+        return roleWebClient.deleteClientOrganizationUserRole(tokenService.getAccessToken(), assignmentId).then();
+    }
+
     @GetMapping("/organizations")
     public Mono<RestPage<Organization>> organizations(Pageable pageable) {
         String accessToken = tokenService.getAccessToken();
@@ -164,6 +236,11 @@ public class AdminApiController {
     }
 
     public record UserListResponse(RestPage<UUID> page, List<?> users) {}
+    public record OrganizationAssociation(UUID organizationId) {}
+    public record ClientOrganizationsResponse(UUID clientId, RestPage<ClientOrganization> organizations) {}
+    public record ClientUsersResponse(UUID clientId, Organization organization, List<Role> roles,
+                                      RestPage<UUID> page, List<User> users,
+                                      List<ClientOrganizationUserWithRole> assignments) {}
     public record SubdomainResponse(String host, Subdomain subdomain,
                                     RestPage<Organization> organizations,
                                     RestPage<SubdomainOrganizationUser> users) {}
