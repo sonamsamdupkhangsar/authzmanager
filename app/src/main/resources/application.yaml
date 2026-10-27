@@ -27,6 +27,11 @@ spring:
         enabled: true
   thymeleaf: # to enable hot reload of Thymeleaf templates
     cache: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
 
 
 permitpath:
@@ -77,6 +82,8 @@ oauthClientId: authzmanager-client
 issuerUri: ${ISSUER_URI}
 
 authzmanager:
+  bearer-auth:
+    enabled: ${AUTHZMANAGER_BEARER_AUTH_ENABLED:false}
   oauth2:
     registration-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager
     client-id: b4dfe3fb-1692-44b8-92ab-366ccc84b539-authzmanager

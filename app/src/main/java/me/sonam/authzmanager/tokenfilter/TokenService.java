@@ -15,6 +15,9 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
+import java.util.Set;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +59,17 @@ public class TokenService {
     }
 
     public OAuth2AccessToken getAccessToken(Authentication authentication) {
+        if (authentication instanceof JwtAuthenticationToken jwtAuthentication) {
+            LOG.info("using inbound bearer token for API request");
+            var jwt = jwtAuthentication.getToken();
+            var scopes = jwt.getClaimAsStringList("scope");
+            return new OAuth2AccessToken(
+                    OAuth2AccessToken.TokenType.BEARER,
+                    jwt.getTokenValue(),
+                    jwt.getIssuedAt(),
+                    jwt.getExpiresAt(),
+                    scopes == null ? Set.of() : Set.copyOf(scopes));
+        }
         var authorizedClient = this.getAuthorizedClient(authentication);
         LOG.debug("authorized client available: {}", authorizedClient != null);
         if (authorizedClient != null) {

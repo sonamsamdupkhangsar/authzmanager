@@ -30,6 +30,9 @@ public class AuthManagerSecurityConfig {
     @Value("${allowedOrigins}")
     private String allowedOrigins; //csv allow origins
 
+    @Value("${authzmanager.bearer-auth.enabled:false}")
+    private boolean bearerAuthEnabled;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -54,8 +57,14 @@ public class AuthManagerSecurityConfig {
                 )
 
                 .csrf(AbstractHttpConfigurer::disable)
-               .oauth2Login(Customizer.withDefaults())
+                // Keep the existing browser session flow and also accept bearer
+                // tokens from the server-side Next.js admin UI.
+                .oauth2Login(Customizer.withDefaults())
                 .oauth2Login(oauth2 -> oauth2.failureHandler(new CustomOAuth2AuthenticationFailureHandler()));
+
+        if (bearerAuthEnabled) {
+            http.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
+        }
 
         return http.cors(Customizer.withDefaults()).build();
     }
