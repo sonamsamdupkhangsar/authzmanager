@@ -2,7 +2,6 @@ package me.sonam.authzmanager.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BadRequestException;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
@@ -24,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -78,11 +78,11 @@ public class AdminApiController {
     @PostMapping("/clients")
     public Mono<OauthClient> saveClient(@Valid @RequestBody OauthClient client, HttpServletRequest request) {
         if (client.getAuthorizationGrantTypes() == null || client.getAuthorizationGrantTypes().isEmpty()) {
-            return Mono.error(new BadRequestException("Need to select at least one authorization grant type"));
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Need to select at least one authorization grant type"));
         }
         if (client.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE.getValue().toUpperCase())
                 && !StringUtils.hasText(client.getRedirectUris())) {
-            return Mono.error(new BadRequestException("redirect uris is needed for AuthorizationGrantType of AUTHORIZATION_CODE"));
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "redirect uris is needed for AuthorizationGrantType of AUTHORIZATION_CODE"));
         }
         boolean newClient = !StringUtils.hasText(client.getId());
         if (newClient) {
@@ -102,7 +102,7 @@ public class AdminApiController {
                     .map(count -> count < clientLimitService.maxClientsForHost(host))
                 : Mono.just(true);
         return underLimit.flatMap(ok -> {
-            if (!ok) return Mono.error(new BadRequestException("Max number of clients reached"));
+            if (!ok) return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max number of clients reached"));
             return oauthClientWebClient.updateClient(accessToken, map, host);
         }).map(OauthClient::getFromRegisteredClient);
     }

@@ -260,6 +260,72 @@ public class ClientControllerIntegTest {
 
     }
 
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminApiGetsClientAsJson() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+        UUID id = UUID.randomUUID();
+        oauthClient.setId(id.toString());
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(registeredClientUtil.getMapObject(oauthClient.getRegisteredClient()))));
+
+        webTestClient.get().uri("/api/admin/clients/" + id)
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.clientId").isEqualTo(oauthClient.getClientId());
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assertions.assertThat(request.getMethod()).isEqualTo("GET");
+        Assertions.assertThat(request.getPath()).startsWith("/issuer/clients/");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminApiCreatesClientAndChecksLimit() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody("0"));
+        mockWebServer.enqueue(new MockResponse().setHeader("Content-Type", MediaType.APPLICATION_JSON)
+                .setResponseCode(200).setBody(getJson(registeredClientUtil.getMapObject(oauthClient.getRegisteredClient()))));
+
+        webTestClient.post().uri("/api/admin/clients")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(oauthClient)
+                .exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.clientId").isEqualTo(oauthClient.getClientId());
+
+        RecordedRequest countRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(countRequest.getPath()).startsWith("/issuer/clients/count/organizations/default");
+        RecordedRequest saveRequest = mockWebServer.takeRequest();
+        Assertions.assertThat(saveRequest.getMethod()).isEqualTo("POST");
+        Assertions.assertThat(saveRequest.getPath()).startsWith("/issuer/clients");
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminApiRejectsAuthorizationCodeClientWithoutRedirectUri() throws Exception {
+        OauthClient oauthClient = getOauthClient();
+        oauthClient.setAuthorizationGrantTypes(List.of("AUTHORIZATION_CODE"));
+        oauthClient.setRedirectUris("");
+
+        webTestClient.post().uri("/api/admin/clients")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(oauthClient)
+                .exchange().expectStatus().is4xxClientError();
+        Assertions.assertThat(mockWebServer.takeRequest(100, TimeUnit.MILLISECONDS)).isNull();
+    }
+
+    @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
+    @Test
+    public void adminApiDeletesClient() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(204));
+
+        webTestClient.delete().uri("/api/admin/clients/" + id)
+                .exchange().expectStatus().isNoContent();
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assertions.assertThat(request.getMethod()).isEqualTo("DELETE");
+        Assertions.assertThat(request.getPath()).startsWith("/issuer/clients/");
+    }
+
 
     @WithMockCustomUser(userId = "5d8de63a-0b45-4c33-b9eb-d7fb8d662107", username = "user@sonam.cloud", password = "password", role = "ROLE_USER")
     @Test

@@ -1,5 +1,6 @@
 package me.sonam.authzmanager.oauth2;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
@@ -601,6 +602,7 @@ public class OauthClient {
         return stringBuilder;
     }
 
+   @JsonIgnore
    public DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
 
    private Instant getInstant(String dateString) {
@@ -625,6 +627,7 @@ public class OauthClient {
        }
    }
 
+    @JsonIgnore
     public RegisteredClient getRegisteredClient() {
         if (id == null || id.isEmpty()) {
            // id = UUID.randomUUID().toString();
