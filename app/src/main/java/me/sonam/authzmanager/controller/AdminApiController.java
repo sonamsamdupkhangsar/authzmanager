@@ -272,7 +272,8 @@ public class AdminApiController {
                 .flatMap(user -> organizationWebClient.userExistsInOrganization(accessToken, user.getId(), id)
                         .zipWith(organizationWebClient.getDefaultOrganizationIdForUser(accessToken, user.getId(), effectiveHost(request))
                                 .map(Optional::of).defaultIfEmpty(Optional.empty()))
-                        .map(result -> new OrganizationUserLookup(user, result.getT1(), result.getT2().map(id::equals).orElse(false))));
+                        .map(result -> new OrganizationUserLookup(user, result.getT1(), result.getT2().map(id::equals).orElse(false))))
+                .onErrorResume(error -> Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to find that user", error)));
     }
 
     @GetMapping("/users")
