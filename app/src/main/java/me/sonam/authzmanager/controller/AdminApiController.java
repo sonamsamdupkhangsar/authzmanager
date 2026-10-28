@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
+import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
 import me.sonam.authzmanager.controller.admin.roles.Role;
@@ -259,6 +260,27 @@ public class AdminApiController {
             case "default" -> organizationWebClient.setDefaultOrganization(accessToken, id, action.userId()).then();
             default -> Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported action"));
         };
+    }
+
+    @PostMapping("/organizations/{id}/users/signup")
+    public Mono<Void> signupOrganizationUser(@PathVariable UUID id, @RequestBody UserSignup signup,
+                                              HttpServletRequest request) {
+        if (signup == null || !StringUtils.hasText(signup.getFirstName())
+                || !StringUtils.hasText(signup.getEmail())) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "firstName and email are required"));
+        }
+        signup.setOrganizationId(id);
+        signup.setAuthenticationId(signup.getEmail());
+        signup.setActivationHost(effectiveHost(request));
+        return userWebClient.signupUser(tokenService.getAccessToken(), signup)
+                .then(userWebClient.findByAuthenticationId(tokenService.getAccessToken(), signup.getAuthenticationId()))
+                .flatMap(user -> organizationWebClient.addUserToOrganization(tokenService.getAccessToken(), user.getId(), id)
+                        .then(organizationWebClient.setDefaultOrganization(tokenService.getAccessToken(), id, user.getId())))
+                .then()
+                .onErrorResume(WebClientResponseException.class, error ->
+                        Mono.error(new ResponseStatusException(error.getStatusCode(),
+                                StringUtils.hasText(error.getResponseBodyAsString())
+                                        ? error.getResponseBodyAsString() : "Unable to add user", error)));
     }
 
     @PostMapping("/organizations/{id}/users/lookup")
