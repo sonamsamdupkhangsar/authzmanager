@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.UUID;
@@ -201,6 +202,25 @@ public class AdminApiController {
                         .map(organizations -> new RestPage<>(organizations, ids.number(), ids.size(), ids.totalElements())));
     }
 
+    @GetMapping("/profile")
+    public Mono<User> profile() {
+        return userWebClient.getUserById(tokenService.getAccessToken(), Util.getLoggedInUserId());
+    }
+
+    @PutMapping("/profile")
+    public Mono<User> updateProfile(@RequestBody User requested) {
+        UUID userId = Util.getLoggedInUserId();
+        String accessToken = tokenService.getAccessToken();
+        return userWebClient.getUserById(accessToken, userId)
+                .flatMap(current -> {
+                    current.setFirstName(requested == null ? null : requested.getFirstName());
+                    current.setLastName(requested == null ? null : requested.getLastName());
+                    current.setSearchable(requested == null ? current.getSearchable() : requested.getSearchable());
+                    return userWebClient.updateProfile(accessToken, current)
+                            .thenReturn(current);
+                });
+    }
+
     @GetMapping("/organizations/{id}")
     public Mono<Organization> organization(@PathVariable UUID id) {
         return organizationWebClient.getOrganizationById(tokenService.getAccessToken(), id)
@@ -331,10 +351,21 @@ public class AdminApiController {
                                         java.util.Map<UUID, UUID> assignments = result.getT3().content().stream().collect(java.util.stream.Collectors.toMap(AuthzManagerRoleAssignment::userId, AuthzManagerRoleAssignment::id, (first, second) -> first));
                                         List<SubdomainUserView> rows = memberships.content().stream().map(membership -> {
                                             User user = usersById.get(membership.userId());
-                                            return new SubdomainUserView(membership.userId(), user == null ? null : user.getFirstName(), user == null ? null : user.getLastName(), user == null ? null : user.getEmail(), user == null ? null : user.getAuthenticationId(), membership.organizationId(), membership.organizationName(), assignments.get(membership.userId()));
+                                            return new SubdomainUserView(membership.userId(), user == null ? null : user.getFirstName(), user == null ? null : user.getLastName(), user == null ? null : user.getEmail(), user == null ? null : user.getAuthenticationId(), membership.organizationId(), membership.organizationName(), assignments.get(membership.userId()), false);
                                         }).toList();
-                                        return new SubdomainResponse(host, subdomain, result.getT1(), new RestPage<>(rows, memberships.number(), memberships.size(), memberships.totalElements()));
-                                    });
+                                        return rows;
+                                    })
+                                    .flatMap(enrichedRows -> Flux.fromIterable(enrichedRows)
+                                            .flatMapSequential(row -> {
+                                                if (row.userId() == null || row.subdomainAdminAssignmentId() != null) return Mono.just(row);
+                                                return organizationWebClient.getDefaultOrganizationIdForUser(accessToken, row.userId(), host)
+                                                        .flatMap(defaultOrg -> roleWebClient.isOrgAdminInOrgId(accessToken, row.userId(), defaultOrg))
+                                                        .defaultIfEmpty(false)
+                                                        .onErrorReturn(false)
+                                                        .map(eligible -> new SubdomainUserView(row.userId(), row.firstName(), row.lastName(), row.email(), row.authenticationId(), row.organizationId(), row.organizationName(), row.subdomainAdminAssignmentId(), eligible));
+                                            })
+                                            .collectList()
+                                            .map(finalRows -> new SubdomainResponse(host, subdomain, result.getT1(), new RestPage<>(finalRows, memberships.number(), memberships.size(), memberships.totalElements()))));
                         }));
     }
 
@@ -385,5 +416,5 @@ public class AdminApiController {
                                     RestPage<SubdomainUserView> users) {}
     public record SubdomainUserView(UUID userId, String firstName, String lastName, String email,
                                     String authenticationId, UUID organizationId, String organizationName,
-                                    UUID subdomainAdminAssignmentId) {}
+                                    UUID subdomainAdminAssignmentId, boolean subdomainAdminEligible) {}
 }
