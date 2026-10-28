@@ -221,6 +221,68 @@ public class AdminApiController {
                 });
     }
 
+    @GetMapping("/settings")
+    public Mono<SettingsResponse> settings(HttpServletRequest request, Pageable pageable) {
+        String accessToken = tokenService.getAccessToken();
+        UUID loggedInUserId = Util.getLoggedInUserId();
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 50));
+        return roleWebClient.getAuthzManagerRoleByName(accessToken, "OrgAdmin")
+                .map(role -> UUID.fromString(role.get("message")))
+                .flatMap(roleId -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken, loggedInUserId, effectiveHost(request))
+                        .flatMap(orgId -> organizationWebClient.getOrganizationById(accessToken, orgId)
+                                .zipWith(organizationWebClient.getUserIdsInOrganizationId(accessToken, orgId, safePageable))
+                                .flatMap(orgAndIds -> userWebClient.getUserByBatchOfIds(accessToken, orgAndIds.getT2().content())
+                                        .defaultIfEmpty(List.of())
+                                        .zipWith(roleWebClient.areUsersOrgAdminInDefaultOrgId(accessToken, orgId, orgAndIds.getT2().content()))
+                                        .map(usersAndAssignments -> {
+                                            usersAndAssignments.getT1().forEach(user -> {
+                                                if (user.getId().equals(loggedInUserId)) user.setEnabled(false);
+                                                user.setAuthzManagerRoleAssignmentId(usersAndAssignments.getT2().get(user.getId()));
+                                            });
+                                            return new SettingsResponse(roleId, orgAndIds.getT1(), new RestPage<>(usersAndAssignments.getT1(), orgAndIds.getT2().number(), orgAndIds.getT2().size(), orgAndIds.getT2().totalElements()));
+                                        }))));
+    }
+
+    @PostMapping("/settings/org-admin")
+    public Mono<Void> addSettingsOrgAdmin(@RequestBody SettingsOrgAdminAction action) {
+        if (action == null || action.userId() == null || action.organizationId() == null || action.roleId() == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId, organizationId, and roleId are required"));
+        }
+        return roleWebClient.addUserToOrgAdminRoleInOrganization(tokenService.getAccessToken(), action.roleId(), action.organizationId(), action.userId(), PageRequest.of(0, 50)).then();
+    }
+
+    @GetMapping("/settings/lookup")
+    public Mono<SettingsResponse> settingsLookup(@RequestParam String username, HttpServletRequest request) {
+        String accessToken = tokenService.getAccessToken();
+        UUID loggedInUserId = Util.getLoggedInUserId();
+        return roleWebClient.getAuthzManagerRoleByName(accessToken, "OrgAdmin")
+                .map(role -> UUID.fromString(role.get("message")))
+                .flatMap(roleId -> organizationWebClient.getDefaultOrganizationIdForUser(accessToken, loggedInUserId, effectiveHost(request))
+                        .flatMap(orgId -> settingsLookupForOrganization(accessToken, roleId, orgId, username, loggedInUserId)));
+    }
+
+    private Mono<SettingsResponse> settingsLookupForOrganization(String accessToken, UUID roleId, UUID organizationId,
+                                                                  String username, UUID loggedInUserId) {
+        return organizationWebClient.getOrganizationById(accessToken, organizationId)
+                .flatMap(organization -> userWebClient.findByAuthenticationProfileSearch(accessToken, username)
+                        .flatMap(user -> organizationWebClient.userExistsInOrganization(accessToken, user.getId(), organizationId)
+                                .flatMap(exists -> {
+                                    if (!exists) return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not in the default organization"));
+                                    return roleWebClient.areUsersOrgAdminInDefaultOrgId(accessToken, organizationId, List.of(user.getId()))
+                                            .map(assignments -> {
+                                                if (user.getId().equals(loggedInUserId)) user.setEnabled(false);
+                                                user.setAuthzManagerRoleAssignmentId(assignments.get(user.getId()));
+                                                return new SettingsResponse(roleId, organization, new RestPage<>(List.of(user), 0, 1, 1));
+                                            });
+                                })));
+    }
+
+    @DeleteMapping("/settings/org-admin/{assignmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeSettingsOrgAdmin(@PathVariable UUID assignmentId) {
+        return roleWebClient.deleteUserFromAuthzManagerRoleAssignment(tokenService.getAccessToken(), assignmentId).then();
+    }
+
     @GetMapping("/organizations/{id}")
     public Mono<Organization> organization(@PathVariable UUID id) {
         return organizationWebClient.getOrganizationById(tokenService.getAccessToken(), id)
@@ -403,6 +465,8 @@ public class AdminApiController {
     }
 
     public record UserListResponse(RestPage<UUID> page, List<?> users) {}
+    public record SettingsResponse(UUID roleId, Organization organization, RestPage<User> users) {}
+    public record SettingsOrgAdminAction(UUID roleId, UUID organizationId, UUID userId) {}
     public record OrganizationAssociation(UUID organizationId) {}
     public record OrganizationUserAction(UUID userId, String action) {}
     public record UserLookup(String authenticationId) {}
