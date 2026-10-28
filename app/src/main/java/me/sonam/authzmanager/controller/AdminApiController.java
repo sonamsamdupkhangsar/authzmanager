@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import me.sonam.authzmanager.controller.admin.organization.Organization;
 import me.sonam.authzmanager.controller.admin.subdomain.Subdomain;
 import me.sonam.authzmanager.controller.admin.subdomain.SubdomainOrganizationUser;
+import me.sonam.authzmanager.controller.admin.subdomain.SubdomainUserRow;
+import me.sonam.authzmanager.clients.role.AuthzManagerRoleAssignment;
 import me.sonam.authzmanager.controller.signup.UserSignup;
 import me.sonam.authzmanager.clients.user.ClientOrganization;
 import me.sonam.authzmanager.controller.admin.clients.carrier.ClientOrganizationUserWithRole;
@@ -318,8 +320,39 @@ public class AdminApiController {
         return organizationWebClient.getSubdomainByHost(accessToken, host)
                 .flatMap(subdomain -> Mono.zip(
                         organizationWebClient.getOrganizationsBySubdomain(accessToken, host, safePageable),
-                        organizationWebClient.getUsersBySubdomain(accessToken, host, safePageable))
-                        .map(result -> new SubdomainResponse(host, subdomain, result.getT1(), result.getT2())));
+                        organizationWebClient.getUsersBySubdomain(accessToken, host, safePageable),
+                        roleWebClient.getSubdomainAdminAssignments(accessToken, subdomain.getId(), PageRequest.of(0, 1000)))
+                        .flatMap(result -> {
+                            RestPage<SubdomainOrganizationUser> memberships = result.getT2();
+                            List<UUID> userIds = memberships.content().stream().map(SubdomainOrganizationUser::userId).distinct().toList();
+                            return userWebClient.getUserByBatchOfIds(accessToken, userIds).defaultIfEmpty(List.of())
+                                    .map(userList -> {
+                                        java.util.Map<UUID, User> usersById = userList.stream().collect(java.util.stream.Collectors.toMap(User::getId, java.util.function.Function.identity(), (first, second) -> first));
+                                        java.util.Map<UUID, UUID> assignments = result.getT3().content().stream().collect(java.util.stream.Collectors.toMap(AuthzManagerRoleAssignment::userId, AuthzManagerRoleAssignment::id, (first, second) -> first));
+                                        List<SubdomainUserView> rows = memberships.content().stream().map(membership -> {
+                                            User user = usersById.get(membership.userId());
+                                            return new SubdomainUserView(membership.userId(), user == null ? null : user.getFirstName(), user == null ? null : user.getLastName(), user == null ? null : user.getEmail(), user == null ? null : user.getAuthenticationId(), membership.organizationId(), membership.organizationName(), assignments.get(membership.userId()));
+                                        }).toList();
+                                        return new SubdomainResponse(host, subdomain, result.getT1(), new RestPage<>(rows, memberships.number(), memberships.size(), memberships.totalElements()));
+                                    });
+                        }));
+    }
+
+    @PostMapping("/subdomain/users/{userId}/subdomain-admin")
+    public Mono<Void> addSubdomainAdmin(@PathVariable UUID userId, HttpServletRequest request) {
+        String accessToken = tokenService.getAccessToken();
+        return organizationWebClient.getSubdomainByHost(accessToken, effectiveHost(request))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Subdomain not found")))
+                .flatMap(subdomain -> roleWebClient.addSubdomainAdmin(accessToken, subdomain.getId(), userId).then());
+    }
+
+    @DeleteMapping("/subdomain/administrators/{assignmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeSubdomainAdmin(@PathVariable UUID assignmentId, HttpServletRequest request) {
+        String accessToken = tokenService.getAccessToken();
+        return organizationWebClient.getSubdomainByHost(accessToken, effectiveHost(request))
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Subdomain not found")))
+                .flatMap(subdomain -> roleWebClient.removeSubdomainAdmin(accessToken, subdomain.getId(), assignmentId).then());
     }
 
     private String effectiveHost(HttpServletRequest request) {
@@ -349,5 +382,8 @@ public class AdminApiController {
                                       List<ClientOrganizationUserWithRole> assignments) {}
     public record SubdomainResponse(String host, Subdomain subdomain,
                                     RestPage<Organization> organizations,
-                                    RestPage<SubdomainOrganizationUser> users) {}
+                                    RestPage<SubdomainUserView> users) {}
+    public record SubdomainUserView(UUID userId, String firstName, String lastName, String email,
+                                    String authenticationId, UUID organizationId, String organizationName,
+                                    UUID subdomainAdminAssignmentId) {}
 }
